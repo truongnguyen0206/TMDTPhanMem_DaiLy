@@ -26,6 +26,7 @@ function App() {
   return (
     <div style={{ textAlign: 'center', marginTop: '50px', fontSize: '24px' }}>
       <h1>Trạng thái kết nối</h1>
+      <h2>test</h2>
       <p>{message}</p>
     </div>
   );

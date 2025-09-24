@@ -9,11 +9,16 @@ const LoginPage = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Xử lý logic đăng nhập ở đây
-    console.log('School Name:', schoolName);
-    console.log('Password:', password);
-    // Ví dụ: điều hướng đến trang dashboard sau khi đăng nhập thành công
-    // navigate('/');
+    try {
+      const res = await axios.post("http://localhost:5001/auth/login", {
+        username,
+        password,
+      });
+      setMessage(res.data.message);
+      localStorage.setItem("token", res.data.token); // lưu token
+    } catch (err) {
+      setMessage(err.response?.data?.message || "Lỗi đăng nhập");
+    }
   };
 
   return (
@@ -28,19 +33,19 @@ const LoginPage = () => {
             <div className="form-group">
               <input
                 type="text"
-                placeholder="Enter the name of Account"
-                value={schoolName}
-                onChange={(e) => setSchoolName(e.target.value)}
-                required
+                placeholder="Username"
+                className="w-full mb-4 p-2 border rounded"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
               />
             </div>
             <div className="form-group">
               <input
                 type="password"
-                placeholder="Enter Password"
+                placeholder="Password"
+                className="w-full mb-4 p-2 border rounded"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                required
               />
             </div>
             <button type="submit" className="login-button">Login</button>

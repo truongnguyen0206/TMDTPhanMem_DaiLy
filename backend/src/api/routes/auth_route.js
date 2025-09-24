@@ -35,7 +35,7 @@ router.post("/register", async (req, res) => {
 
     res.status(201).json({ message: "Đăng ký thành công 🎉" });
   } catch (err) {
-    console.error("🔥 Lỗi backend:", err);
+    console.error("🔥  Lỗi backend:", err);
     res.status(500).json({ message: "Lỗi server!" });
   }
 });

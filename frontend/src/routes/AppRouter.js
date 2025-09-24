@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout/MainLayout';
 import DashboardPage from '../pages/Dashboard/DashboardPage';
 import LoginPage from '../pages/Auth/LoginPage';
+import RegisterPage from '../pages/Auth/RegisterPage';
 
 // Component placeholder cho các trang chưa có nội dung
 const Placeholder = ({ title }) => <div style={{ padding: 40 }}><h2>{title}</h2></div>;
@@ -13,6 +14,7 @@ const AppRouter = () => {
     <Router>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<RegisterPage />} />
         <Route path="/" element={<MainLayout />}>
           {/* Dashboard */}
           <Route index element={<DashboardPage />} />

@@ -1,0 +1,147 @@
+/* src/components/layout/Sidebar/Sidebar.css */
+.sidebar {
+  width: 260px;
+  background-color: #0d1a4b;
+  color: #a9b4d8;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+}
+
+.sidebar-header {
+  padding: 20px;
+  text-align: center;
+  border-bottom: 1px solid #1a2c6b;
+}
+
+.logo {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  margin: 0 auto 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 24px;
+  background: linear-gradient(135deg, #4f46e5, #ec4899);
+}
+
+.logo-m { color: white; }
+.logo-n { color: #fde047; }
+
+
+.sidebar-header h3 {
+  color: white;
+  margin: 0;
+  font-size: 16px;
+}
+
+.sidebar-menu {
+  list-style: none;
+  padding: 20px 0;
+  margin: 0;
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+.sidebar-menu li {
+  padding: 0 10px;
+}
+
+.sidebar-menu a, .menu-link {
+  color: #a9b4d8;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  margin: 4px 0;
+  border-radius: 8px;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.sidebar-menu a svg, .menu-link svg {
+  margin-right: 15px;
+  min-width: 20px;
+}
+
+.sidebar-menu a.active {
+  background-color: #2563eb;
+  color: white;
+}
+
+.sidebar-menu a:hover, .menu-item:hover {
+  background-color: #1e3a8a;
+  color: white;
+  border-radius: 8px;
+}
+
+/* Dropdown Menu Item */
+.menu-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  padding: 0;
+  margin: 4px 0;
+}
+
+.menu-arrow {
+  transition: transform 0.2s ease-in-out;
+  font-size: 12px;
+  margin-right: 12px;
+}
+
+li.open > .menu-item .menu-arrow {
+  transform: rotate(90deg);
+}
+
+/* Submenu */
+.submenu {
+  list-style: none;
+  padding-left: 15px; /* Thụt vào so với menu cha */
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-in-out;
+}
+
+li.open > .submenu {
+  max-height: 300px; /* Điều chỉnh nếu submenu dài hơn */
+}
+
+.submenu li a {
+  padding-left: 30px; /* Thụt vào sâu hơn */
+  font-size: 14px;
+}
+
+.sidebar-footer {
+  padding: 20px;
+  margin-top: auto;
+}
+
+.features-btn {
+  background-color: #1e293b;
+  color: #a9b4d8;
+  border: none;
+  padding: 12px;
+  width: 100%;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.features-btn svg {
+  margin-right: 10px;
+}
+.new-badge {
+  background-color: #3b82f6;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  margin-left: auto;
+}

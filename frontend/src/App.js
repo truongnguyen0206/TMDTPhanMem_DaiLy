@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import axios from 'axios'; // Import axios
+import AppRouter from './routes/AppRouter';
 
 function App() {
   // Tạo một state để lưu tin nhắn nhận được từ backend
@@ -24,11 +25,7 @@ function App() {
   }, []); // Mảng rỗng [] đảm bảo useEffect chỉ chạy 1 lần
 
   return (
-    <div style={{ textAlign: 'center', marginTop: '50px', fontSize: '24px' }}>
-      <h1>Trạng thái kết nối</h1>
-      <h2>test</h2>
-      <p>{message}</p>
-    </div>
+    <AppRouter />
   );
 }
 

@@ -1,0 +1,37 @@
+/* src/components/layout/Header/Header.css */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background-color: #fff;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.promo-banner p {
+  margin: 0;
+  font-size: 14px;
+  color: #475569;
+}
+
+.user-actions {
+  display: flex;
+  align-items: center;
+}
+
+.notification-icon {
+  font-size: 20px;
+  color: #64748b;
+  margin-right: 20px;
+  cursor: pointer;
+}
+
+.logout-btn {
+  background-color: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+}

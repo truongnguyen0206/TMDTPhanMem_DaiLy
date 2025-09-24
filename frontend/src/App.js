@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios'; // Import axios
-import RegisterPage from './pages/Auth/RegisterPage';
-import LoginPage from './pages/Auth/LoginPage';
+import AppRouter from './routes/AppRouter';
 
 function App() {
   // Tạo một state để lưu tin nhắn nhận được từ backend
@@ -24,10 +23,7 @@ function App() {
   }, []); // Mảng rỗng [] đảm bảo useEffect chỉ chạy 1 lần
 
   return (
-    <div><h1>{message}</h1>
-    <RegisterPage/>
-    <LoginPage />
-    </div>
+    <AppRouter />
   );
 }
 

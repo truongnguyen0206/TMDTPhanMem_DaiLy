@@ -3,16 +3,15 @@ import React from 'react';
 import Sidebar from '../Sidebar/Sidebar';
 import Header from '../Header/Header';
 import { Outlet } from 'react-router-dom';
-import './MainLayout.css';
 
 const MainLayout = () => {
   return (
-    <div className="main-layout">
+    <div className="flex">
       <Sidebar />
-      <div className="content-wrapper">
+      <div className="ml-64 flex-grow flex flex-col">
         <Header />
-        <main className="page-content">
-          <Outlet /> {/* Đây là nơi các component của page sẽ được render */}
+        <main className="flex-grow">
+          <Outlet />
         </main>
       </div>
     </div>

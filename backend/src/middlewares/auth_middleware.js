@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-const pool = require("../config/db");
+const pool = require("../config/database_config");
 
 const verifyToken = (req, res, next) => {
   const authHeader = req.headers["authorization"];
@@ -19,8 +19,8 @@ const isAdmin = async (req, res, next) => {
   try {
     const result = await pool.query(
       `SELECT r.role_name 
-       FROM users u 
-       JOIN roles r ON u.role_id = r.role_id 
+       FROM auth.users u 
+       JOIN auth.roles r ON u.role_id = r.role_id 
        WHERE u.user_id = $1`,
       [req.user.id]
     );

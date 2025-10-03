@@ -1,8 +1,8 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const User = require("../models/user.model");
-const { findByEmailOrUsername, createUser, findByUsername } = require("../models/user.model");
-const pool = require("../config/db");
+const User = require("../models/user_model");
+const { findByEmailOrUsername, createUser, findByUsername } = require("../models/user_model");
+const pool = require("../config/database_config");
 
 
 // Kiểm tra API
@@ -56,7 +56,7 @@ const login = async (req, res) => {
     // Lấy role_name nếu cần
     let roleName = null;
     if (user.role_id) {
-      const roleRes = await pool.query("SELECT role_name FROM roles WHERE role_id = $1", [user.role_id]);
+      const roleRes = await pool.query("SELECT role_name FROM auth.roles WHERE role_id = $1", [user.role_id]);
       roleName = roleRes.rows[0]?.role_name || null;
     }
 
@@ -77,7 +77,7 @@ const login = async (req, res) => {
 
 const updateUser = async (id, { username, email, phone, role_id, status }) => {
   const result = await pool.query(
-    `UPDATE users 
+    `UPDATE auth.users 
      SET username = $1, email = $2, phone = $3, role_id = $4, status = $5
      WHERE user_id = $6 
      RETURNING user_id, username, email, phone, role_id, status, created_at`,
@@ -88,7 +88,7 @@ const updateUser = async (id, { username, email, phone, role_id, status }) => {
 
 const deleteUser = async (id) => {
   const result = await pool.query(
-    "DELETE FROM users WHERE user_id = $1 RETURNING user_id, username, email",
+    "DELETE FROM auth.users WHERE user_id = $1 RETURNING user_id, username, email",
     [id]
   );
   return result.rows[0];

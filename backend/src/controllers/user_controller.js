@@ -1,5 +1,5 @@
-const userModel = require("../models/user.model");
-const pool = require("../config/db");
+const userModel = require("../models/user_model");
+const pool = require("../config/database_config");
 const bcrypt = require("bcrypt");
 
 
@@ -16,7 +16,7 @@ const getAllUsers = async (req, res) => {
 const getUserById = async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await pool.query("SELECT * FROM users WHERE user_id = $1", [id]);
+    const result = await pool.query("SELECT * FROM auth.users WHERE user_id = $1", [id]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "Người dùng không tồn tại" });
@@ -87,7 +87,7 @@ const deleteUser = async (req, res) => {
     const { id } = req.params;
 
     const result = await pool.query(
-      "DELETE FROM users WHERE user_id = $1 RETURNING *",
+      "DELETE FROM auth.users WHERE user_id = $1 RETURNING *",
       [id]
     );
 

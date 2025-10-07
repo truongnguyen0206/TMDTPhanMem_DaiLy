@@ -1,0 +1,57 @@
+```
+# ============================
+# Node.js dependencies
+# ============================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+yarn.lock
+
+# ============================
+# Environment & secrets
+# ============================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ============================
+# Build outputs & temp files
+# ============================
+dist/
+build/
+.tmp/
+temp/
+logs/
+*.log
+
+# ============================
+# IDE & editor settings
+# ============================
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ============================
+# Supabase (optional)
+# ============================
+.supabase/
+supabase/functions/.env
+
+# ============================
+# Misc
+# ============================
+coverage/
+*.pid
+*.seed
+*.tgz
+*.bak
+*.old
+```

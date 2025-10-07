@@ -16,6 +16,7 @@ const app = express();
 // Sử dụng middleware
 app.use(cors()); // Cho phép frontend truy cập
 app.use(express.json()); // Đọc JSON
+app.use(express.urlencoded({ extended: true }));
 
 // Định nghĩa cổng cho server
 const PORT = process.env.PORT || 5001;
@@ -118,7 +119,7 @@ app.put("/commission_rules/:id", async (req, res) => {
     .select();
 
   if (error) return res.status(500).json({ error: error.message });
-  res.json(data[0]);
+  res.json({message: "cập nhật dữ liệu thành công", data: data[0]});
 });
 
 // Xóa commission rule

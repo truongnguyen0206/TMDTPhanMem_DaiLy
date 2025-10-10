@@ -31,7 +31,7 @@ const register = async (req, res) => {
       email,
       password: hashedPassword,
       phone: phone || null,
-      role_id: 1,
+      role_id: 2,
     });
 
     res.status(201).json({ message: "Đăng ký thành công 🎉", user: newUser });

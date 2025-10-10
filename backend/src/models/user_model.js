@@ -66,13 +66,13 @@ const deleteUser = async (id) => {
   return result.rows[0];
 };
 
-// const updateUsername = async (id, username) => {
-//   const result = await pool.query(
-//     "UPDATE auth.users SET username = $1 WHERE user_id = $2 RETURNING *",
-//     [username, id]
-//   );
-//   return result.rows[0];
-// };
+const updateUsername = async (id, username) => {
+  const result = await pool.query(
+    "UPDATE auth.users SET username = $1 WHERE user_id = $2 RETURNING *",
+    [username, id]
+  );
+  return result.rows[0];
+};
 
 module.exports = {
   findByEmailOrUsername,
@@ -81,5 +81,5 @@ module.exports = {
   getUsers,
   updateUser,
   deleteUser,
-  // updateUsername,
+  updateUsername,
 };

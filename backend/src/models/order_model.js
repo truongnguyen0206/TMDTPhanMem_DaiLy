@@ -57,7 +57,7 @@ const update = async (order_id, updates) => {
 
   const query = `
     UPDATE orders.orders
-    SET ${setClauses}, updated_at = NOW()
+    SET ${setClauses}
     WHERE order_id = $${values.length}
     RETURNING *;
   `;
@@ -74,7 +74,6 @@ const remove = async (order_id) => {
   return result.rowCount;
 };
 
-// Tạo order kèm items (transaction)
 // Tạo order kèm items (transaction)
 const createOrderWithItems = async ({ order, items }) => {
   const client = await pool.connect();
@@ -239,10 +238,10 @@ const getOrdersWithOrigin = async ({ limit = 50, offset = 0, agent_id, from, to 
   return res.rows;
 };
 
-const getOrderOrigin = async (order_id) => {
+const getOrderOrigin = async (order_code) => {
   const res = await pool.query(
     `SELECT order_code, order_source, origin_label, origin_type, origin_name, agent_id, collaborator_id, customer_id, customer_name, agent_name, ctv_name 
-     FROM orders.order_origin_view WHERE order_id = $1`, [order_id]);
+     FROM orders.order_origin_view WHERE order_code = $1`, [order_code]);
   return res.rows[0];
 };
 

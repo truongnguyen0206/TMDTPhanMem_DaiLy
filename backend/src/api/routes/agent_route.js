@@ -1,11 +1,12 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const agentcontroller = require('../../controllers/agent_controller');
+const agentController = require("../../controllers/agent_controller");
 
-router.post('/', agentcontroller.createAgent);
-router.get('/', agentcontroller.listAgents);
-router.get('/:agentId', agentcontroller.getAgent);
-router.put('/:agentId', agentcontroller.updateAgent);
-router.delete('/:agentId', agentcontroller.deleteAgent);
+router.get("/getAllAgents", agentController.getAllAgents);
+router.get("/getAgent/:agentId", agentController.getAgent);
+router.get("/listAgents", agentController.listAgents);
+router.post("/createAgent", agentController.createAgent);
+router.put("/updateAgent/:agentId", agentController.updateAgent);
+router.delete("/deleteAgent/:agentId", agentController.deleteAgent);
 
 module.exports = router;

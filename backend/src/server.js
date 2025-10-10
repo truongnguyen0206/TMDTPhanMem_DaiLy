@@ -7,6 +7,8 @@ const userRoutes = require("./api/routes/user_route");
 const orderRouters = require("./api/routes/order_route")
 const reportRoutes = require("./api/routes/report_route");
 const agentRoutes = require("./api/routes/agent_route");
+const productRoutes = require("./api/routes/product_route");
+const collaboratorRoute = require("./api/routes/collaborator_route");
 const app = express();
 
 // Middleware
@@ -19,6 +21,8 @@ app.use("/users", userRoutes);
 app.use("/order", orderRouters)
 app.use("/report", reportRoutes);
 app.use("/agent", agentRoutes);
+app.use("/product", productRoutes);
+app.use("/CTV", collaboratorRoute);
 
 // Test endpoint
 app.get("/api/test", (req, res) => {

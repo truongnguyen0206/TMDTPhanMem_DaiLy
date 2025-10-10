@@ -151,20 +151,54 @@ const listWithOrigin = async (req, res) => {
 
 const getOrigin = async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
-    const data = await Order.getOrderOrigin(id);
-    if (!data) return res.status(404).json({ message: 'Không tìm thấy order' });
-    // thêm validation giống hàm SQL
+    const order_code = req.params.code; // lấy từ URL: /orders/origin/:code
+    const data = await Order.getOrderOrigin(order_code); // trả về tất cả cột liên quan từ view
+
+    if (!data) {
+      return res.status(404).json({ message: `❌ Order ${order_code}: Không tìm thấy đơn hàng.` });
+    }
+
+    let msg = '';
     const issues = [];
-    if (data.order_source === 'agent' && !data.agent_id) issues.push('Nguồn là agent nhưng agent_id null');
-    if (data.order_source === 'ctv' && !data.collaborator_id) issues.push('Nguồn là ctv nhưng collaborator_id null');
-    if (data.order_source === 'system' && (data.agent_id || data.collaborator_id)) issues.push('Nguồn là system nhưng có agent/ctv gắn');
-    res.json({ order: data, issues });
+
+    // Xác định nguồn & mô tả giống SQL
+    switch (data.order_source) {
+      case 'customer':
+        msg = `✅ Order ${data.order_code}: Phát sinh trực tiếp từ khách hàng (customer_id=${data.customer_id}, tên=${data.customer_name || data.cust_customer_name || 'Không rõ'})`;
+        if (data.agent_id || data.collaborator_id || data.npp_id) 
+          issues.push('Nguồn là customer nhưng có agent/npp/ctv gắn');
+        break;
+
+      case 'npp':
+        msg = `✅ Order ${data.order_code}: Phát sinh qua Nhà phân phối (npp_id=${data.npp_id}, tên=${data.npp_name || 'Không rõ'})`;
+        if (!data.npp_id || data.agent_id || data.collaborator_id)
+          issues.push('Nguồn là npp nhưng agent/ctv gắn hoặc npp_id null');
+        break;
+
+      case 'agent':
+        msg = `✅ Order ${data.order_code}: Phát sinh qua Đại lý (agent_id=${data.agent_id}, tên=${data.agent_name || 'Không rõ'})`;
+        if (!data.agent_id || data.npp_id || data.collaborator_id)
+          issues.push('Nguồn là agent nhưng agent_id null hoặc có npp/ctv gắn');
+        break;
+
+      case 'ctv':
+        msg = `✅ Order ${data.order_code}: Phát sinh qua CTV (ctv_id=${data.collaborator_id}, tên=${data.ctv_name || 'Không rõ'}, agent_id=${data.agent_id})`;
+        if (!data.collaborator_id || !data.agent_id || data.npp_id)
+          issues.push('Nguồn là ctv nhưng collaborator_id null, agent_id null, hoặc npp_id gắn');
+        break;
+
+      default:
+        msg = `⚠️ Order ${data.order_code}: Nguồn không hợp lệ (${data.order_source})`;
+        issues.push('Nguồn không hợp lệ');
+    }
+
+    res.json({ message: msg, issues, order: data });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
   }
 };
+
 
 
 const exportOrdersExcel = async (req, res) => {

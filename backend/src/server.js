@@ -1,28 +1,41 @@
-// backend/src/server.js
-
-// Import các thư viện cần thiết
-const express = require('express');
-const cors = require('cors');
-require('dotenv').config(); // Để đọc file .env
-
-// Khởi tạo app express
+const express = require("express");
+const cors = require("cors");
+require("dotenv").config();
+const db = require("./config/database_config");
+const authRoutes = require("./api/routes/auth_route");
+const userRoutes = require("./api/routes/user_route");
+const orderRouters = require("./api/routes/order_route")
+const reportRoutes = require("./api/routes/report_route");
+const agentRoutes = require("./api/routes/agent_route");
+const productRoutes = require("./api/routes/product_route");
+const collaboratorRoute = require("./api/routes/collaborator_route");
 const app = express();
 
-// Sử dụng middleware
-app.use(cors()); // Rất quan trọng! Dùng để cho phép frontend truy cập
-app.use(express.json()); // Cho phép server đọc dữ liệu JSON được gửi lên
+// Middleware
+app.use(cors());
+app.use(express.json());
+  
+// Routes
+app.use("/auth", authRoutes);
+app.use("/users", userRoutes);
+app.use("/order", orderRouters)
+app.use("/report", reportRoutes);
+app.use("/agent", agentRoutes);
+app.use("/product", productRoutes);
+app.use("/CTV", collaboratorRoute);
 
-// Định nghĩa cổng cho server, ưu tiên cổng trong file .env hoặc mặc định là 5001
-const PORT = process.env.PORT || 5001;
-
-// === TẠO API ENDPOINT ĐỂ KIỂM TRA ===
-// Đây là "cánh cửa" mà frontend sẽ gọi đến
-app.get('/api/test', (req, res) => {
-  // Khi có yêu cầu đến '/api/test', server sẽ trả về một JSON
-  res.json({ message: 'Kết nối thành công từ backend! 🎉' });
+// Test endpoint
+app.get("/api/test", (req, res) => {
+  res.json({ message: "Kết nối thành công từ backend! 🎉" });
 });
 
-// Khởi động server
+// Root endpoint
+app.get("/", (req, res) => {
+  res.send("Server chạy ngon lành 🚀");
+});
+
+// Khởi động server 
+const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
   console.log(`Backend server đang chạy tại http://localhost:${PORT}`);
 });

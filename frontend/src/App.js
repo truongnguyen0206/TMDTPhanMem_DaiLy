@@ -1,7 +1,6 @@
-// frontend/src/App.js
-
 import React, { useState, useEffect } from 'react';
 import axios from 'axios'; // Import axios
+import AppRouter from './routes/AppRouter';
 
 function App() {
   // Tạo một state để lưu tin nhắn nhận được từ backend
@@ -16,7 +15,7 @@ function App() {
         // Nếu thành công, cập nhật state với tin nhắn từ response
         setMessage(response.data.message);
       })
-      .catch(error => {
+      .catch(error => { 
         // Nếu có lỗi, in ra console và cập nhật state
         console.error('Có lỗi xảy ra khi gọi API!', error);
         setMessage('Không thể kết nối đến backend. Vui lòng kiểm tra lại!');
@@ -24,11 +23,7 @@ function App() {
   }, []); // Mảng rỗng [] đảm bảo useEffect chỉ chạy 1 lần
 
   return (
-    <div style={{ textAlign: 'center', marginTop: '50px', fontSize: '24px' }}>
-      <h1>Trạng thái kết nối</h1>
-      <h2>test</h2>
-      <p>{message}</p>
-    </div>
+    <AppRouter />
   );
 }
 

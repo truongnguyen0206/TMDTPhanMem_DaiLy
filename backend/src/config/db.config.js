@@ -70,4 +70,6 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY // dùng service key để có quyền admin
 );
 
+
+
 module.exports = supabase;

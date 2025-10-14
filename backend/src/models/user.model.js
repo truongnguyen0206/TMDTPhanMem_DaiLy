@@ -1,5 +1,6 @@
 const supabase = require('../config/db.config');
 
+
 const findById = async (id) => {
     const { data, error } = await supabase.from('users').select('*').eq('id', id).single();
     if (error) throw error;
@@ -12,7 +13,7 @@ const updateActivities = async (id, activities) => {
 };
 
 module.exports = {
-    // Các method khác...
+    // Các export hiện có...
     findById,
     updateActivities
 };

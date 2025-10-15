@@ -1,19 +1,43 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import axiosClient from '../../api/axiosClient';
 
-const AddAgentPage = () => {
+const UpdateAgentPage = () => {
     const navigate = useNavigate();
+    const { id } = useParams(); // Lấy id của đại lý từ URL
     const [formData, setFormData] = useState({
-        name: '',
-        address: '',
+        username: '',
+        address: '', // Giả sử địa chỉ chưa có trong DB, sẽ không được lưu
         phone: '',
-        paymentMethod: '',
+        paymentMethod: '', // Giả sử chưa có trong DB
         email: '',
-        accountInfo: '',
-        notes: ''
+        accountInfo: '', // Giả sử chưa có trong DB
+        notes: '' // Giả sử chưa có trong DB
     });
+    const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState('');
+
+    useEffect(() => {
+        const fetchAgentData = async () => {
+            try {
+                const response = await axiosClient.get(`/users/${id}`);
+                const { username, email, phone } = response.data;
+                setFormData(prevState => ({
+                    ...prevState,
+                    username,
+                    email,
+                    phone: phone || ''
+                }));
+            } catch (error) {
+                console.error("Lỗi khi tải thông tin đại lý:", error);
+                setMessage("Không thể tải thông tin đại lý.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchAgentData();
+    }, [id]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -27,47 +51,65 @@ const AddAgentPage = () => {
         e.preventDefault();
         setMessage('');
 
-        // TODO: Gửi dữ liệu đi. Hiện tại backend của bạn cần `password` và `role_id`.
-        // Bạn cần quyết định cách tạo mật khẩu (tự động hoặc thêm trường nhập).
-        // Tạm thời, chúng ta sẽ chỉ log dữ liệu ra console.
-
-        console.log('Dữ liệu form:', formData);
-        alert('Chức năng đang được phát triển. Dữ liệu đã được log ra console.');
-
-        
         try {
-            const response = await axiosClient.post('/users', {
-                username: formData.name,
+            // ===================================
+            // BƯỚC 1: CẬP NHẬT BẢNG auth.users (Tên, Email, SĐT)
+            // ===================================
+            const userDataToUpdate = {
+                username: formData.username,
                 email: formData.email,
                 phone: formData.phone,
-                password: 'defaultPassword123', // Cần có cơ chế tạo mật khẩu
-                role_id: 3 // Giả sử role_id của Đại lý là 3
-            });
-            setMessage('Tạo đại lý thành công!');
-            setTimeout(() => navigate('/agents'), 2000);
+                role_id: 3 // Vẫn giữ vai trò là Đại lý
+            };
+            await axiosClient.put(`/users/${id}`, userDataToUpdate);
+            
+            // ===================================
+            // BƯỚC 2: CẬP NHẬT BẢNG member.agent (CHỈ gửi các trường CÓ trong DB)
+            // ===================================
+            const agentDataToUpdate = {
+                // Gửi trường address (FE) tương ứng với diachi (DB)
+                diachi: formData.address, 
+                // KHÔNG GỬI paymentMethod, accountInfo, notes vì chúng không có trong DB
+            };
+
+            // Nếu không có gì để cập nhật cho Agent (ngoài address)
+            if (Object.keys(agentDataToUpdate).length > 0) {
+                // Gọi API Agent
+                // id ở đây là user_id, được Controller BE sử dụng làm agentId
+                await axiosClient.put(`/agent/updateAgent/${id}`, agentDataToUpdate);
+            }
+            
+            setMessage('Cập nhật thông tin đại lý thành công!');
+            setTimeout(() => navigate('/agent'), 1500);
+
         } catch (error) {
-            console.error("Lỗi khi tạo đại lý:", error);
-            setMessage(error.response?.data?.message || 'Có lỗi xảy ra.');
+            console.error("Lỗi khi cập nhật đại lý:", error);
+            // Hiển thị thông báo chi tiết hơn nếu có thể
+            const detailedError = error.response?.data?.error || error.response?.data?.message || 'Có lỗi xảy ra (Lỗi Backend).';
+            setMessage(detailedError);
         }
-        
     };
+    
+    if (loading) {
+        return <div className="text-center p-10">Đang tải...</div>;
+    }
 
     return (
         <div>
             <h1 className="text-3xl font-bold text-gray-800 mb-6">Đại lý</h1>
 
             <div className="bg-white p-8 rounded-lg shadow-md max-w-4xl mx-auto">
-                <h2 className="text-xl font-bold text-gray-700">Biểu mẫu yêu cầu thêm đại lý</h2>
+                <h2 className="text-xl font-bold text-gray-700">Cập nhật thông tin đại lý</h2>
                 <p className="text-sm text-gray-500 mt-1 mb-8">
-                    Điền yêu cầu thêm đại lý. Yêu cầu thường được xử lý trong vòng 3-5 ngày làm việc.
+                    Chỉnh sửa thông tin cho đại lý.
                 </p>
 
                 <form onSubmit={handleSubmit}>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                         {/* Tên đại lý */}
                         <div>
-                            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Tên đại lý</label>
-                            <input type="text" name="name" id="name" value={formData.name} onChange={handleChange} placeholder="Nhập tên" className="w-full bg-gray-100 border-transparent rounded-md p-3 focus:ring-2 focus:ring-primary focus:border-transparent" required />
+                            <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">Tên đại lý</label>
+                            <input type="text" name="username" id="username" value={formData.username} onChange={handleChange} placeholder="Nhập tên" className="w-full bg-gray-100 border-transparent rounded-md p-3 focus:ring-2 focus:ring-primary focus:border-transparent" required />
                         </div>
                         {/* Địa chỉ */}
                         <div>
@@ -107,12 +149,12 @@ const AddAgentPage = () => {
                         </div>
                     </div>
 
-                    {message && <p className="text-center text-green-600 mt-4">{message}</p>}
+                    {message && <p className={`text-center mt-4 ${message.includes('thành công') ? 'text-green-600' : 'text-red-600'}`}>{message}</p>}
 
                     <div className="flex justify-end gap-4 mt-8">
                         <button 
                             type="button"
-                            onClick={() => navigate('/npp/agents')} 
+                            onClick={() => navigate('/dl/CTV')} 
                             className="bg-red-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-red-600 transition-colors"
                         >
                             Hủy
@@ -121,7 +163,7 @@ const AddAgentPage = () => {
                             type="submit"
                             className="bg-green-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-600 transition-colors"
                         >
-                            Gửi yêu cầu cấp tài khoản
+                            Cập nhật
                         </button>
                     </div>
                 </form>
@@ -130,4 +172,4 @@ const AddAgentPage = () => {
     );
 };
 
-export default AddAgentPage;
+export default UpdateAgentPage;

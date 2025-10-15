@@ -3,7 +3,7 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
 
-const AdminLayout = () => {
+const Layout = () => {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [pageTitle, setPageTitle] = useState('Dashboard'); // Thêm state cho tiêu đề
 
@@ -31,4 +31,4 @@ const AdminLayout = () => {
   );
 };
 
-export default AdminLayout;
+export default Layout;

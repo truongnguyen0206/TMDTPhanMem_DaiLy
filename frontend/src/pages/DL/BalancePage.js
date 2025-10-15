@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState,useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { LuSearch, LuPlus, LuEllipsisVertical } from 'react-icons/lu';
+import { LuSearch, LuPencil, LuTrash2, LuPlus, LuEllipsisVertical  } from 'react-icons/lu';
 import { useOutletContext } from 'react-router-dom';
 
-// Dữ liệu mẫu
+// ... (Dữ liệu mẫu và các component con giữ nguyên) ...
 const mockTransactions = [
     { id: 58217, transferAmount: 1000000, remainingAmount: 2344000, status: 'success', reason: '', date: '07/05/2025', time: '2:53PM' },
     { id: 58213, transferAmount: 1200000, remainingAmount: 200000, status: 'success', reason: '', date: '07/05/2025', time: '2:53PM' },
@@ -26,48 +26,19 @@ const StatusBadge = ({ status }) => {
     return <span className={`px-3 py-1 text-xs font-bold rounded-full ${style.color}`}>{style.text}</span>;
 };
 
+// Hàm format số tiền
 const formatCurrency = (value) => {
     if (typeof value !== 'number') return value;
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
 };
 
 const BalancePage = () => {
-    const [transactions, setTransactions] = useState(mockTransactions);
+    // ... (phần state và renderPagination giữ nguyên) ...
+     const [transactions, setTransactions] = useState(mockTransactions);
     const [currentPage, setCurrentPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState('');
     const totalPages = 10;
-    const { setPageTitle } = useOutletContext();
-        
-    useEffect(() => {
-        setPageTitle('Số dư');
-    }, [setPageTitle]);
 
-    const handleSearchChange = (event) => {
-        setSearchTerm(event.target.value);
-    };
-
-    const handleStatusFilterChange = (event) => {
-        setStatusFilter(event.target.value);
-    };
-
-    const filteredTransactions = useMemo(() => {
-        let result = transactions;
-
-        if (searchTerm) {
-            const lowercasedSearchTerm = searchTerm.toLowerCase();
-            result = result.filter(transaction =>
-                String(transaction.id).toLowerCase().includes(lowercasedSearchTerm)
-            );
-        }
-
-        if (statusFilter) {
-            result = result.filter(transaction => transaction.status === statusFilter);
-        }
-
-        return result;
-    }, [transactions, searchTerm, statusFilter]);
-    
     const renderPagination = () => {
         let pages = [];
         pages.push(<button key={1} onClick={() => setCurrentPage(1)} className={`px-3 py-1 rounded-md ${currentPage === 1 ? 'bg-primary text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`}>1</button>);
@@ -77,34 +48,40 @@ const BalancePage = () => {
         pages.push(<button key={10} onClick={() => setCurrentPage(10)} className={`px-3 py-1 rounded-md ${currentPage === 10 ? 'bg-primary text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`}>10</button>);
         return pages;
     };
+    const { setPageTitle } = useOutletContext();
+        
+    useEffect(() => {
+        setPageTitle('Số dư');
+    }, [setPageTitle]);
+    const handleSearchChange = (event) => {
+        setSearchTerm(event.target.value);
+        setCurrentPage(1);
+    };
+
+    const filteredTransactions = useMemo(() => {
+        if (!searchTerm) return transactions;
+        return transactions.filter(item =>
+            item.id.toString().includes(searchTerm)
+        );
+    }, [transactions, searchTerm]);
     
     return (
         <div>
             <div className="flex justify-between items-center mb-6 gap-4">
-                <div className="flex items-center gap-4 flex-grow">
-                    <div className="relative flex-grow">
-                        <input 
-                            type="text" 
-                            placeholder="Search by mã hóa đơn"
-                            value={searchTerm}
-                            onChange={handleSearchChange}
-                            className="w-full bg-white border border-border-color rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-primary"
-                        />
-                        <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    </div>
-                    <select 
-                        value={statusFilter}
-                        onChange={handleStatusFilterChange}
-                        className="bg-white border border-border-color rounded-md py-2 px-4 focus:outline-none focus:ring-2 focus:ring-primary"
-                    >
-                        <option value="">Tất cả tình trạng</option>
-                        <option value="success">Thành công</option>
-                        <option value="failed">Thất bại</option>
-                    </select>
+                <div className="relative flex-grow">
+                    <input 
+                        type="text" 
+                        placeholder="Search by mã hóa đơn"
+                        value={searchTerm}
+                        onChange={handleSearchChange}
+                        className="w-full bg-white border border-border-color rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                    <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 </div>
                 <div className="flex items-center gap-4">
+                    {/* THAY THẾ <button> bằng <Link> */}
                     <Link 
-                        to="/npp/withdrawal"
+                        to="/dl/withdrawal"
                         className="flex items-center gap-2 bg-green-500 text-white font-bold px-4 py-2 rounded-lg hover:bg-green-600 transition-colors whitespace-nowrap"
                     >
                        <LuPlus size={20} />
@@ -120,6 +97,7 @@ const BalancePage = () => {
                     </div>
                 </div>
             </div>
+            {/* ... (Phần còn lại của component giữ nguyên) ... */}
              <div className="bg-white p-6 rounded-lg shadow-md">
                 <h2 className="text-lg font-bold text-gray-800 mb-4">Lịch sử giao dịch</h2>
                 <div className="overflow-x-auto">
@@ -136,38 +114,30 @@ const BalancePage = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredTransactions.length > 0 ? (
-                                filteredTransactions.map((item) => (
-                                    <tr key={item.id} className="bg-white border-b hover:bg-gray-50">
-                                        <td className="px-6 py-4 font-medium text-gray-900">{item.id}</td>
-                                        <td className="px-6 py-4">{formatCurrency(item.transferAmount)}</td>
-                                        <td className="px-6 py-4">{formatCurrency(item.remainingAmount)}</td>
-                                        <td className="px-6 py-4"><StatusBadge status={item.status} /></td>
-                                        <td className="px-6 py-4 text-xs text-gray-500">{item.reason}</td>
-                                        <td className="px-6 py-4">{item.date} <span className="text-gray-400">{item.time}</span></td>
-                                        <td className="px-6 py-4 text-right">
-                                            <div className="flex items-center justify-end gap-4">
-                                                <Link to={`/npp/transaction/${item.id}`} state={{ transactionData: item }} className="text-gray-400 hover:text-blue-600">
-                                                    <LuEllipsisVertical size={18} />
-                                                </Link>
-                                                
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td colSpan="7" className="text-center py-10 text-gray-500">
-                                        Không tìm thấy giao dịch nào.
+                            {filteredTransactions.map((item) => (
+                                <tr key={item.id} className="bg-white border-b hover:bg-gray-50">
+                                    <td className="px-6 py-4 font-medium text-gray-900">{item.id}</td>
+                                    <td className="px-6 py-4">{formatCurrency(item.transferAmount)}</td>
+                                    <td className="px-6 py-4">{formatCurrency(item.remainingAmount)}</td>
+                                    <td className="px-6 py-4"><StatusBadge status={item.status} /></td>
+                                    <td className="px-6 py-4 text-xs text-gray-500">{item.reason}</td>
+                                    <td className="px-6 py-4">{item.date} <span className="text-gray-400">{item.time}</span></td>
+                                    <td className="px-6 py-4 text-right">
+                                        <div className="flex items-center justify-end gap-4">
+                                            <Link to={`/dl/balance/transaction/${item.id}`} state={{ transactionData: item }} className="text-gray-400 hover:text-blue-600">
+                                                <LuEllipsisVertical size={18} />
+                                            </Link>
+                                            
+                                        </div>
                                     </td>
                                 </tr>
-                            )}
+                            ))}
                         </tbody>
                     </table>
                 </div>
                 
                 <div className="flex justify-between items-center mt-6">
-                    <p className="text-sm text-gray-500">Showing 1 to {filteredTransactions.length} of {transactions.length} results</p>
+                    <p className="text-sm text-gray-500">Showing 1 to 10 of 97 results</p>
                     <div className="flex items-center gap-2">
                         <button className="px-3 py-1 rounded-md bg-white text-gray-700 hover:bg-gray-100 border">{'<'}</button>
                         {renderPagination()}

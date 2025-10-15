@@ -52,19 +52,41 @@ const UpdateAgentPage = () => {
         setMessage('');
 
         try {
-            // Chỉ gửi những trường mà API PUT yêu cầu
-            const dataToUpdate = {
+            // ===================================
+            // BƯỚC 1: CẬP NHẬT BẢNG auth.users (Tên, Email, SĐT)
+            // ===================================
+            const userDataToUpdate = {
                 username: formData.username,
                 email: formData.email,
                 phone: formData.phone,
-                role_id: 3 // Giả sử role_id của Đại lý là 3
+                role_id: 3 // Vẫn giữ vai trò là Đại lý
             };
-            await axiosClient.put(`/users/${id}`, dataToUpdate);
+            await axiosClient.put(`/users/${id}`, userDataToUpdate);
+            
+            // ===================================
+            // BƯỚC 2: CẬP NHẬT BẢNG member.agent (CHỈ gửi các trường CÓ trong DB)
+            // ===================================
+            const agentDataToUpdate = {
+                // Gửi trường address (FE) tương ứng với diachi (DB)
+                diachi: formData.address, 
+                // KHÔNG GỬI paymentMethod, accountInfo, notes vì chúng không có trong DB
+            };
+
+            // Nếu không có gì để cập nhật cho Agent (ngoài address)
+            if (Object.keys(agentDataToUpdate).length > 0) {
+                // Gọi API Agent
+                // id ở đây là user_id, được Controller BE sử dụng làm agentId
+                await axiosClient.put(`/agent/updateAgent/${id}`, agentDataToUpdate);
+            }
+            
             setMessage('Cập nhật thông tin đại lý thành công!');
-            setTimeout(() => navigate('/agents'), 1500);
+            setTimeout(() => navigate('/agent'), 1500);
+
         } catch (error) {
             console.error("Lỗi khi cập nhật đại lý:", error);
-            setMessage(error.response?.data?.message || 'Có lỗi xảy ra.');
+            // Hiển thị thông báo chi tiết hơn nếu có thể
+            const detailedError = error.response?.data?.error || error.response?.data?.message || 'Có lỗi xảy ra (Lỗi Backend).';
+            setMessage(detailedError);
         }
     };
     
@@ -132,7 +154,7 @@ const UpdateAgentPage = () => {
                     <div className="flex justify-end gap-4 mt-8">
                         <button 
                             type="button"
-                            onClick={() => navigate('/agents')} 
+                            onClick={() => navigate('/npp/agents')} 
                             className="bg-red-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-red-600 transition-colors"
                         >
                             Hủy

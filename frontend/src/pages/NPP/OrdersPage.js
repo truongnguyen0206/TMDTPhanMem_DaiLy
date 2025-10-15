@@ -1,4 +1,4 @@
-import React, { useState, useEffect  } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { LuSearch, LuDownload, LuFileText, LuPencil, LuTrash2 } from 'react-icons/lu';
 import { useOutletContext } from 'react-router-dom';
 
@@ -11,9 +11,9 @@ const mockOrders = [
     { id: 58122, partnerId: '789012346', billId: 32, customer: 'John Bezin', date: '07/05/2020', time: '2:50PM', status: 'priority' },
     { id: 58292, partnerId: '789012348', billId: 40, customer: 'Camyron Williamson', date: '07/05/2020', time: '2:50PM', status: 'priority' },
     { id: 181337, partnerId: '789012349', billId: 41, customer: 'Camyron Williamson', date: '07/05/2020', time: '2:50PM', status: 'priority' },
-    { id: 58292, partnerId: '789012347', billId: 45, customer: 'Dody Phish', date: '07/05/2020', time: '2:50PM', status: 'priority' },
+    { id: 58293, partnerId: '789012347', billId: 45, customer: 'Dody Phish', date: '07/05/2020', time: '2:50PM', status: 'priority' },
     { id: 789787, partnerId: '789012347', billId: 49, customer: 'John Bezin', date: '07/05/2020', time: '2:50PM', status: 'standard' },
-    { id: 58292, partnerId: '789012327', billId: 68, customer: 'Camyron Williamson', date: '07/05/2020', time: '2:50PM', status: 'priority' },
+    { id: 58294, partnerId: '789012327', billId: 68, customer: 'Camyron Williamson', date: '07/05/2020', time: '2:50PM', status: 'priority' },
 ];
 
 const StatusBadge = ({ status }) => {
@@ -35,12 +35,43 @@ const StatusBadge = ({ status }) => {
 const OrdersPage = () => {
     const [orders, setOrders] = useState(mockOrders);
     const [currentPage, setCurrentPage] = useState(1);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [sourceFilter, setSourceFilter] = useState(''); // State for the source filter
     const totalPages = 6; // Giả sử có 6 trang
     const { setPageTitle } = useOutletContext();
 
     useEffect(() => {
         setPageTitle('Đơn hàng');
     }, [setPageTitle]);
+
+    const handleSearchChange = (e) => {
+        setSearchTerm(e.target.value);
+    };
+
+    const handleFilterChange = (e) => {
+        setSourceFilter(e.target.value);
+    };
+
+    const filteredOrders = useMemo(() => {
+        let result = orders;
+
+        // Filtering by search term (Mã đơn or Tên khách hàng)
+        if (searchTerm) {
+            const lowercasedSearchTerm = searchTerm.toLowerCase();
+            result = result.filter(order =>
+                String(order.id).toLowerCase().includes(lowercasedSearchTerm) ||
+                order.customer.toLowerCase().includes(lowercasedSearchTerm)
+            );
+        }
+
+        // Filtering by source (Nguồn phát sinh)
+        if (sourceFilter) {
+            result = result.filter(order => order.status === sourceFilter);
+        }
+
+        return result;
+    }, [orders, searchTerm, sourceFilter]);
+
 
     const renderPagination = () => {
         let pages = [];
@@ -67,15 +98,21 @@ const OrdersPage = () => {
                         <div className="relative">
                             <input 
                                 type="text" 
-                                placeholder="Search by Bill điện"
+                                placeholder="Tìm theo Mã đơn hoặc Khách hàng"
+                                value={searchTerm}
+                                onChange={handleSearchChange}
                                 className="w-64 bg-light-gray border border-border-color rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-primary"
                             />
                             <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                         </div>
-                        <select className="bg-light-gray border border-border-color rounded-md py-2 px-4 focus:outline-none focus:ring-2 focus:ring-primary">
-                            <option>Nguồn phát sinh</option>
-                            <option>Đại lý</option>
-                            <option>Cộng tác viên</option>
+                        <select 
+                            value={sourceFilter}
+                            onChange={handleFilterChange}
+                            className="bg-light-gray border border-border-color rounded-md py-2 px-4 focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                            <option value="">Tất cả nguồn</option>
+                            <option value="standard">Đại lý</option>
+                            <option value="priority">Cộng tác viên</option>
                         </select>
                     </div>
                     <div className="flex items-center gap-4">
@@ -105,30 +142,38 @@ const OrdersPage = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {orders.map((order) => (
-                                <tr key={order.id} className="bg-white border-b hover:bg-gray-50">
-                                    <td className="px-6 py-4 font-medium text-gray-900">{order.id}</td>
-                                    <td className="px-6 py-4">{order.partnerId}</td>
-                                    <td className="px-6 py-4">{order.billId}</td>
-                                    <td className="px-6 py-4">{order.customer}</td>
-                                    <td className="px-6 py-4">
-                                        <StatusBadge status={order.status} />
-                                    </td>
-                                    <td className="px-6 py-4">{order.date} <span className="text-gray-400">{order.time}</span></td>
-                                    <td className="px-6 py-4 text-right">
-                                        <div className="flex items-center justify-end gap-4">
-                                            <button className="text-gray-400 hover:text-blue-600"><LuPencil size={18} /></button>
-                                        </div>
+                            {filteredOrders.length > 0 ? (
+                                filteredOrders.map((order) => (
+                                    <tr key={order.id + '-' + order.billId} className="bg-white border-b hover:bg-gray-50">
+                                        <td className="px-6 py-4 font-medium text-gray-900">{order.id}</td>
+                                        <td className="px-6 py-4">{order.partnerId}</td>
+                                        <td className="px-6 py-4">{order.billId}</td>
+                                        <td className="px-6 py-4">{order.customer}</td>
+                                        <td className="px-6 py-4">
+                                            <StatusBadge status={order.status} />
+                                        </td>
+                                        <td className="px-6 py-4">{order.date} <span className="text-gray-400">{order.time}</span></td>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex items-center justify-end gap-4">
+                                                <button className="text-gray-400 hover:text-blue-600"><LuPencil size={18} /></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan="7" className="text-center py-10 text-gray-500">
+                                        Không tìm thấy đơn hàng nào.
                                     </td>
                                 </tr>
-                            ))}
+                            )}
                         </tbody>
                     </table>
                 </div>
                 
                 {/* Phân trang */}
                 <div className="flex justify-between items-center mt-6">
-                    <p className="text-sm text-gray-500">Showing 1 to 10 of 60 results</p>
+                    <p className="text-sm text-gray-500">Showing 1 to {filteredOrders.length} of {orders.length} results</p>
                     <div className="flex items-center gap-2">
                         <button className="px-3 py-1 rounded-md bg-white text-gray-700 hover:bg-gray-100">{'<'}</button>
                         {renderPagination()}

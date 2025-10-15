@@ -23,7 +23,7 @@ const WithdrawalRequestPage = () => {
         // Trong thực tế, bạn sẽ gọi API để gửi yêu cầu ở đây
         console.log('Dữ liệu yêu cầu rút tiền:', formData);
         alert('Đã gửi yêu cầu rút tiền thành công!');
-        navigate('/balance'); // Quay về trang số dư sau khi gửi
+        navigate('/dl/balance'); // Quay về trang số dư sau khi gửi
     };
 
     return (
@@ -72,7 +72,7 @@ const WithdrawalRequestPage = () => {
                     <div className="flex justify-end gap-4 mt-8">
                         <button 
                             type="button"
-                            onClick={() => navigate('/npp/balance')} 
+                            onClick={() => navigate('/dl/balance')} 
                             className="bg-red-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-red-600 transition-colors"
                         >
                             Hủy

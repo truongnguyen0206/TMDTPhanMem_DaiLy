@@ -36,8 +36,13 @@ import DLTransactionDetailPage from '../pages/DL/TransactionDetailPage';
 // CTV Pages
 import CtvDashboardPage from '../pages/CTV/DashboardPage';
 import ProductPage from '../pages/CTV/ProductPage';
-// ... import các trang khác của CTV (nếu có)
+import SalesPage from '../pages/CTV/SalesPage';
+import CtvCommissionPage from '../pages/CTV/CommissionPage';
 
+// Admin Pages
+import AdminDashboardPage from '../pages/Admin/DashboardPage';
+import AccountsPage from '../pages/Admin/AccountsPage';
+import AddAccountPage from '../pages/Admin/AddAccountPage';
 
 import ProtectedRoute from './ProtectedRoute';
 
@@ -82,12 +87,20 @@ const AppRouter = () => {
               <Route path="balance/transaction/:id" element={<DLTransactionDetailPage />} />
             </Route>
 
-            {/* --- Cấu hình cho CTV: CtvLayout là layout cha cung cấp context --- */}
-            <Route path="/ctv" element={<Layout />}>
-              <Route index element={<Navigate to="dashboard" replace />} /> // Chuyển index về dashboard
+             {/* --- Cấu hình cho CTV --- */}
+            <Route path="/ctv" element={<CtvLayout />}>
               <Route path="dashboard" element={<CtvDashboardPage />} />
               <Route path="products" element={<ProductPage />} />
-              {/* Thêm các Route CTV khác tại đây */}
+              <Route path="sales" element={<SalesPage />} />
+              <Route path="commission" element={<CtvCommissionPage />} />
+            </Route>
+
+            {/* --- Cấu hình cho ADMIN --- */}
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route path="dashboard" element={<AdminDashboardPage />} />
+              <Route path="accounts" element={<AccountsPage />} />
+               <Route path="accounts/new" element={<AddAccountPage />} />
+              {/* Thêm các route khác của Admin ở đây */}
             </Route>
         </Route>
         

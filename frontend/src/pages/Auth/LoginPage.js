@@ -4,14 +4,15 @@ import axiosClient from '../../api/axiosClient';
 import { useAuth } from '../../context/AuthContext'; // Import useAuth
 import { FaEye, FaEyeSlash, FaGoogle } from 'react-icons/fa';
 import LoginImage from '../../assets/images/login-logo.png';
+import { jwtDecode } from 'jwt-decode';//  add thêm jwt-decode
 
 const LoginPage = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const navigate = useNavigate();
   const { login } = useAuth(); // Lấy hàm login từ context
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -25,7 +26,18 @@ const LoginPage = () => {
       const { token } = res.data;
       login(token); // Sử dụng hàm login từ context để lưu token và thông tin user
       
-      navigate('/'); 
+      // Decode token để lấy vai trò
+      const decodedUser = jwtDecode(token);
+
+      //Điều hướng dưa trên vai trò
+      if (decodedUser.role === 'NPP') {
+        navigate('/npp/dashboard');
+      } else if (decodedUser.role === 'CTV') {
+        navigate('/ctv/dashboard');
+      }else {
+        navigate('/'); // Vai trò không xác định, chuyển về trang chủ hoặc trang lỗi
+      }
+
     } catch (err) {
       setMessage(err.response?.data?.message || "Đăng nhập thất bại. Vui lòng thử lại.");
     }

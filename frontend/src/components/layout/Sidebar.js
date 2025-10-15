@@ -1,29 +1,24 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { 
-    LuLayoutDashboard, 
-    LuPackage, 
-    LuUsers, 
-    LuBadgeDollarSign, 
-    LuLogOut, 
-    LuBook, 
-    LuMessageSquare, 
-    LuSettings,
-    LuTrendingUp
+    LuLayoutDashboard, LuPackage, LuUsers, LuBadgeDollarSign, 
+    LuLogOut, LuBook, LuMessageSquare, LuSettings, LuTrendingUp,
+    LuShoppingBag, LuDollarSign, LuUser 
 } from 'react-icons/lu';
 import logo from '../../assets/images/logo.png';
-import { useAuth } from '../../context/AuthContext'; // Thêm import này
+import { useAuth } from '../../context/AuthContext';
 
 const Sidebar = ({ isOpen }) => {
     const navigate = useNavigate();
-    const { logout } = useAuth(); // Lấy hàm logout từ context
+    const { user, logout } = useAuth();
 
     const handleLogout = () => {
-        logout(); // Gọi hàm logout từ context
+        logout();
         navigate('/login');
     };
 
-    const menuItems = [
+    // --- MENU CHÍNH THEO VAI TRÒ ---
+    const nppMenuItems = [
         { name: 'Dashboard', icon: <LuLayoutDashboard size={20} />, path: '/' },
         { name: 'Đơn hàng', icon: <LuPackage size={20} />, path: '/orders' },
         { name: 'Hoa hồng', icon: <LuTrendingUp size={20} />, path: '/commission' },
@@ -31,11 +26,28 @@ const Sidebar = ({ isOpen }) => {
         { name: 'Số dư', icon: <LuBadgeDollarSign size={20} />, path: '/balance' },
     ];
 
+    const ctvMenuItems = [
+        { name: 'Tổng quan', icon: <LuLayoutDashboard size={20} />, path: '/ctv/dashboard' },
+        { name: 'Sản Phẩm', icon: <LuPackage size={20} />, path: '/ctv/products' },
+        { name: 'Hoa hồng', icon: <LuDollarSign size={20} />, path: '/ctv/commission' },
+        { name: 'Doanh số', icon: <LuTrendingUp size={20} />, path: '/ctv/sales' },
+    ];
+
+    // --- MENU "KHÁC" DÙNG CHUNG ---
+    // Đưa phần này ra ngoài để áp dụng cho tất cả các role
     const otherItems = [
         { name: 'Hướng dẫn', icon: <LuBook size={20} />, path: '/guide' },
         { name: 'Nhắn tin', icon: <LuMessageSquare size={20} />, path: '/messages' },
         { name: 'Cài đặt', icon: <LuSettings size={20} />, path: '/settings' },
     ];
+
+    // Chỉ gán menu chính dựa vào vai trò
+    let menuItems = [];
+    if (user?.role === 'Admin') { // Thay 'Admin' bằng vai trò NPP của bạn
+        menuItems = nppMenuItems;
+    } else if (user?.role === 'CTV') { // Thay 'CTV' bằng vai trò CTV của bạn
+        menuItems = ctvMenuItems;
+    }
 
     const baseLinkClass = "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors";
     const inactiveLinkClass = "text-text-muted hover:bg-gray-200 hover:text-gray-900";
@@ -66,8 +78,9 @@ const Sidebar = ({ isOpen }) => {
                     ))}
                 </div>
 
+                {/* Phần này bây giờ sẽ luôn được hiển thị vì otherItems luôn có dữ liệu */}
                 <div className="mt-4">
-                     <h3 className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Khác</h3>
+                    <h3 className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Khác</h3>
                     {otherItems.map((item) => (
                          <NavLink
                             key={item.name}

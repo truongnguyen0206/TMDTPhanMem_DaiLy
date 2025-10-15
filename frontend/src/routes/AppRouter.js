@@ -8,6 +8,8 @@ import RegisterPage from '../pages/Auth/RegisterPage';
 //Layout
 import NppLayout from '../components/layout/NppLayout';
 import CtvLayout from '../components/layout/CtvLayout';
+import AdminLayout from '../components/layout/AdminLayout';
+
 //NPPpages
 import DashboardPage from '../pages/NPP/DashboardPage';
 import OrdersPage from '../pages/NPP/OrdersPage';
@@ -23,8 +25,13 @@ import WithdrawalRequestPage from '../pages/NPP/WithdrawalRequestPage';
 // CTV Pages
 import CtvDashboardPage from '../pages/CTV/DashboardPage';
 import ProductPage from '../pages/CTV/ProductPage';
-// ... import các trang khác của CTV (nếu có)
+import SalesPage from '../pages/CTV/SalesPage';
+import CtvCommissionPage from '../pages/CTV/CommissionPage';
 
+// Admin Pages
+import AdminDashboardPage from '../pages/Admin/DashboardPage';
+import AccountsPage from '../pages/Admin/AccountsPage';
+import AddAccountPage from '../pages/Admin/AddAccountPage';
 
 import ProtectedRoute from './ProtectedRoute';
 
@@ -36,33 +43,42 @@ const AppRouter = () => {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<RegisterPage />} />
 
+        {/* --- CÁC ROUTE CẦN BẢO VỆ --- */}
         <Route element={<ProtectedRoute />}>
-          <Route element={<NppLayout />}>
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/orders" element={<OrdersPage />} />
-            <Route path="/commission" element={<CommissionPage />} />
-            <Route path="/commission/pay/:id" element={<PayCommissionPage />} />
-            <Route path="/agents" element={<AgentsPage />} />
-            <Route path="/agents/new" element={<AddAgentPage />} />
-            <Route path="/agents/edit/:id" element={<UpdateAgentPage />} />
-            <Route path="/balance" element={<BalancePage />} />
-            <Route path="/balance/transaction/:id" element={<TransactionDetailPage />} />
-            <Route path="/balance/withdraw" element={<WithdrawalRequestPage />} /> {/* <-- THÊM DÒNG NÀY */}
+        
+          {/* --- Cấu hình cho NPP --- */}
+          {/* SỬA LẠI CÁC ROUTE BÊN TRONG ĐỂ DÙNG ĐƯỜNG DẪN TƯƠNG ĐỐI */}
+          <Route path="/npp" element={<NppLayout />}>
+            {/* "index" có nghĩa là đây là trang mặc định của /npp */}
+            <Route index element={<DashboardPage />} /> 
+            <Route path="orders" element={<OrdersPage />} />
+            <Route path="commission" element={<CommissionPage />} />
+            <Route path="commission/pay/:id" element={<PayCommissionPage />} />
+            <Route path="agents" element={<AgentsPage />} />
+            <Route path="agents/new" element={<AddAgentPage />} />
+            <Route path="agents/edit/:id" element={<UpdateAgentPage />} />
+            <Route path="balance" element={<BalancePage />} />
+            <Route path="balance/transaction/:id" element={<TransactionDetailPage />} />
+            <Route path="balance/withdraw" element={<WithdrawalRequestPage />} />
           </Route>
-        </Route>
 
-        {/* --- Cấu hình cho CTV --- */}
-        <Route element={<ProtectedRoute />}>
+          {/* --- Cấu hình cho CTV --- */}
           <Route path="/ctv" element={<CtvLayout />}>
             <Route path="dashboard" element={<CtvDashboardPage />} />
             <Route path="products" element={<ProductPage />} />
-            {/* Ví dụ:
-            <Route path="orders" element={<CtvOrdersPage />} />
+            <Route path="sales" element={<SalesPage />} />
             <Route path="commission" element={<CtvCommissionPage />} />
-            */}
           </Route>
-        </Route>
 
+          {/* --- Cấu hình cho ADMIN --- */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route path="dashboard" element={<AdminDashboardPage />} />
+            <Route path="accounts" element={<AccountsPage />} />
+             <Route path="accounts/new" element={<AddAccountPage />} />
+            {/* Thêm các route khác của Admin ở đây */}
+          </Route>
+
+        </Route>
       </Routes>
     </Router>
   );

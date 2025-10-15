@@ -36,7 +36,9 @@ const LoginPage = () => {
         navigate('/'); 
       } else if (decodedUser.role === 'CTV') {
         navigate('/ctv/dashboard');
-      } else {
+      }else if (decodedUser.role === 'Agent') {
+        navigate('/dl/dashboard'); 
+      }else {
         navigate('/'); // Vai trò không xác định, chuyển về trang chủ hoặc trang lỗi
       }
 

@@ -28,7 +28,7 @@ const StatusBadge = ({ status }) => {
     );
 };
 
-const AgentsPage = () => {
+const CTVPage = () => {
     // ... (phần state, useEffect, renderPagination giữ nguyên) ...
      const [agents, setAgents] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -38,14 +38,14 @@ const AgentsPage = () => {
     const [searchTerm, setSearchTerm] = useState(''); 
 
     useEffect(() => {
-        setPageTitle('Đại lý');
+        setPageTitle('CTV');
         const fetchAgents = async () => {
             setLoading(true);
             try {
                 // Gọi API lấy tất cả user đã có sẵn
                 const response = await axiosClient.get('/users');
-                // Lọc ra những user có vai trò là 'Agent'
-                const agentData = response.data.filter(user => user.role_name === 'Agent');
+                // Lọc ra những user có vai trò là 'CTV'
+                const agentData = response.data.filter(user => user.role_name === 'CTV');
 
                 // Thêm trạng thái giả lập để giống với giao diện
                 const agentsWithStatus = agentData.map((agent, index) => {
@@ -59,7 +59,7 @@ const AgentsPage = () => {
 
                 setAgents(agentsWithStatus);
             } catch (error) {
-                console.error("Lỗi khi tải danh sách đại lý:", error);
+                console.error("Lỗi khi tải danh sách Cộng tác viên:", error);
             } finally {
                 setLoading(false);
             }
@@ -70,7 +70,7 @@ const AgentsPage = () => {
 
     // Hàm xử lý xóa đại lý
     const handleDeleteAgent = async (agentId) => {
-        const confirmDelete = window.confirm('Bạn có chắc chắn muốn xóa đại lý này không? Hành động này không thể hoàn tác.');
+        const confirmDelete = window.confirm('Bạn có chắc chắn muốn xóa cộng tác viên này không? Hành động này không thể hoàn tác.');
 
         if (confirmDelete) {
             try {
@@ -81,9 +81,9 @@ const AgentsPage = () => {
                 setAgents(prevAgents => prevAgents.filter(agent => agent.user_id !== agentId));
                 alert('Đại lý đã được xóa thành công.');
             } catch (error) {
-                console.error("Lỗi khi xóa đại lý:", error);
+                console.error("Lỗi khi xóa cộng tác viên:", error);
                 // Hiển thị thông báo lỗi chi tiết từ server (nếu có)
-                const errorMessage = error.response?.data?.message || 'Xóa đại lý thất bại. Vui lòng kiểm tra log Backend.';
+                const errorMessage = error.response?.data?.message || 'Xóa cộng tác viên thất bại. Vui lòng kiểm tra log Backend.';
                 alert(errorMessage);
             }
         }
@@ -131,7 +131,7 @@ const AgentsPage = () => {
                     <div className="relative">
                         <input 
                             type="text" 
-                            placeholder="Search by mã đại lý"
+                            placeholder="Search by mã hoặc tên cộng tác viên"
                             value={searchTerm}
                             onChange={handleSearchChange}
                             className="w-80 bg-light-gray border border-border-color rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-primary"
@@ -139,11 +139,11 @@ const AgentsPage = () => {
                         <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     </div>
                     <Link 
-                        to="/npp/agents/new"
+                        to="/dl/ctv/new"
                         className="flex items-center gap-2 bg-green-500 text-white font-bold px-4 py-2 rounded-lg hover:bg-green-600 transition-colors"
                     >
                        <LuPlus size={20} />
-                       Thêm đại lý
+                       Thêm cộng tác viên
                     </Link>
                 </div>
 
@@ -152,8 +152,8 @@ const AgentsPage = () => {
                         {/* ... (thead giữ nguyên) ... */}
                          <thead className="text-xs text-gray-700 uppercase bg-gray-50">
                             <tr>
-                                <th scope="col" className="px-6 py-3">Mã Đại Lý</th>
-                                <th scope="col" className="px-6 py-3">Tên Đại Lý</th>
+                                <th scope="col" className="px-6 py-3">Mã Cộng Tác Viên</th>
+                                <th scope="col" className="px-6 py-3">Tên Cộng Tác Viên</th>
                                 <th scope="col" className="px-6 py-3">Trạng Thái</th>
                                 <th scope="col" className="px-6 py-3">Ngày Tạo</th>
                                 <th scope="col" className="px-6 py-3"></th>
@@ -167,14 +167,14 @@ const AgentsPage = () => {
                             ) : (
                                 filteredAgents.map((agent) => (
                                     <tr key={agent.user_id} className="bg-white border-b hover:bg-gray-50">
-                                        <td className="px-6 py-4 font-medium text-gray-900">DL{String(agent.user_id).padStart(3, '0')}</td>
+                                        <td className="px-6 py-4 font-medium text-gray-900">CTV{String(agent.user_id).padStart(3, '0')}</td>
                                         <td className="px-6 py-4">{agent.username}</td>
                                         <td className="px-6 py-4"><StatusBadge status={agent.status} /></td>
                                         <td className="px-6 py-4">{new Date(agent.created_at).toLocaleDateString('vi-VN')}</td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-4">
                                                 {/* THAY THẾ <button> bằng <Link> */}
-                                                <Link to={`/npp/agents/edit/${agent.user_id}`} className="text-gray-400 hover:text-green-600">
+                                                <Link to={`/dl/ctv/edit/${agent.user_id}`} className="text-gray-400 hover:text-green-600">
                                                     <LuPencil size={18} />
                                                 </Link>
                                                 <button
@@ -203,4 +203,4 @@ const AgentsPage = () => {
     );
 };
 
-export default AgentsPage;
+export default CTVPage;

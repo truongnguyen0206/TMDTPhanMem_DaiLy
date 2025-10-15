@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { LuSearch, LuPencil, LuTrash2 } from 'react-icons/lu';
 import { useOutletContext } from 'react-router-dom';
 
-// ... (Dữ liệu mẫu và component StatusBadge giữ nguyên) ...
+// Dữ liệu mẫu
 const mockCommissions = [
     { id: 58217, code: '58217342', status: 'pending', amount: 1500000, agent: 'DL001', source: 'Standard', date: '07/05/2025', time: '2:50PM' },
     { id: 58213, code: '58217343', status: 'paid', amount: 1200000, agent: 'DL002', source: 'Priority', date: '07/05/2025', time: '2:50PM' },
@@ -27,14 +27,46 @@ const StatusBadge = ({ status }) => {
 };
 
 const CommissionPage = () => {
-    // ... (phần state, renderPagination, formatCurrency giữ nguyên) ...
     const [commissions, setCommissions] = useState(mockCommissions);
     const [currentPage, setCurrentPage] = useState(1);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState(''); // State for status filter
     const totalPages = 10;
+    const { setPageTitle } = useOutletContext();
+    
+    useEffect(() => {
+        setPageTitle('Hoa hồng');
+    }, [setPageTitle]);
+
+    const handleSearchChange = (event) => {
+        setSearchTerm(event.target.value);
+    };
+
+    const handleStatusChange = (event) => {
+        setStatusFilter(event.target.value);
+    };
+
+    // Filter commissions based on search term and status
+    const filteredCommissions = useMemo(() => {
+        let result = commissions;
+        
+        if (searchTerm) {
+            const lowercasedSearchTerm = searchTerm.toLowerCase();
+            result = result.filter(item =>
+                String(item.id).toLowerCase().includes(lowercasedSearchTerm) ||
+                item.agent.toLowerCase().includes(lowercasedSearchTerm)
+            );
+        }
+
+        if (statusFilter) {
+            result = result.filter(item => item.status === statusFilter);
+        }
+
+        return result;
+    }, [commissions, searchTerm, statusFilter]);
     
     const renderPagination = () => {
         let pages = [];
-        // Hiển thị logic phân trang đơn giản
         pages.push(<button key={1} onClick={() => setCurrentPage(1)} className={`px-3 py-1 rounded-md ${currentPage === 1 ? 'bg-primary text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`}>1</button>);
         pages.push(<button key={2} onClick={() => setCurrentPage(2)} className={`px-3 py-1 rounded-md ${currentPage === 2 ? 'bg-primary text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`}>2</button>);
         pages.push(<button key={3} onClick={() => setCurrentPage(3)} className={`px-3 py-1 rounded-md ${currentPage === 3 ? 'bg-primary text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`}>3</button>);
@@ -47,30 +79,36 @@ const CommissionPage = () => {
         if (typeof value !== 'number') return value;
         return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
     };
-    const { setPageTitle } = useOutletContext();
-    
-        useEffect(() => {
-            setPageTitle('Hoa hồng');
-        }, [setPageTitle]);
 
     return (
         <div>
             <div className="bg-white p-6 rounded-lg shadow-md">
-                {/* ... (Thanh Filter giữ nguyên) ... */}
                  <div className="flex justify-between items-center mb-6">
-                    <div className="relative">
-                        <input 
-                            type="text" 
-                            placeholder="Search by mã hoa hồng"
-                            className="w-80 bg-light-gray border border-border-color rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-primary"
-                        />
-                        <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <div className="flex items-center gap-4">
+                        <div className="relative">
+                            <input 
+                                type="text" 
+                                placeholder="Tìm theo Mã hoa hồng hoặc Đại lý"
+                                value={searchTerm}
+                                onChange={handleSearchChange}
+                                className="w-80 bg-light-gray border border-border-color rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-primary"
+                            />
+                            <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        </div>
+                        <select
+                            value={statusFilter}
+                            onChange={handleStatusChange}
+                            className="bg-light-gray border border-border-color rounded-md py-2 px-4 focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                            <option value="">Tất cả trạng thái</option>
+                            <option value="paid">Đã thanh toán</option>
+                            <option value="pending">Chưa thanh toán</option>
+                        </select>
                     </div>
                 </div>
 
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left text-gray-500">
-                        {/* ... (thead giữ nguyên) ... */}
                         <thead className="text-xs text-gray-700 uppercase bg-gray-50">
                             <tr>
                                 <th scope="col" className="px-6 py-3">Mã Hoa Hồng</th>
@@ -84,38 +122,45 @@ const CommissionPage = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {commissions.map((item) => (
-                                <tr key={item.id} className="bg-white border-b hover:bg-gray-50">
-                                    <td className="px-6 py-4 font-medium text-gray-900">{item.id}</td>
-                                    <td className="px-6 py-4">{item.code}</td>
-                                    <td className="px-6 py-4"><StatusBadge status={item.status} /></td>
-                                    <td className="px-6 py-4 font-semibold text-gray-900">{formatCurrency(item.amount)}</td>
-                                    <td className="px-6 py-4">{item.agent}</td>
-                                    <td className="px-6 py-4">{item.source}</td>
-                                    <td className="px-6 py-4">{item.date} <span className="text-gray-400">{item.time}</span></td>
-                                    <td className="px-6 py-4 text-right">
-                                        <div className="flex items-center justify-end gap-4">
-                                            {item.status === 'paid' ? (
-                                                <button className="text-gray-300 cursor-not-allowed" disabled>
-                                                    <LuPencil size={18} />
-                                                </button>
-                                            ) : (
-                                                <Link to={`/commission/pay/${item.id}`} state={{ commissionData: item }} className="text-gray-400 hover:text-blue-600">
-                                                    <LuPencil size={18} />
-                                                </Link>
-                                            )}
-                                            
-                                        </div>
+                            {filteredCommissions.length > 0 ? (
+                                filteredCommissions.map((item) => (
+                                    <tr key={item.id} className="bg-white border-b hover:bg-gray-50">
+                                        <td className="px-6 py-4 font-medium text-gray-900">{item.id}</td>
+                                        <td className="px-6 py-4">{item.code}</td>
+                                        <td className="px-6 py-4"><StatusBadge status={item.status} /></td>
+                                        <td className="px-6 py-4 font-semibold text-gray-900">{formatCurrency(item.amount)}</td>
+                                        <td className="px-6 py-4">{item.agent}</td>
+                                        <td className="px-6 py-4">{item.source}</td>
+                                        <td className="px-6 py-4">{item.date} <span className="text-gray-400">{item.time}</span></td>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex items-center justify-end gap-4">
+                                                {item.status === 'paid' ? (
+                                                    <button className="text-gray-300 cursor-not-allowed" disabled>
+                                                        <LuPencil size={18} />
+                                                    </button>
+                                                ) : (
+                                                    <Link to={`/npp/commissions/pay/${item.id}`} state={{ commissionData: item }} className="text-gray-400 hover:text-blue-600">
+                                                        <LuPencil size={18} />
+                                                    </Link>
+                                                )}
+                                                
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan="8" className="text-center py-10 text-gray-500">
+                                        Không tìm thấy hoa hồng nào.
                                     </td>
                                 </tr>
-                            ))}
+                            )}
                         </tbody>
                     </table>
                 </div>
                 
-                {/* ... (Phân trang giữ nguyên) ... */}
                 <div className="flex justify-between items-center mt-6">
-                    <p className="text-sm text-gray-500">Showing 1 to 10 of 97 results</p>
+                    <p className="text-sm text-gray-500">Showing 1 to {filteredCommissions.length} of {commissions.length} results</p>
                     <div className="flex items-center gap-2">
                         <button className="px-3 py-1 rounded-md bg-white text-gray-700 hover:bg-gray-100 border">{'<'}</button>
                         {renderPagination()}
@@ -128,3 +173,4 @@ const CommissionPage = () => {
 };
 
 export default CommissionPage;
+

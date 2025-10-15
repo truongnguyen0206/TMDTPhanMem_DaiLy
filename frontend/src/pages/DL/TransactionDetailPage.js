@@ -44,7 +44,7 @@ const TransactionDetailPage = () => {
         return (
             <div>
                 <h1 className="text-3xl font-bold text-gray-800 mb-6">Không tìm thấy giao dịch</h1>
-                <Link to="/npp/balance" className="text-blue-500 hover:underline">Quay lại danh sách</Link>
+                <Link to="/dl/balance" className="text-blue-500 hover:underline">Quay lại danh sách</Link>
             </div>
         )
     }
@@ -72,7 +72,7 @@ const TransactionDetailPage = () => {
                 
                 <div className="flex justify-end gap-4 mt-8">
                     <button 
-                        onClick={() => navigate('/npp/balance')} 
+                        onClick={() => navigate('/dl/balance')} 
                         className="bg-red-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-red-600 transition-colors"
                     >
                         Đóng

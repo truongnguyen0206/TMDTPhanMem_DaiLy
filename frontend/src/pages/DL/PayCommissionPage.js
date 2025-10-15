@@ -30,7 +30,7 @@ const PayCommissionPage = () => {
         return (
             <div>
                 <h1 className="text-3xl font-bold text-gray-800 mb-6">Không tìm thấy thông tin hoa hồng</h1>
-                <button onClick={() => navigate('/npp/commissions')} className="text-blue-500">Quay lại danh sách</button>
+                <button onClick={() => navigate('/commission')} className="text-blue-500">Quay lại danh sách</button>
             </div>
         )
     }
@@ -59,7 +59,7 @@ const PayCommissionPage = () => {
 
                 <div className="flex justify-end gap-4 mt-8">
                     <button 
-                        onClick={() => navigate('/npp/commissions')} 
+                        onClick={() => navigate('/dl/commissions')} 
                         className="bg-gray-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-gray-600 transition-colors"
                     >
                         {isPaid ? 'Quay lại' : 'Đóng'}

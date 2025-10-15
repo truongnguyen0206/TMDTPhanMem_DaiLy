@@ -3,8 +3,9 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { 
     LuLayoutDashboard, LuPackage, LuUsers, LuBadgeDollarSign, 
     LuLogOut, LuBook, LuMessageSquare, LuSettings, LuTrendingUp,
-    LuShoppingBag, LuDollarSign, LuUser 
+    LuShoppingBag, LuDollarSign, LuUser
 } from 'react-icons/lu';
+import { HiServerStack } from "react-icons/hi2";
 import logo from '../../assets/images/logo.png';
 import { useAuth } from '../../context/AuthContext';
 
@@ -17,6 +18,7 @@ const Sidebar = ({ isOpen }) => {
         navigate('/login');
     };
 
+    // --- MENU CHÍNH THEO VAI TRÒ ---
     // 1. Menu cho Admin
     const adminMenuItems = [
         { name: 'Dashboard', icon: <LuLayoutDashboard size={20} />, path: '/admin/dashboard' },
@@ -27,14 +29,20 @@ const Sidebar = ({ isOpen }) => {
 
     // 2. Menu cho NPP
     const nppMenuItems = [
-        // Sửa path để khớp với AppRouter
-        { name: 'Dashboard', icon: <LuLayoutDashboard size={20} />, path: '/npp' }, 
+        { name: 'Dashboard', icon: <LuLayoutDashboard size={20} />, path: '/npp/dashboard' }, 
         { name: 'Đơn hàng', icon: <LuPackage size={20} />, path: '/npp/orders' },
-        { name: 'Hoa hồng', icon: <LuTrendingUp size={20} />, path: '/npp/commission' },
+        { name: 'Hoa hồng', icon: <LuTrendingUp size={20} />, path: '/npp/commissions' }, 
         { name: 'Đại lý', icon: <LuUsers size={20} />, path: '/npp/agents' },
         { name: 'Số dư', icon: <LuBadgeDollarSign size={20} />, path: '/npp/balance' },
     ];
-    
+    // 3. Menu cho đại lý
+    const dlMenuItems = [
+        { name: 'Dashboard', icon: <LuLayoutDashboard size={20} />, path: '/dl/dashboard' }, 
+        { name: 'Đơn hàng', icon: <LuPackage size={20} />, path: '/dl/orders' },
+        { name: 'Hoa hồng', icon: <LuTrendingUp size={20} />, path: '/dl/commissions' }, 
+        { name: 'CTV', icon: <LuUsers size={20} />, path: '/dl/CTV' },
+        { name: 'Sản phẩm', icon: <HiServerStack size={20} />, path: '/dl/products' },
+        { name: 'Số dư', icon: <LuBadgeDollarSign size={20} />, path: '/dl/balance' },
     // 3. Menu cho CTV
     const ctvMenuItems = [
         { name: 'Tổng quan', icon: <LuLayoutDashboard size={20} />, path: '/ctv/dashboard' },
@@ -57,6 +65,8 @@ const Sidebar = ({ isOpen }) => {
         menuItems = nppMenuItems;
     } else if (user?.role === 'CTV') {
         menuItems = ctvMenuItems;
+    } else if (user?.role === 'Agent') { // Thay 'CTV' bằng vai trò CTV của bạn
+        menuItems = dlMenuItems;
     }
 
     const baseLinkClass = "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors";
@@ -87,10 +97,10 @@ const Sidebar = ({ isOpen }) => {
                             <span>{item.name}</span>
                         </NavLink>
                     ))}
-                </div>
+                </div
                 
                 <div className="mt-4">
-                    <h3 className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Khác</h3>
+                     <h3 className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Khác</h3>
                     {otherItems.map((item) => (
                          <NavLink
                             key={item.name}

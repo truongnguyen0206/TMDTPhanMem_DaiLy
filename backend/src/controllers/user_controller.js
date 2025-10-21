@@ -82,23 +82,62 @@ const updateUser = async (req, res) => {
 };
 
 
+// const deleteUser = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+
+//     const result = await pool.query(
+//       "DELETE FROM auth.users WHERE user_id = $1 RETURNING *",
+//       [id]
+//     );
+
+//     if (result.rows.length === 0) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
+
+//     res.json({ message: "User deleted successfully", user: result.rows[0] });
+//   } catch (err) {
+//     console.error("Error deleting user:", err);
+//     res.status(500).json({ message: "Server error", error: err.message });
+//   }
+// };
+
 const deleteUser = async (req, res) => {
+  const { id } = req.params;
+  const client = await pool.connect(); // Lấy một client từ pool để thực hiện transaction
+
   try {
-    const { id } = req.params;
+      await client.query('BEGIN'); // Bắt đầu transaction
 
-    const result = await pool.query(
-      "DELETE FROM auth.users WHERE user_id = $1 RETURNING *",
-      [id]
-    );
+      // === BƯỚC 1: Xóa các bản ghi phụ thuộc trước ===
+      // Xóa khỏi bảng agent (nếu có)
+      await client.query('DELETE FROM "member"."agent" WHERE user_id = $1', [id]);
+      
+      // Xóa khỏi bảng ctv (nếu có)
+      await client.query('DELETE FROM "member"."ctv" WHERE user_id = $1', [id]);
+      // (Thêm các lệnh xóa ở các bảng khác nếu user_id cũng là khóa ngoại ở đó)
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
+        // === BƯỚC 2: Xóa người dùng chính trong bảng auth.users ===
+        const result = await client.query(
+          'DELETE FROM auth.users WHERE user_id = $1 RETURNING *',
+          [id]
+      );
 
-    res.json({ message: "User deleted successfully", user: result.rows[0] });
+      if (result.rows.length === 0) {
+          // Nếu không tìm thấy user, hủy bỏ transaction và báo lỗi
+          await client.query('ROLLBACK');
+          return res.status(404).json({ message: "User not found" });
+      }
+
+      await client.query('COMMIT'); // Hoàn tất transaction nếu mọi thứ thành công
+      res.json({ message: "User deleted successfully", user: result.rows[0] });
+
   } catch (err) {
-    console.error("Error deleting user:", err);
-    res.status(500).json({ message: "Server error", error: err.message });
+      await client.query('ROLLBACK'); // Hoàn tác tất cả thay đổi nếu có lỗi
+      console.error("Error deleting user:", err);
+      res.status(500).json({ message: "Server error", error: err.message });
+  } finally {
+      client.release(); // Trả client về lại pool
   }
 };
 

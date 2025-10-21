@@ -167,9 +167,9 @@ const getOrderById = async (order_id) => {
               'product_name', oi.product_name,
               'quantity', oi.quantity,
               'unit_price', oi.unit_price
-            )) FILTER (WHERE oi.id IS NOT NULL), '[]') AS items
+            )) FILTER (WHERE oi.id IS NOT NULL), '[]') AS products
      FROM orders.orders o
-     LEFT JOIN orders.order_items oi ON oi.order_id = o.order_id
+     LEFT JOIN orders.order_product oi ON oi.order_id = o.order_id
      WHERE o.order_id = $1
      GROUP BY o.order_id`,
     [order_id]

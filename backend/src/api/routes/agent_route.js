@@ -8,5 +8,6 @@ router.get("/listAgents", agentController.listAgents);
 router.post("/createAgent", agentController.createAgent);
 router.put("/updateAgent/:agentId", agentController.updateAgent);
 router.delete("/deleteAgent/:agentId", agentController.deleteAgent);
+router.put("/updateManyAgents", agentController.updateManyAgents);
 
 module.exports = router;

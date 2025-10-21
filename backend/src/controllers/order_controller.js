@@ -92,7 +92,7 @@ const create = async (req, res) => {
       // Tạo order kèm items
       newOrder = await Order.createOrderWithItems({
         order: { order_date, total_amount, created_by, customer_id, order_source, agent_id, collaborator_id, status },
-        items,
+        product_name,
       });
     } else {
       // Tạo order đơn lẻ

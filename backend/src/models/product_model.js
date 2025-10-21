@@ -16,7 +16,7 @@ const createOrderProduct = async (data) => {
   const result = await pool.query(
     `INSERT INTO orders.order_product 
       (order_id, product_id, product_name, description, quantity, unit_price)
-     VALUES ($1, $2, $3, $4, $5,)
+     VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING *`,
     [order_id, product_id, product_name, description, quantity, unit_price]
   );

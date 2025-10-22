@@ -88,7 +88,7 @@ const AppRouter = () => {
             </Route>
 
              {/* --- Cấu hình cho CTV --- */}
-            <Route path="/ctv" element={<CtvLayout />}>
+            <Route path="/ctv" element={<Layout />}>
               <Route path="dashboard" element={<CtvDashboardPage />} />
               <Route path="products" element={<ProductPage />} />
               <Route path="sales" element={<SalesPage />} />
@@ -96,7 +96,7 @@ const AppRouter = () => {
             </Route>
 
             {/* --- Cấu hình cho ADMIN --- */}
-            <Route path="/admin" element={<AdminLayout />}>
+            <Route path="/admin" element={<Layout />}>
               <Route path="dashboard" element={<AdminDashboardPage />} />
               <Route path="accounts" element={<AccountsPage />} />
                <Route path="accounts/new" element={<AddAccountPage />} />

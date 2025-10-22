@@ -43,6 +43,7 @@ const Sidebar = ({ isOpen }) => {
         { name: 'CTV', icon: <LuUsers size={20} />, path: '/dl/CTV' },
         { name: 'Sản phẩm', icon: <HiServerStack size={20} />, path: '/dl/products' },
         { name: 'Số dư', icon: <LuBadgeDollarSign size={20} />, path: '/dl/balance' },
+    ];
     // 3. Menu cho CTV
     const ctvMenuItems = [
         { name: 'Tổng quan', icon: <LuLayoutDashboard size={20} />, path: '/ctv/dashboard' },
@@ -61,7 +62,7 @@ const Sidebar = ({ isOpen }) => {
     let menuItems = [];
     if (user?.role === 'Admin') {
         menuItems = adminMenuItems;
-    } else if (user?.role === 'Nhà phân phối') { // Thêm điều kiện cho NPP
+    } else if (user?.role === 'NPP') { // Thêm điều kiện cho NPP
         menuItems = nppMenuItems;
     } else if (user?.role === 'CTV') {
         menuItems = ctvMenuItems;
@@ -97,7 +98,7 @@ const Sidebar = ({ isOpen }) => {
                             <span>{item.name}</span>
                         </NavLink>
                     ))}
-                </div
+                </div>
                 
                 <div className="mt-4">
                      <h3 className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Khác</h3>

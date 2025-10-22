@@ -43,6 +43,9 @@ import CtvCommissionPage from '../pages/CTV/CommissionPage';
 import AdminDashboardPage from '../pages/Admin/DashboardPage';
 import AccountsPage from '../pages/Admin/AccountsPage';
 import AddAccountPage from '../pages/Admin/AddAccountPage';
+import AdminCommissionPage from '../pages/Admin/CommissionPage';
+import CommissionFormPage from '../pages/Admin/CommissionFormPage';
+import OrdersPage from '../pages/Admin/OrdersPage';
 
 import ProtectedRoute from './ProtectedRoute';
 
@@ -100,8 +103,12 @@ const AppRouter = () => {
               <Route path="dashboard" element={<AdminDashboardPage />} />
               <Route path="accounts" element={<AccountsPage />} />
                <Route path="accounts/new" element={<AddAccountPage />} />
-              {/* Thêm các route khác của Admin ở đây */}
+               <Route path="commission" element={<AdminCommissionPage />} />
+               <Route path="commission/new" element={<CommissionFormPage mode="new" />} />
+               <Route path="commission/edit/:id" element={<CommissionFormPage mode="edit" />} />
+               <Route path="orders" element={<OrdersPage />} />
             </Route>
+            
         </Route>
         
         <Route path="/" element={<Navigate to="/npp/dashboard" replace />} />

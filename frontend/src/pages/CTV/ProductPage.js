@@ -70,7 +70,7 @@ const ProductPage = () => {
                                 <th className="px-6 py-3">Source</th>
                                 <th className="px-6 py-3">Tên sản phẩm</th>
                                 <th className="px-6 py-3">Trạng thái</th>
-                                <th className="px-6 py-3">Số lượng</th>
+                                <th className="px-6 py-3">Lượt tải</th>
                                 <th className="px-6 py-3">Giá</th>
                                 <th className="px-6 py-3 text-center">Tác vụ</th>
                             </tr>
@@ -86,7 +86,7 @@ const ProductPage = () => {
                                     <td className="px-6 py-4">{product.price.toLocaleString('vi-VN')}</td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center justify-center gap-2">
-                                            <button className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded-md">Tạm khoá</button>
+                                            <button className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded-md">Tạo mã giới thiệu</button>
                                             <button className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold py-1 px-3 rounded-md">Xem chi tiết</button>
                                         </div>
                                     </td>

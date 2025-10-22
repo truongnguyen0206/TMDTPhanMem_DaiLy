@@ -85,6 +85,40 @@ const deleteAgent = async (agent_id) => {
   return true;
 };
 
+/**
+ *  Cập nhập nhiều Đại lý
+ */
+const updateManyAgents = async (agents = []) => {
+  if (!Array.isArray(agents) || agents.length === 0) {
+    throw new Error("Không có dữ liệu đại lý để cập nhật.");
+  }
+
+  const results = await Promise.all(
+    agents.map(async (agent) => {
+      const { agent_id, ...fields } = agent;
+      if (!agent_id) throw new Error("Thiếu agent_id trong một đối tượng cập nhật.");
+
+      const keys = Object.keys(fields);
+      if (keys.length === 0) return null;
+
+      const setClause = keys.map((k, i) => `${k} = $${i + 1}`).join(", ");
+      const values = Object.values(fields);
+      values.push(agent_id);
+
+      const sql = `
+        UPDATE ${TABLE}
+        SET ${setClause}
+        WHERE agent_id = $${keys.length + 1}
+        RETURNING *;
+      `;
+      const { rows } = await pool.query(sql, values);
+      return rows[0];
+    })
+  );
+
+  return results.filter(Boolean);
+};
+
 module.exports = {
   getAllAgents,
   createAgent,
@@ -92,4 +126,5 @@ module.exports = {
   updateAgent,
   deleteAgent,
   listAgents,
+  updateManyAgents,
 };

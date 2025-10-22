@@ -123,7 +123,6 @@ const AgentsPage = () => {
         return pages;
     };
 
-
     return (
         <div>
             <div className="bg-white p-6 rounded-lg shadow-md">

@@ -20,14 +20,13 @@ async function getAllCTV(opts = {}) {
     search = '',
     limit = 50,
     page = 1,
-    includeInactive = false,
   } = opts;
 
   const offset = (Math.max(1, Number(page)) - 1) * Number(limit);
   const params = [];
   let sql = `
     SELECT ctv_id, user_id, ctv_code, ctv_name, diachi,
-           ngaythamgia, trangthai, agent_id
+           ngaythamgia, agent_id
     FROM ${TABLE}
     WHERE 1=1
   `;
@@ -38,10 +37,6 @@ async function getAllCTV(opts = {}) {
   if (agentId) {
     sql += ` AND agent_id = $${idx++}`;
     params.push(agentId);
-  }
-
-  if (!includeInactive) {
-    sql += ' AND trangthai = TRUE';
   }
 
   if (search) {
@@ -61,7 +56,7 @@ async function getAllCTV(opts = {}) {
 /** Lấy CTV theo id */
 async function getCTVById(ctvId) {
   const sql = `SELECT ctv_id, user_id, ctv_code, ctv_name, diachi,
-    ngaythamgia, trangthai, agent_id
+    ngaythamgia, agent_id
     FROM ${TABLE} WHERE ctv_id = ? LIMIT 1`;
   const [rows] = await pool.query(sql, [ctvId]);
   return rows[0] || null;
@@ -102,7 +97,6 @@ async function createCTV(payload = {}) {
   maybePushCTV('ctv_name', payload.ctv_name);
   maybePushCTV('diachi', payload.diachi);
   maybePushCTV('ngaythamgia', payload.ngaythamgia); // if omitted DB will set default
-  maybePushCTV('trangthai', typeof payload.trangthai === 'boolean' ? payload.trangthai : 1);
   maybePushCTV('agent_id', payload.agent_id);
 
   const sql = `
@@ -124,7 +118,7 @@ async function updateCTV(ctvId, payload = {}) {
   const params = [];
 
   const allowed = ['user_id', 'ctv_code', 'ctv_name', 'diachi',
-    'ngaythamgia', 'trangthai', 'agent_id'];
+    'ngaythamgia', 'agent_id'];
 
   for (const key of allowed) {
     if (Object.prototype.hasOwnProperty.call(payload, key)) {

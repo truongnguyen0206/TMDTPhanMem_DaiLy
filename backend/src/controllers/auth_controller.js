@@ -44,33 +44,44 @@ const register = async (req, res) => {
 // Đăng nhập
 const login = async (req, res) => {
   try {
-    const { username, password } = req.body;
-    // tìm user (tuỳ model của bạn)
-    const users = await findByEmailOrUsername(null, username); // hoặc findByUsername
+    const { username, password } = req.body; // "username" ở đây có thể là username hoặc email
+
+    // Tìm user theo username hoặc email
+    const users = await findByEmailOrUsername(username, username);
     const user = users && users.length ? users[0] : null;
-    if (!user) return res.status(400).json({ message: "Sai username hoặc password" });
+
+    if (!user)
+      return res.status(400).json({ message: "Sai username/email hoặc password" });
 
     const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) return res.status(400).json({ message: "Sai username hoặc password" });
+    if (!validPassword)
+      return res.status(400).json({ message: "Sai username/email hoặc password" });
 
     // Lấy role_name nếu cần
     let roleName = null;
     if (user.role_id) {
-      const roleRes = await pool.query("SELECT role_name FROM auth.roles WHERE role_id = $1", [user.role_id]);
+      const roleRes = await pool.query(
+        "SELECT role_name FROM auth.roles WHERE role_id = $1",
+        [user.role_id]
+      );
       roleName = roleRes.rows[0]?.role_name || null;
     }
 
+    // Payload JWT
     const payload = {
       id: user.user_id || user.id,
       username: user.username,
+      email: user.email,
       role: roleName,
-      role_id: user.role_id
+      role_id: user.role_id,
     };
 
-    const token = jwt.sign(payload, process.env.JWT_SECRET || "secretkey", { expiresIn: "1h" });
-    res.json({ message: "Đăng nhập thành công", token });
-  } catch (err) {
-    console.error("Login error:", err);
+    // (Tùy chọn) sinh token
+    const token = jwt.sign(payload, process.env.JWT_SECRET || "mysecret", { expiresIn: "1d" });
+
+    res.json({ message: "Đăng nhập thành công", token, user: payload });
+  } catch (error) {
+    console.error("Lỗi đăng nhập:", error);
     res.status(500).json({ message: "Lỗi server" });
   }
 };

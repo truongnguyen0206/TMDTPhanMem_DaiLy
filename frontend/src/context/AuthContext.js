@@ -6,15 +6,19 @@ const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
+    // THÊM MỚI: State để theo dõi quá trình kiểm tra token ban đầu
+    const [isInitializing, setIsInitializing] = useState(true);
 
     useEffect(() => {
-        // Kiểm tra token khi trang được tải lại
         const token = localStorage.getItem('token');
         if (token) {
             try {
                 const decodedUser = jwtDecode(token);
-                if (decodedUser.exp * 1.0 > Date.now()) {
+                // SỬA LỖI: JWT 'exp' tính bằng giây, Date.now() tính bằng mili giây. Cần nhân 1000.
+                if (decodedUser.exp * 1000 > Date.now()) {
                     setUser(decodedUser);
+                    // CẬP NHẬT: Gắn token vào header của axiosClient ngay khi xác thực lại thành công
+                    axiosClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
                 } else {
                     localStorage.removeItem('token');
                 }
@@ -23,6 +27,8 @@ export const AuthProvider = ({ children }) => {
                 localStorage.removeItem('token');
             }
         }
+        // THÊM MỚI: Đánh dấu là đã khởi tạo xong, dù có token hay không
+        setIsInitializing(false);
     }, []);
 
     const login = (token) => {
@@ -38,14 +44,16 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
     };
 
+    // CẬP NHẬT: Cung cấp isInitializing cho các component con
+    const value = { user, login, logout, isInitializing };
+
     return (
-        <AuthContext.Provider value={{ user, login, logout }}>
+        <AuthContext.Provider value={value}>
             {children}
         </AuthContext.Provider>
     );
 };
 
-// Hook tùy chỉnh để sử dụng context dễ dàng hơn
 export const useAuth = () => {
     return useContext(AuthContext);
 };

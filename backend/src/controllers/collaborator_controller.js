@@ -58,7 +58,6 @@ async function createCTV(req, res) {
         ctv_name,
         diachi,
         ngaythamgia,
-        trangthai,
         agent_id,
       } = req.body;
   
@@ -71,7 +70,6 @@ async function createCTV(req, res) {
         ctv_name,
         diachi,
         ngaythamgia,
-        trangthai: typeof trangthai === 'boolean' ? trangthai : true,
         agent_id: agent_id ? Number(agent_id) : null,
       };
   
@@ -98,7 +96,6 @@ async function updateCTV(req, res) {
       ctv_name,
       diachi,
       ngaythamgia,
-      trangthai,
       agent_id,
     } = req.body;
 
@@ -116,7 +113,6 @@ async function updateCTV(req, res) {
     if (typeof ctv_name !== 'undefined') payload.ctv_name = ctv_name;
     if (typeof diachi !== 'undefined') payload.diachi = diachi;
     if (typeof ngaythamgia !== 'undefined') payload.ngaythamgia = ngaythamgia;
-    if (typeof trangthai !== 'undefined') payload.trangthai = trangthai;
     if (typeof agent_id !== 'undefined') payload.agent_id = Number(agent_id);
 
     const updated = await Collaborator.update(ctvId, payload);

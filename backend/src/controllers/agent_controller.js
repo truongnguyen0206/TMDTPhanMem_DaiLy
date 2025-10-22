@@ -95,6 +95,31 @@ const getAllAgents = async (req, res) => {
   }
 };
 
+
+// Cập nhật nhiều đại lý cùng lúc
+const updateManyAgents = async (req, res) => {
+  try {
+    const { agents } = req.body;
+
+    // Kiểm tra dữ liệu đầu vào
+    if (!Array.isArray(agents) || agents.length === 0) {
+      return res.status(400).json({ error: "⚠️ Danh sách đại lý không hợp lệ hoặc trống" });
+    }
+
+    // Gọi model để xử lý
+    const updatedAgents = await Agent.updateManyAgents(agents);
+
+    res.json({
+      success: true,
+      message: `✅ Đã cập nhật thành công ${updatedAgents.length} đại lý`,
+      data: updatedAgents,
+    });
+  } catch (err) {
+    console.error("❌ Lỗi updateManyAgents:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
 module.exports = {
   createAgent,
   getAgent,
@@ -102,4 +127,5 @@ module.exports = {
   deleteAgent,
   listAgents,
   getAllAgents,
+  updateManyAgents,
 };

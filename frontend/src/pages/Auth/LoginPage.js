@@ -30,8 +30,10 @@ const LoginPage = () => {
       const decodedUser = jwtDecode(token);
 
       //Điều hướng dưa trên vai trò
-      if (decodedUser.role === 'NPP') {
-        navigate('/npp/dashboard');
+      if (decodedUser.role === 'Admin') {
+        navigate('/admin/dashboard'); 
+      } else if (decodedUser.role === 'Nhà phân phối') {
+        navigate('/'); 
       } else if (decodedUser.role === 'CTV') {
         navigate('/ctv/dashboard');
       }else if (decodedUser.role === 'Agent') {

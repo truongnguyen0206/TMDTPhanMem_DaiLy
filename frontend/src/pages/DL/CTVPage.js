@@ -1,24 +1,29 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import axiosClient from '../../api/axiosClient';
-import { LuSearch, LuPencil, LuTrash2, LuPlus, LuCalendarDays } from 'react-icons/lu';
+import { LuSearch, LuPencil, LuTrash2, LuPlus } from 'react-icons/lu'; // Bỏ LuCalendarDays nếu không dùng
 import { useOutletContext } from 'react-router-dom';
+
+// --- BẮT ĐẦU THAY ĐỔI ---
+
+// 1. Định nghĩa số lượng mục mỗi trang
+const ITEMS_PER_PAGE = 10;
 
 // ... (component StatusBadge giữ nguyên) ...
 const StatusBadge = ({ status }) => {
     let style = {};
-    switch (status.toLowerCase()) {
+    switch (status?.toLowerCase()) { // Thêm optional chaining phòng trường hợp status null/undefined
         case 'đang hoạt động':
             style = { text: 'Đang hoạt động', color: 'bg-green-100 text-green-800' };
             break;
-        case 'cần hoàn đồng':
-            style = { text: 'Đang chờ cấp tài khoản', color: 'bg-yellow-100 text-yellow-800' };
+        case 'cần hoàn đồng': // Giữ lại status này nếu có thể áp dụng cho CTV
+            style = { text: 'Chờ duyệt', color: 'bg-yellow-100 text-yellow-800' };
             break;
         case 'ngừng hoạt động':
             style = { text: 'Ngừng hoạt động', color: 'bg-red-100 text-red-800' };
             break;
         default:
-            style = { text: status, color: 'bg-gray-100 text-gray-800' };
+            style = { text: status || 'Không rõ', color: 'bg-gray-100 text-gray-800' }; // Hiển thị 'Không rõ' nếu status null/undefined
     }
 
     return (
@@ -29,61 +34,68 @@ const StatusBadge = ({ status }) => {
 };
 
 const CTVPage = () => {
-    // ... (phần state, useEffect, renderPagination giữ nguyên) ...
-     const [agents, setAgents] = useState([]);
+    // Đổi tên state từ agents thành ctvs
+    const [ctvs, setCtvs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
-    const totalPages = 10; // Giả sử
     const { setPageTitle } = useOutletContext();
-    const [searchTerm, setSearchTerm] = useState(''); 
+    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
-        setPageTitle('CTV');
-        const fetchAgents = async () => {
+        setPageTitle('Cộng tác viên'); // Đổi tiêu đề
+        const fetchCtvs = async () => { // Đổi tên hàm
             setLoading(true);
             try {
-                // Gọi API lấy tất cả user đã có sẵn
-                const response = await axiosClient.get('/users');
-                // Lọc ra những user có vai trò là 'CTV'
-                const agentData = response.data.filter(user => user.role_name === 'CTV');
+                // 2. Gọi API lấy danh sách CTV
+                // Dựa trên backend, endpoint có thể là '/CTV/getAllCTV'
+                const response = await axiosClient.get('/CTV/getAllCTV');
+                const ctvData = response.data.data; // API trả về trong { data: [...] }
 
-                // Thêm trạng thái giả lập để giống với giao diện
-                const agentsWithStatus = agentData.map((agent, index) => {
-                    const statuses = ['Đang hoạt động', 'Cần hoàn đồng', 'Ngừng hoạt động'];
+                // Thêm trạng thái giả lập (điều chỉnh nếu cần)
+                const ctvsWithStatus = ctvData.map((ctv, index) => {
+                    const statuses = ['Đang hoạt động', 'Chờ duyệt', 'Ngừng hoạt động'];
+                     // API trả về user_id, ctv_id, ctv_code, ctv_name,...
+                     // Sử dụng ctv_id hoặc user_id để tạo status giả
+                    const idForStatus = ctv.ctv_id || ctv.user_id || index;
                     return {
-                        ...agent,
-                        // Dùng id để tạo trạng thái giả lập một cách ổn định
-                        status: statuses[agent.user_id % statuses.length], 
+                        ...ctv,
+                         // Gán status giả lập
+                        status: statuses[idForStatus % statuses.length],
+                         // Gán created_at giả lập nếu API không có (lấy ngaythamgia)
+                        created_at: ctv.created_at || ctv.ngaythamgia || new Date().toISOString()
                     };
                 });
 
-                setAgents(agentsWithStatus);
+                setCtvs(ctvsWithStatus); // Cập nhật state ctvs
             } catch (error) {
                 console.error("Lỗi khi tải danh sách Cộng tác viên:", error);
+                 if (error.response && error.response.status === 404) {
+                    alert("Lỗi: Không tìm thấy API endpoint '/CTV/getAllCTV'. Vui lòng kiểm tra lại Backend.");
+                }
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchAgents();
+        fetchCtvs(); // Gọi hàm fetchCtvs
     }, [setPageTitle]);
 
-    // Hàm xử lý xóa đại lý
-    const handleDeleteAgent = async (agentId) => {
-        const confirmDelete = window.confirm('Bạn có chắc chắn muốn xóa cộng tác viên này không? Hành động này không thể hoàn tác.');
+    // Hàm xử lý xóa CTV
+    const handleDeleteCtv = async (ctvIdToDelete) => { // Đổi tên hàm và tham số
+        const confirmDelete = window.confirm('Bạn có chắc chắn muốn xóa cộng tác viên này không?');
 
         if (confirmDelete) {
             try {
-                // Gọi API DELETE đến endpoint đã định nghĩa trong BE: /agents/deleteAgent/:agentId
-                await axiosClient.delete(`agent/deleteAgent/${agentId}`);
+                 // 3. Gọi API xóa CTV
+                 // Dựa trên backend, endpoint là '/CTV/removeCTV/:id' và :id là ctv_id
+                await axiosClient.delete(`/CTV/removeCTV/${ctvIdToDelete}`);
 
-                // Xóa thành công, cập nhật state để loại bỏ đại lý khỏi danh sách
-                setAgents(prevAgents => prevAgents.filter(agent => agent.user_id !== agentId));
-                alert('Đại lý đã được xóa thành công.');
+                // Cập nhật state sau khi xóa thành công
+                setCtvs(prevCtvs => prevCtvs.filter(ctv => ctv.ctv_id !== ctvIdToDelete));
+                alert('Cộng tác viên đã được xóa thành công.');
             } catch (error) {
                 console.error("Lỗi khi xóa cộng tác viên:", error);
-                // Hiển thị thông báo lỗi chi tiết từ server (nếu có)
-                const errorMessage = error.response?.data?.message || 'Xóa cộng tác viên thất bại. Vui lòng kiểm tra log Backend.';
+                const errorMessage = error.response?.data?.message || 'Xóa cộng tác viên thất bại.';
                 alert(errorMessage);
             }
         }
@@ -91,36 +103,77 @@ const CTVPage = () => {
 
     const handleSearchChange = (event) => {
         setSearchTerm(event.target.value);
-        // Có thể reset trang về 1 khi tìm kiếm mới
-        setCurrentPage(1); 
+        setCurrentPage(1); // Reset về trang 1 khi tìm kiếm
     };
 
-    // **Sử dụng useMemo để lọc danh sách Đại lý**
-    const filteredAgents = useMemo(() => {
+    // 4. Lọc danh sách CTV theo từ khóa tìm kiếm
+    const filteredCtvs = useMemo(() => { // Đổi tên biến
         if (!searchTerm) {
-            return agents;
+            return ctvs;
         }
-
         const searchLower = searchTerm.toLowerCase();
+        return ctvs.filter(ctv => {
+            // Tìm kiếm bằng ctv_code hoặc ctv_name
+            const ctvCode = ctv.ctv_code ? ctv.ctv_code.toLowerCase() : '';
+            const ctvName = ctv.ctv_name ? ctv.ctv_name.toLowerCase() : ''; // API trả về ctv_name
 
-        return agents.filter(agent => {
-            // Tạo mã đại lý (ví dụ: DL001) để tìm kiếm
-            const agentCode = `DL${String(agent.user_id).padStart(3, '0')}`.toLowerCase();
-            const agentName = agent.username.toLowerCase();
-
-            // Tìm kiếm theo Mã Đại lý HOẶC Tên Đại lý
-            return agentCode.includes(searchLower) || agentName.includes(searchLower);
+            return ctvCode.includes(searchLower) || ctvName.includes(searchLower);
         });
-    }, [agents, searchTerm]);
+    }, [ctvs, searchTerm]); // Phụ thuộc vào ctvs
 
+    // 5. Tính toán tổng số trang
+    const totalPages = Math.ceil(filteredCtvs.length / ITEMS_PER_PAGE);
+
+    // 6. "Cắt" mảng dữ liệu đã lọc cho trang hiện tại
+    const paginatedCtvs = useMemo(() => { // Đổi tên biến
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        const endIndex = startIndex + ITEMS_PER_PAGE;
+        return filteredCtvs.slice(startIndex, endIndex);
+    }, [filteredCtvs, currentPage]); // Phụ thuộc vào filteredCtvs
+
+    // 7. Hàm render các nút phân trang (giữ nguyên logic)
     const renderPagination = () => {
-        let pages = [];
-        pages.push(<button key={1} onClick={() => setCurrentPage(1)} className={`px-3 py-1 rounded-md ${currentPage === 1 ? 'bg-primary text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`}>1</button>);
-        pages.push(<button key={2} onClick={() => setCurrentPage(2)} className={`px-3 py-1 rounded-md ${currentPage === 2 ? 'bg-primary text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`}>2</button>);
-        pages.push(<button key={3} onClick={() => setCurrentPage(3)} className={`px-3 py-1 rounded-md ${currentPage === 3 ? 'bg-primary text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`}>3</button>);
-        pages.push(<span key="dots" className="px-3 py-1">...</span>);
-        pages.push(<button key={10} onClick={() => setCurrentPage(10)} className={`px-3 py-1 rounded-md ${currentPage === 10 ? 'bg-primary text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`}>10</button>);
+        if (totalPages <= 1) return null;
+        const pages = [];
+        const maxPagesToShow = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+        let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+        if (endPage - startPage + 1 < maxPagesToShow) {
+            startPage = Math.max(1, endPage - maxPagesToShow + 1);
+        }
+        if (startPage > 1) {
+            pages.push(<button key={1} onClick={() => setCurrentPage(1)} className={`px-3 py-1 rounded-md bg-white text-gray-700 hover:bg-gray-100 border`}>1</button>);
+            if (startPage > 2) {
+                pages.push(<span key="dots-start" className="px-3 py-1">...</span>);
+            }
+        }
+        for (let i = startPage; i <= endPage; i++) {
+            pages.push(
+                <button
+                    key={i}
+                    onClick={() => setCurrentPage(i)}
+                    className={`px-3 py-1 rounded-md ${currentPage === i ? 'bg-primary text-white' : 'bg-white text-gray-700 hover:bg-gray-100 border'}`}
+                >
+                    {i}
+                </button>
+            );
+        }
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                pages.push(<span key="dots-end" className="px-3 py-1">...</span>);
+            }
+            pages.push(<button key={totalPages} onClick={() => setCurrentPage(totalPages)} className={`px-3 py-1 rounded-md bg-white text-gray-700 hover:bg-gray-100 border`}>{totalPages}</button>);
+        }
         return pages;
+    };
+
+    // 8. Hàm xử lý chuyển trang (giữ nguyên logic)
+    const handlePrevPage = () => {
+        setCurrentPage(prev => Math.max(prev - 1, 1));
+    };
+
+    const handleNextPage = () => {
+        setCurrentPage(prev => Math.min(prev + 1, totalPages));
     };
 
 
@@ -129,17 +182,17 @@ const CTVPage = () => {
             <div className="bg-white p-6 rounded-lg shadow-md">
                 <div className="flex justify-between items-center mb-6">
                     <div className="relative">
-                        <input 
-                            type="text" 
-                            placeholder="Search by mã hoặc tên cộng tác viên"
+                        <input
+                            type="text"
+                            placeholder="Tìm theo mã hoặc tên CTV" // Đổi placeholder
                             value={searchTerm}
                             onChange={handleSearchChange}
                             className="w-80 bg-light-gray border border-border-color rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-primary"
                         />
                         <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     </div>
-                    <Link 
-                        to="/dl/ctv/new"
+                    <Link
+                        to="/dl/ctv/new" // Link đến trang thêm CTV
                         className="flex items-center gap-2 bg-green-500 text-white font-bold px-4 py-2 rounded-lg hover:bg-green-600 transition-colors"
                     >
                        <LuPlus size={20} />
@@ -149,11 +202,10 @@ const CTVPage = () => {
 
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left text-gray-500">
-                        {/* ... (thead giữ nguyên) ... */}
                          <thead className="text-xs text-gray-700 uppercase bg-gray-50">
                             <tr>
-                                <th scope="col" className="px-6 py-3">Mã Cộng Tác Viên</th>
-                                <th scope="col" className="px-6 py-3">Tên Cộng Tác Viên</th>
+                                <th scope="col" className="px-6 py-3">Mã CTV</th>
+                                <th scope="col" className="px-6 py-3">Tên CTV</th>
                                 <th scope="col" className="px-6 py-3">Trạng Thái</th>
                                 <th scope="col" className="px-6 py-3">Ngày Tạo</th>
                                 <th scope="col" className="px-6 py-3"></th>
@@ -162,23 +214,34 @@ const CTVPage = () => {
                         <tbody>
                             {loading ? (
                                 <tr><td colSpan="5" className="text-center py-4">Đang tải dữ liệu...</td></tr>
-                            ) : filteredAgents.length === 0 ? (
-                                <tr><td colSpan="5" className="text-center py-4">Không tìm thấy đại lý nào phù hợp với tìm kiếm.</td></tr>
+                            // 9. Sử dụng paginatedCtvs để render và kiểm tra length
+                            ) : paginatedCtvs.length === 0 ? (
+                                <tr><td colSpan="5" className="text-center py-4">Không tìm thấy cộng tác viên nào.</td></tr>
                             ) : (
-                                filteredAgents.map((agent) => (
-                                    <tr key={agent.user_id} className="bg-white border-b hover:bg-gray-50">
-                                        <td className="px-6 py-4 font-medium text-gray-900">CTV{String(agent.user_id).padStart(3, '0')}</td>
-                                        <td className="px-6 py-4">{agent.username}</td>
-                                        <td className="px-6 py-4"><StatusBadge status={agent.status} /></td>
-                                        <td className="px-6 py-4">{new Date(agent.created_at).toLocaleDateString('vi-VN')}</td>
+                                paginatedCtvs.map((ctv) => (
+                                    <tr key={ctv.ctv_id} className="bg-white border-b hover:bg-gray-50">
+                                        <td className="px-6 py-4 font-medium text-gray-900">
+                                            {/* Hiển thị ctv_code */}
+                                            {ctv.ctv_code || 'N/A'}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {/* Hiển thị ctv_name */}
+                                            {ctv.ctv_name || 'N/A'}
+                                        </td>
+                                        <td className="px-6 py-4"><StatusBadge status={ctv.status} /></td>
+                                        <td className="px-6 py-4">
+                                             {/* Hiển thị ngày tạo (created_at hoặc ngaythamgia) */}
+                                            {new Date(ctv.created_at || ctv.ngaythamgia).toLocaleDateString('vi-VN')}
+                                        </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-4">
-                                                {/* THAY THẾ <button> bằng <Link> */}
-                                                <Link to={`/dl/ctv/edit/${agent.user_id}`} className="text-gray-400 hover:text-green-600">
+                                                 {/* Link sửa dùng user_id (nếu trang edit cần user_id) hoặc ctv_id */}
+                                                <Link to={`/dl/ctv/edit/${ctv.user_id}`} className="text-gray-400 hover:text-green-600">
                                                     <LuPencil size={18} />
                                                 </Link>
+                                                {/* Nút xóa dùng ctv_id */}
                                                 <button
-                                                onClick={() => handleDeleteAgent(agent.user_id)}
+                                                onClick={() => handleDeleteCtv(ctv.ctv_id)}
                                                 className="text-gray-400 hover:text-red-600"><LuTrash2 size={18} /></button>
                                             </div>
                                         </td>
@@ -188,15 +251,33 @@ const CTVPage = () => {
                         </tbody>
                     </table>
                 </div>
-                
-                {/* ... (Phân trang giữ nguyên) ... */}
+
+                {/* 10. Cập nhật hiển thị phân trang */}
                 <div className="flex justify-between items-center mt-6">
-                    <p className="text-sm text-gray-500">Showing 1 to 10 of {agents.length} results</p>
-                    <div className="flex items-center gap-2">
-                        <button className="px-3 py-1 rounded-md bg-white text-gray-700 hover:bg-gray-100 border">{'<'}</button>
-                        {renderPagination()}
-                        <button className="px-3 py-1 rounded-md bg-white text-gray-700 hover:bg-gray-100 border">{'>'}</button>
-                    </div>
+                    <p className="text-sm text-gray-500">
+                        Hiển thị {paginatedCtvs.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0}
+                        đến {(currentPage - 1) * ITEMS_PER_PAGE + paginatedCtvs.length}
+                        trong tổng số {filteredCtvs.length} kết quả
+                    </p>
+                    {totalPages > 1 && (
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={handlePrevPage}
+                                disabled={currentPage === 1}
+                                className="px-3 py-1 rounded-md bg-white text-gray-700 hover:bg-gray-100 border disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {'<'}
+                            </button>
+                            {renderPagination()}
+                            <button
+                                onClick={handleNextPage}
+                                disabled={currentPage === totalPages}
+                                className="px-3 py-1 rounded-md bg-white text-gray-700 hover:bg-gray-100 border disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {'>'}
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

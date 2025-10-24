@@ -1,20 +1,25 @@
-import { createClient } from '@supabase/supabase-js'
+const { createClient } = require ("@supabase/supabase-js")
+require("dotenv").config();
 
+// export const supabase = createClient(
+//     process.env.SUPABASE_URL,
+//     process.env.SUPABASE_ANON_KEY
+//   );
 
-export const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_ANON_KEY
-  );
-
-  // Nếu bạn muốn dùng service role key (server-side)
-export const supabaseAdmin = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
+//   // Nếu bạn muốn dùng service role key (server-side)
+// export const supabaseAdmin = createClient(
+//     process.env.SUPABASE_URL,
+//     process.env.SUPABASE_SERVICE_ROLE_KEY
+//   );
   
 
-// Dán URL và API key từ Supabase project
-const SUPABASE_URL = 'https://dnynupuvcbwybpowkvek.supabase.co'
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRueW51cHV2Y2J3eWJwb3drdmVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA2Mzc4NjMsImV4cCI6MjA3NjIxMzg2M30.fyFQsRgn6ne45V1adL0FbvZOwdaYyQpT01RZgXTZ-Zg'
+// Lấy URL và KEY từ biến môi trường (.env)
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
+// Tạo client Supabase
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+// export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
+
+module.exports = supabase;

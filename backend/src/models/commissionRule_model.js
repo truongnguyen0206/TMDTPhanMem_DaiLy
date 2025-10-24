@@ -1,4 +1,5 @@
-const pool = require("../config/database_config");
+// const pool = require("../config/database_config");
+const pool = require("../config/supabaseClient");
 
 class CommissionRule {
   // Lấy tất cả quy tắc hoa hồng

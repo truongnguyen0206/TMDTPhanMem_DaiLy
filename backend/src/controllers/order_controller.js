@@ -1,7 +1,8 @@
 const Order = require("../models/order_model");
 const ExcelJS = require('exceljs');
 const PDFDocument = require('pdfkit');
-const pool = require("../config/database_config");
+// const pool = require("../config/database_config");
+const pool = require("../config/supabaseClient");
 
 // Lấy all
 const getAll = async (req, res) => {

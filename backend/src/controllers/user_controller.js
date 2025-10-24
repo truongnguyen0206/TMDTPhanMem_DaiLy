@@ -1,5 +1,6 @@
 const userModel = require("../models/user_model");
-const pool = require("../config/database_config");
+// const pool = require("../config/database_config");
+const pool = require("../config/supabaseClient");
 const bcrypt = require("bcrypt");
 
 
@@ -16,7 +17,7 @@ const getAllUsers = async (req, res) => {
 const getUserById = async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await pool.query("SELECT * FROM auth.users WHERE user_id = $1", [id]);
+    const result = await pool.query("SELECT * FROM users_view/ WHERE user_id = $1", [id]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "Người dùng không tồn tại" });
@@ -119,7 +120,7 @@ const deleteUser = async (req, res) => {
 
         // === BƯỚC 2: Xóa người dùng chính trong bảng auth.users ===
         const result = await client.query(
-          'DELETE FROM auth.users WHERE user_id = $1 RETURNING *',
+          'DELETE FROM users_view WHERE user_id = $1 RETURNING *',
           [id]
       );
 

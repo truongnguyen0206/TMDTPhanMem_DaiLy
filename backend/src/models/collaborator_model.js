@@ -1,166 +1,103 @@
-/**
- * models/collaborator_model.js
- *
- * Data access layer for CTV (member.ctv).
- * Uses mysql2/promise pool provided by ../config/db.js
- */
+const supabase = require("../config/supabaseClient");
 
-const pool = require("../config/database_config");
+// const TABLE = 'member.ctv';
 
-const TABLE = 'member.ctv';
-
-
-/**
- * Lấy danh sách CTV với paging, tìm kiếm và lọc theo agent.
- * @param {Object} opts
- */
+/** Lấy danh sách CTV với paging, tìm kiếm và lọc theo agent. */
 async function getAllCTV(opts = {}) {
-  const {
-    agentId = null,
-    search = '',
-    limit = 50,
-    page = 1,
-  } = opts;
+  const { agentId = null, search = '', limit = 50, page = 1 } = opts;
 
-  const offset = (Math.max(1, Number(page)) - 1) * Number(limit);
-  const params = [];
-  let sql = `
-    SELECT ctv_id, user_id, ctv_code, ctv_name, diachi,
-           ngaythamgia, agent_id
-    FROM ${TABLE}
-    WHERE 1=1
-  `;
-
-  // Tạo biến đếm để đánh số placeholder $1, $2,...
-  let idx = 1;
+  let query = supabase.from("ctv_view")
+    .select('ctv_id, user_id, ctv_code, ctv_name, diachi, ngaythamgia, agent_id')
+    .order('ngaythamgia', { ascending: false });
 
   if (agentId) {
-    sql += ` AND agent_id = $${idx++}`;
-    params.push(agentId);
+    query = query.eq('agent_id', agentId);
   }
 
   if (search) {
-    sql += ` AND (ctv_name ILIKE $${idx} OR ctv_code ILIKE $${idx + 1} OR diachi ILIKE $${idx + 2})`;
-    const like = `%${search}%`;
-    params.push(like, like, like);
-    idx += 3;
+    query = query.or(`ctv_name.ilike.%${search}%,ctv_code.ilike.%${search}%,diachi.ilike.%${search}%`);
   }
 
-  sql += ` ORDER BY ngaythamgia DESC LIMIT $${idx++} OFFSET $${idx}`;
-  params.push(Number(limit), Number(offset));
+  // Phân trang
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
 
-  const { rows } = await pool.query(sql, params);
-  return rows;
+  const { data, error } = await query.range(from, to);
+
+  if (error) throw error;
+  return data;
 }
 
 /** Lấy CTV theo id */
 async function getCTVById(ctvId) {
-  const sql = `SELECT ctv_id, user_id, ctv_code, ctv_name, diachi,
-    ngaythamgia, agent_id
-    FROM ${TABLE} WHERE ctv_id = ? LIMIT 1`;
-  const [rows] = await pool.query(sql, [ctvId]);
-  return rows[0] || null;
+  const { data, error } = await supabase
+    .from("ctv_view")
+    .select('ctv_id, user_id, ctv_code, ctv_name, diachi, ngaythamgia, agent_id')
+    .eq('ctv_id', ctvId)
+    .single();
+
+  if (error && error.code !== 'PGRST116') throw error;
+  return data || null;
 }
 
-/** Lấy CTV theo ctv_code */
+/** Lấy CTV theo code */
 async function getCTVByCode(code) {
-  const sql = `SELECT ctv_id FROM ${TABLE} WHERE ctv_code = ? LIMIT 1`;
-  const [rows] = await pool.query(sql, [code]);
-  return rows[0] || null;
+  const { data, error } = await supabase
+    .from("ctv_view")
+    .select('ctv_id')
+    .eq('ctv_code', code)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data || null;
 }
 
-/**
- * Tạo CTV mới.
- * Chỉ đưa vào các cột tồn tại trong payload (để tận dụng default DB).
- */
+/** Tạo CTV mới */
 async function createCTV(payload = {}) {
-  const columns = [];
-  const placeholders = [];
-  const params = [];
-
-  // required: ctv_name
   if (!payload.ctv_name) {
     throw new Error('ctv_name is required');
   }
 
-  // optional fields
-  const maybePushCTV = (col, val) => {
-    if (typeof val !== 'undefined') {
-      columns.push(col);
-      placeholders.push(`$${params.length + 1}`);
-      params.push(val);
-    }
-  };
+  const { data, error } = await supabase
+    .from("ctv_view")
+    .insert([payload])
+    .select()
+    .single();
 
-  maybePushCTV('user_id', payload.user_id); 
-  maybePushCTV('ctv_code', payload.ctv_code);
-  maybePushCTV('ctv_name', payload.ctv_name);
-  maybePushCTV('diachi', payload.diachi);
-  maybePushCTV('ngaythamgia', payload.ngaythamgia); // if omitted DB will set default
-  maybePushCTV('agent_id', payload.agent_id);
+  if (error) throw error;
+  return data;
+}
 
-  const sql = `
-    INSERT INTO ${TABLE} (${columns.join(', ')})
-    VALUES (${placeholders.join(', ')})
-    RETURNING *;
-  `;
-
-  const { rows } = await pool.query(sql, params);
-  return rows[0]; // ✅ Trả lại bản ghi vừa insert
-};
-
-/**
- * Cập nhật CTV theo ctv_id (partial update).
- * payload chứa các cột cần cập nhật.
- */
+/** Cập nhật CTV */
 async function updateCTV(ctvId, payload = {}) {
-  const sets = [];
-  const params = [];
-
-  const allowed = ['user_id', 'ctv_code', 'ctv_name', 'diachi',
-    'ngaythamgia', 'agent_id'];
+  const allowed = ['user_id', 'ctv_code', 'ctv_name', 'diachi', 'ngaythamgia', 'agent_id'];
+  const updates = {};
 
   for (const key of allowed) {
-    if (Object.prototype.hasOwnProperty.call(payload, key)) {
-      sets.push(`${key} = ?`);
-      params.push(payload[key]);
-    }
+    if (payload[key] !== undefined) updates[key] = payload[key];
   }
 
-  if (sets.length === 0) {
-    // nothing to update
-    return getCTVById(ctvId);
-  }
+  const { data, error } = await supabase
+    .from("ctv_view")
+    .update(updates)
+    .eq('ctv_id', ctvId)
+    .select()
+    .single();
 
-  params.push(ctvId);
-  const sql = `UPDATE ${TABLE} SET ${sets.join(', ')}
-    WHERE ctv_id = ?`;
-
-  const [result] = await pool.query(sql, params);
-  if (result.affectedRows === 0) {
-    return null;
-  }
-  return getCTVById(ctvId);
+  if (error) throw error;
+  return data;
 }
 
-/** Soft delete (set trangthai = false) */
+/** Soft delete (set trangthai = 0) */
 async function softDeleteCTV(ctvId) {
-  const sql = `UPDATE ${TABLE} SET trangthai = 0 WHERE ctv_id = ?`;
-  const [result] = await pool.query(sql, [ctvId]);
-  return result.affectedRows > 0;
-}
+  const { error } = await supabase
+    .from("ctv_view")
+    .update({ trangthai: 0 })
+    .eq('ctv_id', ctvId);
 
-// /** Generate unique ctv_code like CTV123456 (tries several times) */
-// async function generateUniqueCode(prefix = 'CTV', digits = 6) {
-//   for (let attempt = 0; attempt < 6; attempt++) {
-//     const rand = Math.floor(Math.random() * Math.pow(10, digits));
-//     const pad = String(rand).padStart(digits, '0');
-//     const code = `${prefix}${pad}`;
-//     const exists = await getByCode(code);
-//     if (!exists) return code;
-//   }
-//   throw new Error('Failed to generate unique ctv_code');
-// }
+  if (error) throw error;
+  return true;
+}
 
 module.exports = {
   getAllCTV,
@@ -169,5 +106,4 @@ module.exports = {
   createCTV,
   updateCTV,
   softDeleteCTV,
-  // generateUniqueCode,
 };

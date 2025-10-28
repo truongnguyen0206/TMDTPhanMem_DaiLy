@@ -1,88 +1,96 @@
 const dashboardService = require('../services/dashboard_service');
 
+/**
+ * Lấy dữ liệu tổng hợp cho dashboard cá nhân.
+ */
 const getPersonalDashboard = async (req, res) => {
     try {
-        const userId = req.user.id; // Lấy userId từ auth middleware
-        
-        if (!userId) {
-             return res.status(401).json({ error: 'Unauthorized: User ID not found' });
-        }
+        // Lấy userId từ middleware xác thực đã chạy trước đó
+        const userId = req.user.id; 
         
         const data = await dashboardService.getPersonalData(userId);
-        res.json({ success: true, data }); // Thêm response success
+        res.status(200).json({ success: true, data });
     } catch (err) {
         console.error('Error in getPersonalDashboard:', err.message);
-        res.status(500).json({ error: 'Failed to retrieve dashboard data', details: err.message });
+        res.status(500).json({ success: false, error: 'Failed to retrieve personal dashboard data' });
     }
 };
 
+/**
+ * Xử lý yêu cầu tải lên file Excel.
+ */
 const uploadExcel = async (req, res) => {
     try {
         const userId = req.user.id;
         
-        if (!req.file) {
-             // Lỗi này thường do Multer hoặc validateExcelUpload bắt
-             return res.status(400).json({ error: 'No file uploaded or file failed validation' });
-        }
-        
+        // Middleware (multer, validator) đã xử lý việc file có tồn tại hay không
+        // Nếu qua được middleware, req.file chắc chắn sẽ tồn tại
         await dashboardService.processExcelUpload(req.file.path, userId);
-        res.json({ success: true, message: 'Data uploaded and processed' });
+        res.status(200).json({ success: true, message: 'File uploaded and processed successfully' });
     } catch (err) {
         console.error('Error in uploadExcel:', err.message);
-        res.status(500).json({ error: 'Failed to process uploaded file', details: err.message });
+        res.status(500).json({ success: false, error: 'Failed to process uploaded file' });
     }
 };
 
+/**
+ * Lấy các số liệu thống kê tổng quan.
+ */
 const getStatistics = async (req, res) => {
     try {
         const userId = req.user.id;
-        const stats = await dashboardService.getStatistics(userId);
-        res.json({ success: true, stats });
+        const data = await dashboardService.getStatistics(userId);
+        res.status(200).json({ success: true, data });
     } catch (err) {
         console.error('Error in getStatistics:', err.message);
-        res.status(500).json({ error: 'Failed to retrieve statistics', details: err.message });
+        res.status(500).json({ success: false, error: 'Failed to retrieve statistics' });
     }
 };
 
+/**
+ * Lấy tóm tắt về các sản phẩm bán chạy.
+ */
 const getProductsSummary = async (req, res) => {
     try {
         const userId = req.user.id;
-        const summary = await dashboardService.getProductsSummary(userId);
-        res.json({ success: true, summary });
+        const data = await dashboardService.getProductsSummary(userId);
+        res.status(200).json({ success: true, data });
     } catch (err) {
         console.error('Error in getProductsSummary:', err.message);
-        res.status(500).json({ error: 'Failed to retrieve product summary', details: err.message });
+        res.status(500).json({ success: false, error: 'Failed to retrieve product summary' });
     }
 };
 
-const errorHandler = (err, req, res, next) => {
-    console.error(err.stack);
+/**
+ * Xử lý yêu cầu rút tiền.
+ */
+const requestWithdrawal = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { amount } = req.body;
 
-    if (err.type === 'FILE_UPLOAD_ERROR') {
-        return res.status(400).json({
-            error: 'File upload failed',
-            details: err.message
-        });
+        // Validate đầu vào cơ bản
+        if (!amount || typeof amount !== 'number' || amount <= 0) {
+            return res.status(400).json({ success: false, error: 'Invalid amount provided.' });
+        }
+
+        const data = await dashboardService.submitWithdrawalRequest(userId, amount);
+        res.status(201).json({ success: true, message: 'Withdrawal request submitted successfully.', data });
+    } catch (err) {
+        console.error('Error in requestWithdrawal:', err.message);
+        // Phân biệt lỗi nghiệp vụ (do người dùng) và lỗi hệ thống
+        if (err.message.includes('Số dư') || err.message.includes('tối thiểu')) {
+            return res.status(400).json({ success: false, error: err.message });
+        }
+        res.status(500).json({ success: false, error: 'Failed to submit withdrawal request' });
     }
-
-    if (err.type === 'VALIDATION_ERROR') {
-        return res.status(400).json({
-            error: 'Validation failed',
-            details: err.message
-        });
-    }
-
-    res.status(500).json({
-        error: 'Internal server error',
-        message: err.message
-    });
 };
 
-// Sửa lỗi CRITICAL: Hợp nhất tất cả các hàm controller vào một module.exports
+
 module.exports = {
     getPersonalDashboard,
     uploadExcel,
     getStatistics,
     getProductsSummary,
-    errorHandler
+    requestWithdrawal, // Đừng quên export hàm mới
 };

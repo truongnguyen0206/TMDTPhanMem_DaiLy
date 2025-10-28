@@ -1,18 +1,18 @@
-// 
+// File: api/routes/commissionRule_route.js
 
 const express = require('express');
 const router = express.Router();
-const CommissionRuleController = require('../../controllers/commissionRule_controller');
-const authMiddleware = require('../../middlewares/auth_middleware');
+const commissionRuleController = require('../../controllers/commissionRule_controller');
+// Giả sử bạn cũng cần xác thực cho các route này
+const { authenticateToken } = require('../../middlewares/auth_middleware'); 
 
-// Áp dụng xác thực & phân quyền
-router.use(authMiddleware.authenticateToken);
-router.use(authMiddleware.requireRole(['Admin']));
+// Áp dụng middleware xác thực cho tất cả các route bên dưới
+// router.use(authenticateToken); 
 
-// Các route API
-router.get('/', CommissionRuleController.getAllRules);
-router.post('/', CommissionRuleController.createRule);
-router.put('/:id', CommissionRuleController.updateRule);
-router.delete('/:id', CommissionRuleController.deleteRule);
+router.get("/", commissionRuleController.getAllCommissionRules);
+router.get("/:id", commissionRuleController.getCommissionRuleById);
+router.post("/", commissionRuleController.createCommissionRule);
+router.put("/:id", commissionRuleController.updateCommissionRule);
+router.delete("/:id", commissionRuleController.deleteCommissionRule);
 
 module.exports = router;

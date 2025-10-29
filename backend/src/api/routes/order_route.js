@@ -9,7 +9,7 @@ router.post("/createOrder", orderController.create);
 router.put("/updateOrder/:id", orderController.update);
 router.delete("/remove/:id", orderController.remove);
 
-router.get('/with-origin', orderController.listWithOrigin);      // GET /api/order/with-origin
+router.get('/with-origin', orderController.list);      // GET /api/order/with-origin
 router.get('/origin/:code', orderController.getOrigin);            // GET /api/order/123/origin
 
 router.get('/export/excel', orderController.exportOrdersExcel);

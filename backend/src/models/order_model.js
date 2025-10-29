@@ -36,8 +36,6 @@ const create = async (order) => {
       created_by: order.created_by || null,
       customer_id: order.customer_id || null,
       order_source: order.order_source || "system",
-      agent_id: order.agent_id || null,
-      collaborator_id: order.collaborator_id || null,
       status: order.status ?? 1
     }])
     .select("order_id")
@@ -136,72 +134,66 @@ const getOrderById = async (order_id) => {
 };
 
 
-// Lấy list orders kèm items (có filter agent_id, from, to, limit, offset)
-const listOrders = async ({ limit = 50, offset = 0, agent_id, from, to } = {}) => {
-  const params = [];
-  const where = [];
+/**
+ * 📋 Lấy danh sách chi tiết đơn hàng từ VIEW `orders.v_order_detail`
+ * Có thể lọc theo: user_id (người giới thiệu), từ ngày - đến ngày, limit, offset
+ */
+const listOrders = async ({ limit = 50, offset = 0, user_id, from, to } = {}) => {
+  let query = supabase
+    .from("orders.v_order_detail")
+    .select("*")
+    .order("tao_vao_luc", { ascending: false })
+    .range(offset, offset + limit - 1);
 
-  if (agent_id) {
-    params.push(agent_id);
-    where.push(`o.agent_id = $${params.length}`);
-  }
-  if (from) {
-    params.push(from);
-    where.push(`o.order_date >= $${params.length}`);
-  }
-  if (to) {
-    params.push(to);
-    where.push(`o.order_date <= $${params.length}`);
-  }
+  if (user_id) query = query.eq("nguoi_gioi_thieu", user_id);
+  if (from) query = query.gte("tao_vao_luc", from);
+  if (to) query = query.lte("tao_vao_luc", to);
 
-  let q = `
-    SELECT o.*,
-           COALESCE(json_agg(json_build_object(
-             'code', oi.product_code,
-             'product_id', oi.product_id,
-             'product_name', oi.product_name,
-             'quantity', oi.quantity,
-             'unit_price', oi.unit_price
-           )) FILTER (WHERE oi.id IS NOT NULL), '[]') AS items
-    FROM orders_view o
-    LEFT JOIN orders.order_product oi ON oi.product_code = o.order_code`;
-
-  if (where.length) q += ` WHERE ${where.join(" AND ")}`;
-  q += ` GROUP BY o.order_id ORDER BY o.order_date DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
-
-  params.push(limit, offset);
-  const res = await pool.query(q, params);
-  return res.rows;
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
 };
 
+/**
+ * 🔍 Lấy chi tiết 1 đơn hàng theo mã (order_code)
+ */
+const getOrderDetail = async (order_code) => {
+  const { data, error } = await supabase
+    .from("orders.v_order_detail")
+    .select("*")
+    .eq("ma_don_hang", order_code)
+    .single();
 
-const getOrdersWithOrigin = async ({ limit = 50, offset = 0, agent_id, from, to } = {}) => {
-  let q = `SELECT * FROM orders.order_origin_view WHERE 1=1`;
-  const params = [];
-  if (agent_id) {
-    params.push(agent_id);
-    q += ` AND agent_id = $${params.length}`;
-  }
-  if (from) {
-    params.push(from);
-    q += ` AND order_date >= $${params.length}`;
-  }
-  if (to) {
-    params.push(to);
-    q += ` AND order_date <= $${params.length}`;
-  }
-  params.push(limit);
-  params.push(offset);
-  q += ` ORDER BY order_date DESC LIMIT $${params.length-1} OFFSET $${params.length}`;
-  const res = await pool.query(q, params);
-  return res.rows;
+  if (error) throw error;
+  return data;
 };
 
-const getOrderOrigin = async (order_code) => {
-  const res = await pool.query(
-    `SELECT order_code, order_source, origin_label, origin_type, origin_name, agent_id, collaborator_id, customer_id, customer_name, agent_name, ctv_name 
-     FROM orders.order_origin_view WHERE order_code = $1`, [order_code]);
-  return res.rows[0];
+/**
+ * 🧭 Lấy log thay đổi nguồn gốc của đơn hàng (từ order_origin_log)
+ */
+const getOrderOriginLogs = async (order_id) => {
+  const { data, error } = await supabase
+    .from("orders.order_origin_log")
+    .select(
+      `
+      log_id,
+      order_id,
+      old_source,
+      new_source,
+      old_agent,
+      new_agent,
+      old_collaborator,
+      new_collaborator,
+      changed_reason,
+      changed_by,
+      changed_at
+      `
+    )
+    .eq("order_id", order_id)
+    .order("changed_at", { ascending: false });
+
+  if (error) throw error;
+  return data || [];
 };
 
 module.exports = {
@@ -213,6 +205,6 @@ module.exports = {
   createOrderWithItems,
   getOrderById,
   listOrders,
-  getOrdersWithOrigin,
-  getOrderOrigin
+  getOrderDetail,
+  getOrderOriginLogs
 };

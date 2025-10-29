@@ -1,6 +1,6 @@
 const supabase = require("../config/supabaseClient");
 
-// const TABLE = "member.agent";
+// const TABLE = "m";
 
 /**
  * 🧩 Lấy toàn bộ danh sách đại lý
@@ -13,6 +13,20 @@ const getAllAgents = async () => {
 
   if (error) throw error;
   return data;
+};
+
+
+// Lấy danh sách CTV của đại lý hiện tại
+const getCTVByAgent = async (agent_id) => {
+  // Lấy danh sách CTV có agent_id trùng
+  const { data: ctvList, error } = await supabase
+    .from("ctv_view")
+    .select("*")
+    .eq("agent_id", agent_id);
+
+  if (error) throw error;
+
+  return ctvList;
 };
 
 /**
@@ -125,6 +139,7 @@ const updateManyAgents = async (agents = []) => {
 
 module.exports = {
   getAllAgents,
+  getCTVByAgent,
   listAgents,
   createAgent,
   getAgentById,

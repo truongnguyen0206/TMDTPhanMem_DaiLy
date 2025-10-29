@@ -206,7 +206,7 @@ const loginWithGoogle = async (req, res) => {
         email,
         password: null,
         phone: null,
-        role_id: 2,
+        role_id: 4,
       });
     }
 

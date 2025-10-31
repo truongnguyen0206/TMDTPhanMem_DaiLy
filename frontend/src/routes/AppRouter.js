@@ -18,6 +18,7 @@ import NPPUpdateAgentPage from '../pages/NPP/UpdateAgentPage';
 import NPPBalancePage from '../pages/NPP/BalancePage';
 import NPPTransactionDetailPage from '../pages/NPP/TransactionDetailPage';
 import NPPWithdrawalRequestPage from '../pages/NPP/WithdrawalRequestPage';
+import NPPProfilePage from '../pages/NPP/ProfilePage';
 
 //DLpages
 import DLDashboardPage from '../pages/DL/DashboardPage';
@@ -32,12 +33,15 @@ import DLProductCommissionFormPage from '../pages/DL/ProductCommissionFormPage';
 import DLBalancePage from '../pages/DL/BalancePage';
 import DLWithdrawalRequestPage from '../pages/DL/WithdrawalRequestPage';
 import DLTransactionDetailPage from '../pages/DL/TransactionDetailPage';
+import DLProfilePage from '../pages/DL/ProfilePage';
 
 // CTV Pages
 import CtvDashboardPage from '../pages/CTV/DashboardPage';
 import ProductPage from '../pages/CTV/ProductPage';
 import SalesPage from '../pages/CTV/SalesPage';
 import CtvCommissionPage from '../pages/CTV/CommissionPage';
+import CtvProfilePage from '../pages/CTV/ProfilePage';
+import CtvRequestChangeInfoPage from '../pages/CTV/RequestChangeInfoPage';
 
 // Admin Pages
 import AdminDashboardPage from '../pages/Admin/DashboardPage';
@@ -46,6 +50,7 @@ import AddAccountPage from '../pages/Admin/AddAccountPage';
 import AdminCommissionPage from '../pages/Admin/CommissionPage';
 import CommissionFormPage from '../pages/Admin/CommissionFormPage';
 import OrdersPage from '../pages/Admin/OrdersPage';
+import AdminProfilePage from '../pages/Admin/ProfilePage';
 
 import ProtectedRoute from './ProtectedRoute';
 
@@ -73,6 +78,7 @@ const AppRouter = () => {
               <Route path="balance" element={<NPPBalancePage />} />
               <Route path="withdrawal" element={<NPPWithdrawalRequestPage />} />
               <Route path="transaction/:id" element={<NPPTransactionDetailPage />} />
+              <Route path="profile" element={<NPPProfilePage />} />
             </Route>
             <Route path="/dl" element={<Layout />}>
               <Route index element={<Navigate to="dashboard" replace />} /> // Chuyển index về dashboard
@@ -88,6 +94,7 @@ const AppRouter = () => {
               <Route path="balance" element={<DLBalancePage />} />
               <Route path="withdrawal" element={<DLWithdrawalRequestPage />} />
               <Route path="balance/transaction/:id" element={<DLTransactionDetailPage />} />
+              <Route path="profile" element={<DLProfilePage />} />
             </Route>
 
              {/* --- Cấu hình cho CTV --- */}
@@ -96,6 +103,8 @@ const AppRouter = () => {
               <Route path="products" element={<ProductPage />} />
               <Route path="sales" element={<SalesPage />} />
               <Route path="commission" element={<CtvCommissionPage />} />
+              <Route path="profile" element={<CtvProfilePage />} /> {/* <--- THÊM ROUTE NÀY */}
+              <Route path="request-change-info" element={<CtvRequestChangeInfoPage />} /> {/* <--- THÊM ROUTE NÀY */}
             </Route>
 
             {/* --- Cấu hình cho ADMIN --- */}
@@ -107,6 +116,7 @@ const AppRouter = () => {
                <Route path="commission/new" element={<CommissionFormPage mode="new" />} />
                <Route path="commission/edit/:id" element={<CommissionFormPage mode="edit" />} />
                <Route path="orders" element={<OrdersPage />} />
+               <Route path="profile" element={<AdminProfilePage />} />
             </Route>
             
         </Route>

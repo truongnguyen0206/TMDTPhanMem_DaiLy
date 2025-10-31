@@ -62,11 +62,11 @@ const Sidebar = ({ isOpen }) => {
     let menuItems = [];
     if (user?.role === 'Admin') {
         menuItems = adminMenuItems;
-    } else if (user?.role === 'NPP') { // Thêm điều kiện cho NPP
+    } else if (user?.role === 'Nhà phân phối') { // Thêm điều kiện cho NPP
         menuItems = nppMenuItems;
-    } else if (user?.role === 'CTV') {
+    } else if (user?.role === 'Cộng tác viên') {
         menuItems = ctvMenuItems;
-    } else if (user?.role === 'Agent') { // Thay 'CTV' bằng vai trò CTV của bạn
+    } else if (user?.role === 'Đại lý') { // Thay 'CTV' bằng vai trò CTV của bạn
         menuItems = dlMenuItems;
     }
 

@@ -1,39 +1,52 @@
-const pool = require("../config/database_config");
+// const pool = require("../config/database_config");
+const supabase = require("../config/supabaseClient");
 
 // Lấy tất cả orders (không join items)
 const getAll = async () => {
-  const result = await pool.query("SELECT * FROM orders.orders ORDER BY order_date DESC");
-  return result.rows;
+  const { data, error } = await supabase
+    .from("orders_view")
+    .select("*")
+    .order("order_date", { ascending: false });
+
+  if (error) throw error;
+  return data;
 };
+
 
 // Lấy 1 order theo id (không join items)
 const getById = async (order_id) => {
-  const result = await pool.query("SELECT * FROM orders.orders WHERE order_id = $1", [order_id]);
-  return result.rows[0];
+  const { data, error } = await supabase
+    .from("orders_view")
+    .select("*")
+    .eq("order_id", order_id)
+    .single();
+
+  if (error) throw error;
+  return data;
 };
 
+
 // Tạo order (chỉ tạo đơn, không tạo items)
-const create = async ({ order_date, total_amount, created_by, customer_id, order_source, agent_id, collaborator_id, status }) => {
-  const result = await pool.query(
-    `INSERT INTO orders.orders (order_date, total_amount, created_by, customer_id, order_source, agent_id, collaborator_id, status)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING order_id`,
-    [
-      order_date || new Date(),
-      total_amount || 0,
-      created_by || null,
-      customer_id || null,
-      order_source,
-      agent_id || null,
-      collaborator_id || null,
-      status ?? 1,
-    ]
-  );
-  return result.rows[0].order_id;
+const create = async (order) => {
+  const { data, error } = await supabase
+    .from("orders_view")
+    .insert([{
+      order_date: order.order_date || new Date(),
+      total_amount: order.total_amount || 0,
+      created_by: order.created_by || null,
+      customer_id: order.customer_id || null,
+      order_source: order.order_source || "system",
+      status: order.status ?? 1
+    }])
+    .select("order_id")
+    .single();
+
+  if (error) throw error;
+  return data.order_id;
 };
 
 // Update order
 const update = async (order_id, updates) => {
-  // Chỉ cho phép update những cột hợp lệ
   const allowedFields = [
     "customer_name",
     "customer_phone",
@@ -45,204 +58,142 @@ const update = async (order_id, updates) => {
     "created_by"
   ];
 
-  const keys = Object.keys(updates).filter((k) =>
-    allowedFields.includes(k)
-  );
+  const validUpdates = {};
+  for (const key of allowedFields) {
+    if (updates[key] !== undefined) validUpdates[key] = updates[key];
+  }
 
-  if (keys.length === 0) return null;
+  if (Object.keys(validUpdates).length === 0) return null;
 
-  const setClauses = keys.map((k, i) => `${k} = $${i + 1}`).join(", ");
-  const values = keys.map((k) => updates[k]);
-  values.push(order_id);
+  const { data, error } = await supabase
+    .from("orders_view")
+    .update(validUpdates)
+    .eq("order_id", order_id)
+    .select()
+    .single();
 
-  const query = `
-    UPDATE orders.orders
-    SET ${setClauses}
-    WHERE order_id = $${values.length}
-    RETURNING *;
-  `;
-
-  const result = await pool.query(query, values);
-
-  return result.rowCount ? result.rows[0] : null;
+  if (error) throw error;
+  return data;
 };
+
 
 
 // Xóa order
 const remove = async (order_id) => {
-  const result = await pool.query("DELETE FROM orders.orders WHERE order_id = $1", [order_id]);
-  return result.rowCount;
+  const { error } = await supabase
+    .from("orders_view")
+    .delete()
+    .eq("order_id", order_id);
+
+  if (error) throw error;
+  return true;
 };
 
 // Tạo order kèm items (transaction)
 const createOrderWithItems = async ({ order, items }) => {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
+  const { data, error } = await supabase.rpc("fn_create_order_with_items", {
+    order_data: order,
+    items: items,
+  });
 
-    // Insert order
-    const insertOrderText = `
-      INSERT INTO orders.orders (
-        total_amount, created_by, customer_name, customer_phone,
-        order_source, agent_id, collaborator_id, status
-      )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-      RETURNING *`;
-    const orderValues = [
-      order.total_amount || 0,
-      order.created_by || null,
-      order.customer_name || null,
-      order.customer_phone || null,
-      order.order_source || 'system',
-      order.agent_id || null,
-      order.collaborator_id || null,
-      order.status || 1,
-    ];
-    const resOrder = await client.query(insertOrderText, orderValues);
-    const createdOrder = resOrder.rows[0];
-
-    // Insert items
-    const insertItemText = `
-      INSERT INTO orders.order_items (order_id, product_id, product_name, quantity, unit_price)
-      VALUES ($1,$2,$3,$4,$5) RETURNING *`;
-
-    for (const it of items) {
-      await client.query(insertItemText, [
-        createdOrder.order_id,
-        it.product_id,
-        it.product_name || null,
-        it.quantity || 1,
-        it.unit_price || 0,
-      ]);
-    }
-
-    // Recalculate total
-    const totRes = await client.query(
-      `SELECT COALESCE(SUM(quantity * unit_price),0) AS total 
-       FROM orders.order_items WHERE order_id = $1`,
-      [createdOrder.order_id]
-    );
-    const total = totRes.rows[0].total || 0;
-
-    await client.query(
-      `UPDATE orders.orders SET total_amount = $1 WHERE order_id = $2`,
-      [total, createdOrder.order_id]
-    );
-
-    await client.query("COMMIT");
-
-    // Trả về order kèm items
-    const final = await client.query(
-      `SELECT o.*, 
-              COALESCE(json_agg(json_build_object(
-                'order_item_id', oi.order_item_id,
-                'product_id', oi.product_id,
-                'product_name', oi.product_name,
-                'quantity', oi.quantity,
-                'unit_price', oi.unit_price
-              )) FILTER (WHERE oi.order_item_id IS NOT NULL), '[]') AS items
-       FROM orders.orders o
-       LEFT JOIN orders.order_items oi ON oi.order_id = o.order_id
-       WHERE o.order_id = $1
-       GROUP BY o.order_id`,
-      [createdOrder.order_id]
-    );
-
-    return final.rows[0];
-  } catch (err) {
-    await client.query("ROLLBACK");
-    throw err;
-  } finally {
-    client.release();
+  if (error) {
+    console.error("❌ Error creating order:", error);
+    throw error;
   }
+
+  return data;
 };
 
 // Lấy order kèm items
 const getOrderById = async (order_id) => {
-  const res = await pool.query(
-    `SELECT o.*,
-            COALESCE(json_agg(json_build_object(
-              'id', oi.id,
-              'product_id', oi.product_id,
-              'product_name', oi.product_name,
-              'quantity', oi.quantity,
-              'unit_price', oi.unit_price
-            )) FILTER (WHERE oi.id IS NOT NULL), '[]') AS products
-     FROM orders.orders o
-     LEFT JOIN orders.order_product oi ON oi.order_id = o.order_id
-     WHERE o.order_id = $1
-     GROUP BY o.order_id`,
-    [order_id]
-  );
-  return res.rows[0];
-};
+  const { data, error } = await supabase
+    .from("orders_view") // 👈 nếu bạn tạo view `public.orders` trỏ tới `orders_view`
+    .select(`
+      *,
+      order_product:order_product (
+        id,
+        product_id,
+        product_name,
+        quantity,
+        unit_price
+      )
+    `)
+    .eq("order_id", order_id)
+    .maybeSingle(); // Lấy đúng 1 bản ghi hoặc null
 
-// Lấy list orders kèm items (có filter agent_id, from, to, limit, offset)
-const listOrders = async ({ limit = 50, offset = 0, agent_id, from, to } = {}) => {
-  const params = [];
-  const where = [];
-
-  if (agent_id) {
-    params.push(agent_id);
-    where.push(`o.agent_id = $${params.length}`);
-  }
-  if (from) {
-    params.push(from);
-    where.push(`o.order_date >= $${params.length}`);
-  }
-  if (to) {
-    params.push(to);
-    where.push(`o.order_date <= $${params.length}`);
+  if (error) {
+    console.error("❌ Error fetching order:", error);
+    throw error;
   }
 
-  let q = `
-    SELECT o.*,
-           COALESCE(json_agg(json_build_object(
-             'code', oi.product_code,
-             'product_id', oi.product_id,
-             'product_name', oi.product_name,
-             'quantity', oi.quantity,
-             'unit_price', oi.unit_price
-           )) FILTER (WHERE oi.id IS NOT NULL), '[]') AS items
-    FROM orders.orders o
-    LEFT JOIN orders.order_items oi ON oi.product_code = o.order_code`;
-
-  if (where.length) q += ` WHERE ${where.join(" AND ")}`;
-  q += ` GROUP BY o.order_id ORDER BY o.order_date DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
-
-  params.push(limit, offset);
-  const res = await pool.query(q, params);
-  return res.rows;
+  // Đổi tên trường cho khớp với format cũ
+  return {
+    ...data,
+    products: data?.order_product || [],
+  };
 };
 
 
-const getOrdersWithOrigin = async ({ limit = 50, offset = 0, agent_id, from, to } = {}) => {
-  let q = `SELECT * FROM orders.order_origin_view WHERE 1=1`;
-  const params = [];
-  if (agent_id) {
-    params.push(agent_id);
-    q += ` AND agent_id = $${params.length}`;
-  }
-  if (from) {
-    params.push(from);
-    q += ` AND order_date >= $${params.length}`;
-  }
-  if (to) {
-    params.push(to);
-    q += ` AND order_date <= $${params.length}`;
-  }
-  params.push(limit);
-  params.push(offset);
-  q += ` ORDER BY order_date DESC LIMIT $${params.length-1} OFFSET $${params.length}`;
-  const res = await pool.query(q, params);
-  return res.rows;
+/**
+ * 📋 Lấy danh sách chi tiết đơn hàng từ VIEW `orders.v_order_detail`
+ * Có thể lọc theo: user_id (người giới thiệu), từ ngày - đến ngày, limit, offset
+ */
+const listOrders = async ({ limit = 50, offset = 0, user_id, from, to } = {}) => {
+  let query = supabase
+    .from("orders.v_order_detail")
+    .select("*")
+    .order("tao_vao_luc", { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (user_id) query = query.eq("nguoi_gioi_thieu", user_id);
+  if (from) query = query.gte("tao_vao_luc", from);
+  if (to) query = query.lte("tao_vao_luc", to);
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
 };
 
-const getOrderOrigin = async (order_code) => {
-  const res = await pool.query(
-    `SELECT order_code, order_source, origin_label, origin_type, origin_name, agent_id, collaborator_id, customer_id, customer_name, agent_name, ctv_name 
-     FROM orders.order_origin_view WHERE order_code = $1`, [order_code]);
-  return res.rows[0];
+/**
+ * 🔍 Lấy chi tiết 1 đơn hàng theo mã (order_code)
+ */
+const getOrderDetail = async (order_code) => {
+  const { data, error } = await supabase
+    .from("orders.v_order_detail")
+    .select("*")
+    .eq("ma_don_hang", order_code)
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+/**
+ * 🧭 Lấy log thay đổi nguồn gốc của đơn hàng (từ order_origin_log)
+ */
+const getOrderOriginLogs = async (order_id) => {
+  const { data, error } = await supabase
+    .from("orders.order_origin_log")
+    .select(
+      `
+      log_id,
+      order_id,
+      old_source,
+      new_source,
+      old_agent,
+      new_agent,
+      old_collaborator,
+      new_collaborator,
+      changed_reason,
+      changed_by,
+      changed_at
+      `
+    )
+    .eq("order_id", order_id)
+    .order("changed_at", { ascending: false });
+
+  if (error) throw error;
+  return data || [];
 };
 
 module.exports = {
@@ -254,6 +205,6 @@ module.exports = {
   createOrderWithItems,
   getOrderById,
   listOrders,
-  getOrdersWithOrigin,
-  getOrderOrigin
+  getOrderDetail,
+  getOrderOriginLogs
 };

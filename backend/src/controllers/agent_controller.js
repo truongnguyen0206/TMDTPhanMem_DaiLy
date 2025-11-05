@@ -1,4 +1,5 @@
 const Agent = require('../models/agent_model');
+const { getCTVByAgent } = require("../models/agent_model");
 
 // 🟩 Tạo agent mới
 const createAgent = async (req, res) => {
@@ -33,6 +34,21 @@ const getAgent = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+const getCTVListByAgent = async (req, res) => {
+  try {
+    const agentId = req.params.agentId; // lấy từ URL
+    const ctvList = await getCTVByAgent(agentId);
+
+    res.status(200).json({
+      message: "Lấy danh sách CTV thành công",
+      ctvList
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 
 // 🟩 Cập nhật agent
 const updateAgent = async (req, res) => {
@@ -120,9 +136,11 @@ const updateManyAgents = async (req, res) => {
   }
 };
 
+
 module.exports = {
   createAgent,
   getAgent,
+  getCTVListByAgent,
   updateAgent,
   deleteAgent,
   listAgents,

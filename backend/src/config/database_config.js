@@ -1,14 +1,12 @@
-const { Pool } = require('pg');
-// const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
-
+const { Pool } = require('pg');
 
 const pool = new Pool({
-  user: 'postgres',
-  host: 'localhost',
-  database: 'dailyctv',
-  password: 'an123',
-  port: 5432,
+  user: process.env.POSTGRES_USER,
+  host: process.env.POSTGRES_HOST,
+  database: process.env.POSTGRES_DB,
+  password: process.env.POSTGRES_PASSWORD,
+  port: process.env.POSTGRES_PORT,
 });
 
 pool.connect()
@@ -16,12 +14,3 @@ pool.connect()
   .catch(err => console.error("❌ Lỗi kết nối:", err));
 
 module.exports = pool;
-
-
-
-// const supabase = createClient(
-//   process.env.SUPABASE_URL,
-//   process.env.SUPABASE_SERVICE_ROLE_KEY // dùng service key để có quyền admin
-// );
-
-// module.exports = supabase;

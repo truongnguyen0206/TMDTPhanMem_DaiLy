@@ -1,4 +1,5 @@
-const pool = require("../config/database_config");
+// const pool = require("../config/database_config");
+const pool = require("../config/supabaseClient"); // Đã import 'pool'
 
 class CommissionRule {
   // Lấy tất cả quy tắc hoa hồng
@@ -14,7 +15,8 @@ class CommissionRule {
         LEFT JOIN product_categories pc ON cr.product_category = pc.category_name
         ORDER BY cr.role_id, cr.min_sales
       `;
-      const result = await db.query(query);
+      // SỬA: db.query -> pool.query
+      const result = await pool.query(query);
       return result.rows;
     } catch (error) {
       throw error;
@@ -34,7 +36,8 @@ class CommissionRule {
         LEFT JOIN product_categories pc ON cr.product_category = pc.category_name
         WHERE cr.rule_id = $1
       `;
-      const result = await db.query(query, [ruleId]);
+      // SỬA: db.query -> pool.query
+      const result = await pool.query(query, [ruleId]);
       return result.rows[0];
     } catch (error) {
       throw error;
@@ -55,7 +58,8 @@ class CommissionRule {
         WHERE cr.role_id = $1
         ORDER BY cr.min_sales
       `;
-      const result = await db.query(query, [roleId]);
+      // SỬA: db.query -> pool.query
+      const result = await pool.query(query, [roleId]);
       return result.rows;
     } catch (error) {
       throw error;
@@ -94,7 +98,8 @@ class CommissionRule {
         description
       ];
 
-      const result = await db.query(query, values);
+      // SỬA: db.query -> pool.query
+      const result = await pool.query(query, values);
       return result.rows[0];
     } catch (error) {
       throw error;
@@ -142,7 +147,8 @@ class CommissionRule {
         ruleId
       ];
 
-      const result = await db.query(query, values);
+      // SỬA: db.query -> pool.query
+      const result = await pool.query(query, values);
       return result.rows[0];
     } catch (error) {
       throw error;
@@ -153,7 +159,8 @@ class CommissionRule {
   static async delete(ruleId) {
     try {
       const query = 'DELETE FROM commission_rules WHERE rule_id = $1 RETURNING *';
-      const result = await db.query(query, [ruleId]);
+      // SỬA: db.query -> pool.query
+      const result = await pool.query(query, [ruleId]);
       return result.rows[0];
     } catch (error) {
       throw error;
@@ -164,7 +171,8 @@ class CommissionRule {
   static async getRoles() {
     try {
       const query = 'SELECT * FROM roles ORDER BY role_name';
-      const result = await db.query(query);
+      // SỬA: db.query -> pool.query
+      const result = await pool.query(query);
       return result.rows;
     } catch (error) {
       throw error;
@@ -175,7 +183,8 @@ class CommissionRule {
   static async getProductCategories() {
     try {
       const query = 'SELECT * FROM product_categories ORDER BY category_name';
-      const result = await db.query(query);
+      // SỬA: db.query -> pool.query
+      const result = await pool.query(query);
       return result.rows;
     } catch (error) {
       throw error;
@@ -224,7 +233,8 @@ class CommissionRule {
         values.push(excludeRuleId);
       }
 
-      const result = await db.query(query, values);
+      // SỬA: db.query -> pool.query
+      const result = await pool.query(query, values);
       return result.rows.length > 0;
     } catch (error) {
       throw error;

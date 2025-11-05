@@ -1,36 +1,41 @@
-const pool = require("../config/database_config");
+const supabase = require("../config/supabaseClient");
 const ExcelJS = require("exceljs");
 const PDF = require("pdfmake");
 const path = require("path");
 
-
-
-// Lấy dữ liệu orders với filter
+// ===============================
+// LẤY DỮ LIỆU VỚI FILTER
+// ===============================
 const getFilteredOrders = async (from, to) => {
-  let query = "SELECT * FROM orders.orders";
-  const params = [];
+  let query = supabase.from("orders.orders").select("*");
 
   if (from && to) {
-    query += " WHERE order_date BETWEEN $1 AND $2";
-    params.push(from, to);
+    query = query.gte("order_date", from).lte("order_date", to);
   } else if (from) {
-    query += " WHERE order_date >= $1";
-    params.push(from);
+    query = query.gte("order_date", from);
   } else if (to) {
-    query += " WHERE order_date <= $1";
-    params.push(to);
+    query = query.lte("order_date", to);
   }
 
-  query += " ORDER BY order_date DESC";
+  query = query.order("order_date", { ascending: false });
 
-  const result = await pool.query(query, params);
-  return result.rows;
+  const { data, error } = await query;
+
+  if (error) throw error;
+  return data;
 };
 
-// Xuất Excel
+// ===============================
+// XUẤT EXCEL
+// ===============================
 const exportOrdersExcel = async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM orders.orders ORDER BY order_date DESC");
+    const { data, error } = await supabase
+      .from("orders_view")
+      .select("*")
+      .order("order_date", { ascending: false });
+
+    if (error) throw error;
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Orders");
@@ -42,12 +47,14 @@ const exportOrdersExcel = async (req, res) => {
     worksheet.getCell("A1").alignment = { horizontal: "center" };
 
     worksheet.mergeCells("A2", "F2");
-    worksheet.getCell("A2").value = "Địa chỉ: Số 7, đường 7C, Khu đô thị An Phú An Khánh, Phường An Phú, TP Thủ Đức, TP HCM.";
+    worksheet.getCell("A2").value =
+      "Địa chỉ: Số 7, đường 7C, Khu đô thị An Phú An Khánh, Phường An Phú, TP Thủ Đức, TP HCM.";
     worksheet.getCell("A2").font = { size: 10 };
     worksheet.getCell("A2").alignment = { horizontal: "center" };
 
     worksheet.mergeCells("A3", "F3");
-    worksheet.getCell("A3").value = "SĐT: 0123 456 789 | Website: www.abc.com | Email: contact@abc.com";
+    worksheet.getCell("A3").value =
+      "SĐT: 0123 456 789 | Website: www.abc.com | Email: contact@abc.com";
     worksheet.getCell("A3").font = { size: 10 };
     worksheet.getCell("A3").alignment = { horizontal: "center" };
 
@@ -73,51 +80,61 @@ const exportOrdersExcel = async (req, res) => {
     ];
 
     // ==== DỮ LIỆU ====
-    result.rows.forEach(order => {
+    data.forEach((order) => {
       worksheet.addRow({
         order_code: order.order_code,
-        order_date: order.order_date ? new Date(order.order_date).toLocaleDateString("vi-VN") : "-",
+        order_date: order.order_date
+          ? new Date(order.order_date).toLocaleDateString("vi-VN")
+          : "-",
         customer_name: order.customer_name || "-",
         product_name: order.product_name || "-",
-        order_source: order.order_source,
+        order_source: order.order_source || "-",
         total_amount: order.total_amount || 0,
         status: order.status || "-",
       });
     });
 
-    // ==== ĐỊNH DẠNG ====
-    worksheet.getColumn("total_amount").numFmt = '#,##0 "₫"'; // tiền Việt
+    worksheet.getColumn("total_amount").numFmt = '#,##0 "₫"';
     worksheet.getColumn("order_date").alignment = { horizontal: "center" };
     worksheet.getColumn("status").alignment = { horizontal: "center" };
 
-    // ==== NGÀY XUẤT ====
     worksheet.addRow([]);
-    const exportDateRow = worksheet.addRow([`Ngày xuất: ${new Date().toLocaleString("vi-VN")}`]);
+    const exportDateRow = worksheet.addRow([
+      `Ngày xuất: ${new Date().toLocaleString("vi-VN")}`,
+    ]);
     worksheet.mergeCells(`A${exportDateRow.number}:F${exportDateRow.number}`);
     exportDateRow.getCell(1).alignment = { horizontal: "right" };
     exportDateRow.getCell(1).font = { size: 10 };
 
-    // ==== XUẤT FILE ====
-    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
     res.setHeader("Content-Disposition", "attachment; filename=orders.xlsx");
 
     await workbook.xlsx.write(res);
     res.end();
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Lỗi xuất Excel" });
+    res.status(500).json({ message: "Lỗi xuất Excel", error: err.message });
   }
 };
 
-// Xuất PDF
+// ===============================
+// XUẤT PDF
+// ===============================
 const exportOrdersPDF = async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM orders.orders ORDER BY order_date DESC");
+    const { data, error } = await supabase// 👈 chỉ rõ schema
+    .from("orders_view")
+    .select("*")
+    .order("order_date", { ascending: false });
+
+    if (error) throw error;
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", "attachment; filename=orders.pdf");
 
-    // === FONT (Times New Roman trong thư mục dự án) ===
     const fonts = {
       TimesNewRoman: {
         normal: path.join(__dirname, "../../public/fonts/times.ttf"),
@@ -129,22 +146,19 @@ const exportOrdersPDF = async (req, res) => {
 
     const printer = new PDF(fonts);
 
-    // === TẠO NỘI DUNG PDF ===
     const docDefinition = {
       pageMargins: [40, 60, 40, 60],
-      defaultStyle: {
-        font: "TimesNewRoman", // dùng font tùy chỉnh
-      },
+      defaultStyle: { font: "TimesNewRoman" },
       content: [
         {
           columns: [
-            {
-              image: path.join(__dirname, "../../public/logo.png"),
-              width: 80,
-            },
+            { image: path.join(__dirname, "../../public/logo.png"), width: 80 },
             [
               { text: "CÔNG TY CỔ PHẦN AMIT GROUP", style: "headerRight" },
-              { text: "Địa chỉ: Số 7, đường 7C, Khu đô thị An Phú An Khánh, Phường An Phú, TP Thủ Đức, TP HCM.", style: "subTextRight" },
+              {
+                text: "Địa chỉ: Số 7, đường 7C, Khu đô thị An Phú An Khánh, Phường An Phú, TP Thủ Đức, TP HCM.",
+                style: "subTextRight",
+              },
               { text: "SĐT: 0123 456 789", style: "subTextRight" },
               { text: "Website: www.abc.com", style: "subTextRight" },
               { text: "Email: contact@abc.com", style: "subTextRight" },
@@ -167,12 +181,12 @@ const exportOrdersPDF = async (req, res) => {
                 { text: "Tổng tiền", bold: true },
                 { text: "Trạng thái", bold: true },
               ],
-              ...result.rows.map(order => [
+              ...data.map((order) => [
                 order.order_code,
                 new Date(order.order_date).toLocaleDateString("vi-VN"),
                 order.customer_name || "-",
-                order.order_source,
-                order.product_name,
+                order.order_source || "-",
+                order.product_name || "-",
                 (order.total_amount || 0).toLocaleString("vi-VN") + " ₫",
                 order.status || "-",
               ]),
@@ -180,7 +194,11 @@ const exportOrdersPDF = async (req, res) => {
           },
           layout: "lightHorizontalLines",
         },
-        { text: "\nNgày xuất: " + new Date().toLocaleString("vi-VN"), alignment: "right", fontSize: 9 },
+        {
+          text: "\nNgày xuất: " + new Date().toLocaleString("vi-VN"),
+          alignment: "right",
+          fontSize: 9,
+        },
       ],
       styles: {
         headerRight: { fontSize: 14, bold: true, alignment: "right" },
@@ -189,15 +207,13 @@ const exportOrdersPDF = async (req, res) => {
       },
     };
 
-    // === TẠO FILE PDF ===
     const pdfDoc = printer.createPdfKitDocument(docDefinition);
     pdfDoc.pipe(res);
     pdfDoc.end();
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Lỗi xuất PDF" });
+    res.status(500).json({ message: "Lỗi xuất PDF", error: err.message });
   }
 };
-
 
 module.exports = { getFilteredOrders, exportOrdersExcel, exportOrdersPDF };

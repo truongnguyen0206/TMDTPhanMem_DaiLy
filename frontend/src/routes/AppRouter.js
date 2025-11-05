@@ -51,6 +51,7 @@ import AdminCommissionPage from '../pages/Admin/CommissionPage';
 import CommissionFormPage from '../pages/Admin/CommissionFormPage';
 import OrdersPage from '../pages/Admin/OrdersPage';
 import AdminProfilePage from '../pages/Admin/ProfilePage';
+import UpdateAccountPage from '../pages/Admin/UpdateAccountPage';
 
 import ProtectedRoute from './ProtectedRoute';
 
@@ -103,8 +104,8 @@ const AppRouter = () => {
               <Route path="products" element={<ProductPage />} />
               <Route path="sales" element={<SalesPage />} />
               <Route path="commission" element={<CtvCommissionPage />} />
-              <Route path="profile" element={<CtvProfilePage />} /> {/* <--- THÊM ROUTE NÀY */}
-              <Route path="request-change-info" element={<CtvRequestChangeInfoPage />} /> {/* <--- THÊM ROUTE NÀY */}
+              <Route path="profile" element={<CtvProfilePage />} />
+              <Route path="request-change-info" element={<CtvRequestChangeInfoPage />} />
             </Route>
 
             {/* --- Cấu hình cho ADMIN --- */}
@@ -117,6 +118,7 @@ const AppRouter = () => {
                <Route path="commission/edit/:id" element={<CommissionFormPage mode="edit" />} />
                <Route path="orders" element={<OrdersPage />} />
                <Route path="profile" element={<AdminProfilePage />} />
+               <Route path="accounts/edit/:id" element={<UpdateAccountPage />} />
             </Route>
             
         </Route>

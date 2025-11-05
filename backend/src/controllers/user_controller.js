@@ -1,143 +1,122 @@
-const userModel = require("../models/user_model");
-const pool = require("../config/database_config");
+const supabase = require("../config/supabaseClient");
 const bcrypt = require("bcrypt");
 
-
+// 🟢 Lấy toàn bộ users (join roles)
 const getAllUsers = async (req, res) => {
   try {
-    const users = await userModel.getUsers();
-    res.status(200).json(users);
+    const { data, error } = await supabase.rpc("get_users_with_roles");
+    if (error) throw error;
+    res.status(200).json(data);
   } catch (error) {
-    console.error("Error fetching users:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error("Lỗi getAllUsers:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
+// 🟢 Lấy user theo ID
 const getUserById = async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await pool.query("SELECT * FROM auth.users WHERE user_id = $1", [id]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Người dùng không tồn tại" });
+    const { data, error } = await supabase.rpc("get_users_with_roles");
+    if (error) throw error;
+    const user = data.find(u => u.user_id == id); 
+    if (!user) {
+      return res.status(404).json({ message: "Người dùng không tồn tại trong kết quả RPC" });
     }
-
-    res.json(result.rows[0]);
+    res.json(user);
   } catch (err) {
-    console.error("Error fetching user by id:", err);
-    res.status(500).json({ message: "Lỗi server" });
+    console.error("Lỗi getUserById:", err);
+    res.status(500).json({ message: "Lỗi server", error: err.message });
   }
 };
 
+// 🟢 Tạo user mới
 const createUser = async (req, res) => {
   try {
     const { username, email, password, phone, role_id } = req.body;
-
-    if (!username || !email || !password) {
-      return res.status(400).json({ message: "Missing required fields" });
-    }
-
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-    const newUser = await userModel.createUser({
-      username,
-      email,
-      password: hashedPassword,
-      phone,
-      role_id: role_id || 2
-    });
-
-    res.status(201).json({ message: "User created successfully", user: newUser });
+    if (!username || !email || !password)
+      return res.status(400).json({ message: "Thiếu thông tin bắt buộc" });
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const { data, error } = await supabase
+      .from("users_view")
+      .insert([
+        {
+          username,
+          email,
+          password: hashedPassword,
+          phone,
+          role_id: role_id || 2, 
+          status: "Đang chờ cấp tài khoản",
+        },
+      ])
+      .select()
+      .single();
+    if (error) throw error;
+    res.status(201).json({ message: "User created successfully", user: data });
   } catch (err) {
-    console.error("Error creating user:", err);
+    console.error("Lỗi createUser:", err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 
 
+// ==========================================================
+// 🟢 CẬP NHẬT USER (BẢN AN TOÀN - LOẠI BỎ AUTH)
+// ==========================================================
 const updateUser = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { username, email, phone, role_id } = req.body;
+    // 'id' ở đây là user_id (SỐ NGUYÊN, vd: 37)
+    const { id } = req.params; 
+    
+    // Chỉ lấy các trường công khai (public) từ body
+    const { username, role_id, status, phone } = req.body;
 
-    if (!username || !email || !role_id) {
-      return res.status(400).json({ message: "Thiếu thông tin bắt buộc!" });
-    }
+    // Lỗi 500 xảy ra vì chúng ta cố cập nhật email/password (trường Auth).
+    // GIẢI PHÁP: Chỉ cập nhật các trường public.
+    const publicPayload = {
+      username,
+      role_id,
+      status,
+      phone // Cập nhật SĐT (trường này có trong public.users)
+    };
 
-    const updatedUser = await userModel.updateUser(id, { username, email, phone, role_id });
+    console.log(`[Public Update] Đang cập nhật Public cho user_id ${id}:`, publicPayload);
+    const { data, error } = await supabase
+      .from("users_view") // Hoặc "users"
+      .update(publicPayload)
+      .eq("user_id", id) // Dùng user_id (số nguyên)
+      .select()
+      .single();
 
-    if (!updatedUser) {
-      return res.status(404).json({ message: "Không tìm thấy người dùng để cập nhật" });
-    }
+    if (error) throw error; 
+    if (!data) return res.status(404).json({ message: "Không tìm thấy user trong bảng public" });
 
-    res.status(200).json({
-      message: "Cập nhật user thành công",
-      user: updatedUser
-    });
+    res.status(200).json({ message: "Cập nhật user thành công (trừ email/password)", user: data });
+    
   } catch (error) {
-    console.error("Error updating user:", error);
-    res.status(500).json({ message: "Internal Server Error" });
+    console.error("Lỗi updateUser:", error);
+    res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 };
 
-
-// const deleteUser = async (req, res) => {
-//   try {
-//     const { id } = req.params;
-
-//     const result = await pool.query(
-//       "DELETE FROM auth.users WHERE user_id = $1 RETURNING *",
-//       [id]
-//     );
-
-//     if (result.rows.length === 0) {
-//       return res.status(404).json({ message: "User not found" });
-//     }
-
-//     res.json({ message: "User deleted successfully", user: result.rows[0] });
-//   } catch (err) {
-//     console.error("Error deleting user:", err);
-//     res.status(500).json({ message: "Server error", error: err.message });
-//   }
-// };
-
+// 🟢 Xóa user
 const deleteUser = async (req, res) => {
-  const { id } = req.params;
-  const client = await pool.connect(); // Lấy một client từ pool để thực hiện transaction
-
   try {
-      await client.query('BEGIN'); // Bắt đầu transaction
-
-      // === BƯỚC 1: Xóa các bản ghi phụ thuộc trước ===
-      // Xóa khỏi bảng agent (nếu có)
-      await client.query('DELETE FROM "member"."agent" WHERE user_id = $1', [id]);
-      
-      // Xóa khỏi bảng ctv (nếu có)
-      await client.query('DELETE FROM "member"."ctv" WHERE user_id = $1', [id]);
-      // (Thêm các lệnh xóa ở các bảng khác nếu user_id cũng là khóa ngoại ở đó)
-
-        // === BƯỚC 2: Xóa người dùng chính trong bảng auth.users ===
-        const result = await client.query(
-          'DELETE FROM auth.users WHERE user_id = $1 RETURNING *',
-          [id]
-      );
-
-      if (result.rows.length === 0) {
-          // Nếu không tìm thấy user, hủy bỏ transaction và báo lỗi
-          await client.query('ROLLBACK');
-          return res.status(404).json({ message: "User not found" });
-      }
-
-      await client.query('COMMIT'); // Hoàn tất transaction nếu mọi thứ thành công
-      res.json({ message: "User deleted successfully", user: result.rows[0] });
-
+    const { id } = req.params;
+    await supabase.from("member.agent").delete().eq("user_id", id);
+    await supabase.from("member.ctv").delete().eq("user_id", id);
+    const { data, error } = await supabase
+      .from("users_view")
+      .delete()
+      .eq("user_id", id)
+      .select()
+      .single();
+    if (error) throw error;
+    if (!data) return res.status(404).json({ message: "User not found" });
+    res.json({ message: "User deleted successfully", user: data });
   } catch (err) {
-      await client.query('ROLLBACK'); // Hoàn tác tất cả thay đổi nếu có lỗi
-      console.error("Error deleting user:", err);
-      res.status(500).json({ message: "Server error", error: err.message });
-  } finally {
-      client.release(); // Trả client về lại pool
+    console.error("Lỗi deleteUser:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 

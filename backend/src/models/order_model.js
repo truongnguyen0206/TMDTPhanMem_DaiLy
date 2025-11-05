@@ -26,7 +26,7 @@ const getById = async (order_id) => {
 };
 
 
-// Tạo order (chỉ tạo đơn, không tạo items)
+// Tạo order
 const create = async (order) => {
   const { data, error } = await supabase
     .from("orders_view")
@@ -140,7 +140,7 @@ const getOrderById = async (order_id) => {
  */
 const listOrders = async ({ limit = 50, offset = 0, user_id, from, to } = {}) => {
   let query = supabase
-    .from("orders.v_order_detail")
+    .from("v_order_detail")
     .select("*")
     .order("tao_vao_luc", { ascending: false })
     .range(offset, offset + limit - 1);
@@ -159,7 +159,7 @@ const listOrders = async ({ limit = 50, offset = 0, user_id, from, to } = {}) =>
  */
 const getOrderDetail = async (order_code) => {
   const { data, error } = await supabase
-    .from("orders.v_order_detail")
+    .from("v_order_detail")
     .select("*")
     .eq("ma_don_hang", order_code)
     .single();

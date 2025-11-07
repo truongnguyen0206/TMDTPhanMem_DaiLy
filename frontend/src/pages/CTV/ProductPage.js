@@ -15,17 +15,17 @@ const mockProducts = [
 
 // Component cho các thẻ thống kê nhỏ
 const StatCard = ({ title, value }) => (
-    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
         <p className="text-sm text-gray-500">{title}</p>
-        <p className="text-2xl font-bold text-gray-800 mt-1">{value}</p>
+        <p className="text-2xl font-bold text-gray-800 mt-1 dark:text-white">{value}</p>
     </div>
 );
 
 // Component cho trạng thái sản phẩm
 const StatusBadge = ({ status }) => {
     const statusStyles = {
-        active: { text: 'Xây dựng', color: 'bg-green-100 text-green-800' },
-        inactive: { text: 'Không khả dụng', color: 'bg-red-100 text-red-800' },
+        active: { text: 'Xây dựng', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
+        inactive: { text: 'Không khả dụng', color: 'bg-red-100 text-red-800 dark:bg-green-900 dark:text-green-200' },
     };
     const style = statusStyles[status] || {};
     return <span className={`px-3 py-1 text-xs font-bold rounded-full ${style.color}`}>{style.text}</span>;
@@ -61,24 +61,24 @@ const ProductPage = () => {
             </div>
 
             {/* Bảng sản phẩm */}
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left text-gray-600">
-                        <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+                    <table className="w-full text-sm text-left text-gray-600 dark:text-gray-400">
+                        <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                             <tr>
                                 <th className="px-6 py-3">ID</th>
                                 <th className="px-6 py-3">Source</th>
                                 <th className="px-6 py-3">Tên sản phẩm</th>
                                 <th className="px-6 py-3">Trạng thái</th>
-                                <th className="px-6 py-3">Số lượng</th>
+                                <th className="px-6 py-3">Lượt tải</th>
                                 <th className="px-6 py-3">Giá</th>
                                 <th className="px-6 py-3 text-center">Tác vụ</th>
                             </tr>
                         </thead>
                         <tbody>
                             {products.map(product => (
-                                <tr key={product.id} className="bg-white border-b hover:bg-gray-50">
-                                    <td className="px-6 py-4 font-medium text-gray-900">{product.id}</td>
+                                <tr key={product.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                                    <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{product.id}</td>
                                     <td className="px-6 py-4">{product.source}</td>
                                     <td className="px-6 py-4">{product.name}</td>
                                     <td className="px-6 py-4"><StatusBadge status={product.status} /></td>
@@ -86,8 +86,8 @@ const ProductPage = () => {
                                     <td className="px-6 py-4">{product.price.toLocaleString('vi-VN')}</td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center justify-center gap-2">
-                                            <button className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded-md">Tạm khoá</button>
-                                            <button className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold py-1 px-3 rounded-md">Xem chi tiết</button>
+                                            <button className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded-md dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500">Tạo mã giới thiệu</button>
+                                            <button className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold py-1 px-3 rounded-md dark:bg-blue-900 dark:text-blue-200 dark:hover:bg-blue-800">Xem chi tiết</button>
                                         </div>
                                     </td>
                                 </tr>

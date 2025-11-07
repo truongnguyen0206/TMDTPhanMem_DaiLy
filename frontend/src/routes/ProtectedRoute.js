@@ -1,18 +1,26 @@
-// Logic giả định cho ProtectedRoute.js
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext'; // Import useAuth
+import { useAuth } from '../context/AuthContext'; 
 
 const ProtectedRoute = () => {
-  // Lấy cả user và loading từ AuthContext
-  const { user } = useAuth(); 
-  // 2. Nếu đã kiểm tra xong (loading=false) nhưng không có user, chuyển hướng về /login
+  // CẬP NHẬT: Lấy cả user và isInitializing từ AuthContext
+  const { user, isInitializing } = useAuth(); 
+
+  // THÊM MỚI: Nếu đang trong quá trình kiểm tra token, hiển thị màn hình chờ
+  if (isInitializing) {
+    return (
+        <div className="flex items-center justify-center h-screen">
+            <div className="text-xl font-semibold">Đang tải, vui lòng chờ...</div>
+        </div>
+    );
+  }
+
+  // Nếu đã kiểm tra xong và không có user, chuyển hướng về /login
   if (!user) {
-    // Dùng replace để tránh lưu trang login vào lịch sử duyệt web
     return <Navigate to="/login" replace />; 
   }
 
-  // 3. Nếu đã kiểm tra xong (loading=false) và có user, cho phép truy cập
+  // Nếu đã kiểm tra xong và có user, cho phép truy cập
   return <Outlet />; 
 };
 

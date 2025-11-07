@@ -76,7 +76,7 @@ const register = async (req, res) => {
       email,
       password: hashedPassword,
       phone: phone || null,
-      role_id: 2,
+      role_id: 4,
     });
 
     res.status(201).json({ message: "Đăng ký thành công 🎉", user: newUser });
@@ -206,7 +206,7 @@ const loginWithGoogle = async (req, res) => {
         email,
         password: null,
         phone: null,
-        role_id: 4,
+        role_id: 3,
       });
     }
 

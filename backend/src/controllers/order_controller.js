@@ -135,31 +135,42 @@ const remove = async (req, res) => {
 const getOrigin = async (req, res) => {
   try {
     const order_code = req.params.code;
+
+    // ✅ Gọi model để lấy chi tiết đơn hàng từ VIEW
     const data = await Order.getOrderDetail(order_code);
 
     if (!data) {
-      return res.status(404).json({ message: `❌ Order ${order_code} not found.` });
+      return res.status(404).json({ message: `❌ Order ${order_code} không tồn tại.` });
     }
 
     let msg = "";
     const issues = [];
 
-    switch (data.trang_thai) {
-      case "Đại lý":
-        msg = `✅ Order ${data.ma_don_hang}: Phát sinh qua Đại lý (${data.nguoi_gioi_thieu || "Không rõ"})`;
-        break;
-      case "Cộng tác viên":
-        msg = `✅ Order ${data.ma_don_hang}: Phát sinh qua CTV (${data.nguoi_gioi_thieu || "Không rõ"})`;
-        break;
-      default:
-        msg = `⚠️ Order ${data.ma_don_hang}: Nguồn ${data.nguon_tao_don}`;
-        break;
+    // ✅ Logic xác định nguồn gốc đơn hàng
+    // Giữ nguyên nhưng đổi key cho khớp với view (nguon_tao_don)
+    if (data.nguon_tao_don === "Đại lý") {
+      msg = `✅ Đơn ${data.ma_don_hang}: Phát sinh qua Đại lý (${data.nguoi_gioi_thieu || "Không rõ"})`;
+    } else if (data.nguon_tao_don === "Cộng tác viên") {
+      msg = `✅ Đơn ${data.ma_don_hang}: Phát sinh qua Cộng tác viên (${data.nguoi_gioi_thieu || "Không rõ"})`;
+    } else if (data.nguon_tao_don) {
+      msg = `⚠️ Đơn ${data.ma_don_hang}: Tạo từ nguồn ${data.nguon_tao_don}`;
+    } else {
+      msg = `⚠️ Đơn ${data.ma_don_hang}: Không xác định được nguồn tạo đơn.`;
+      issues.push("Thiếu thông tin nguồn_tao_don");
     }
 
-    res.json({ message: msg, issues, order: data });
+    // ✅ Trả kết quả về cho client
+    res.json({
+      message: msg,
+      issues,
+      order: data,
+    });
   } catch (err) {
-    console.error("❌ Error in getOrigin:", err);
-    res.status(500).json({ message: err.message });
+    console.error("❌ Lỗi trong getOrigin:", err);
+    res.status(500).json({
+      message: `Lỗi hệ thống khi truy xuất nguồn gốc đơn hàng.`,
+      error: err.message,
+    });
   }
 };
 

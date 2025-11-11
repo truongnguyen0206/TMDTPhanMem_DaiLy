@@ -13,6 +13,51 @@ const getAll = async () => {
 };
 
 
+// // ========================================
+// // 🟧 LẤY ĐƠN HÀNG THEO CỘNG TÁC VIÊN
+// // ========================================
+// const getByCollaboratorId = async (collaborator_id) => {
+//   const { data, error } = await supabase
+//     .from("orders_view")
+//     .select("*")
+//     .eq("collaborator_id", collaborator_id)
+//     .order("order_date", { ascending: false });
+
+//   if (error) throw error;
+//   return data || [];
+// };
+
+// // ========================================
+// // 🟦 LẤY ĐƠN HÀNG THEO KHÁCH HÀNG
+// // ========================================
+// const getByCustomerId = async (customer_id) => {
+//   const { data, error } = await supabase
+//     .from("orders_view")
+//     .select("*")
+//     .eq("customer_id", customer_id)
+//     .order("order_date", { ascending: false });
+
+//   if (error) throw error;
+//   return data || [];
+// };
+
+
+// ========================================
+// 🟧 LẤY ĐƠN HÀNG THEO USER (ID + ROLE)
+// ========================================
+const getByUser = async (user_id, role_id) => {
+  // tạo builder query
+  let query = supabase.from("orders_view").select("*");
+
+  if (user_id) query = query.eq("user_id", user_id);
+  if (role_id) query = query.eq("role_id", role_id); // hoặc .eq("role_name", "Cộng tác viên")
+
+  const { data, error } = await query.order("order_date", { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+};
+
 // Lấy 1 order theo id (không join items)
 const getById = async (order_id) => {
   const { data, error } = await supabase
@@ -98,40 +143,40 @@ const createOrderWithItems = async ({ order, items }) => {
 
   if (error) {
     console.error("❌ Error creating order:", error);
-    throw error;
+    throw error;  
   }
 
   return data;
 };
 
-// Lấy order kèm items
-const getOrderById = async (order_id) => {
-  const { data, error } = await supabase
-    .from("orders_view") // 👈 nếu bạn tạo view `public.orders` trỏ tới `orders_view`
-    .select(`
-      *,
-      order_product:order_product (
-        id,
-        product_id,
-        product_name,
-        quantity,
-        unit_price
-      )
-    `)
-    .eq("order_id", order_id)
-    .maybeSingle(); // Lấy đúng 1 bản ghi hoặc null
+// // Lấy order kèm items
+// const getOrderById = async (order_id) => {
+//   const { data, error } = await supabase
+//     .from("orders_view") // 👈 nếu bạn tạo view `public.orders` trỏ tới `orders_view`
+//     .select(`
+//       *,
+//       order_product:order_product (
+//         id,
+//         product_id,
+//         product_name,
+//         quantity,
+//         unit_price
+//       )
+//     `)
+//     .eq("order_id", order_id)
+//     .maybeSingle(); // Lấy đúng 1 bản ghi hoặc null
 
-  if (error) {
-    console.error("❌ Error fetching order:", error);
-    throw error;
-  }
+//   if (error) {
+//     console.error("❌ Error fetching order:", error);
+//     throw error;
+//   }
 
-  // Đổi tên trường cho khớp với format cũ
-  return {
-    ...data,
-    products: data?.order_product || [],
-  };
-};
+//   // Đổi tên trường cho khớp với format cũ
+//   return {
+//     ...data,
+//     products: data?.order_product || [],
+//   };
+// };
 
 
 /**
@@ -162,7 +207,7 @@ const getOrderDetail = async (order_code) => {
     .from("v_order_detail")
     .select("*")
     .eq("ma_don_hang", order_code)
-    .single();
+    .maybeSingle()
 
   if (error) throw error;
   return data;
@@ -199,11 +244,14 @@ const getOrderOriginLogs = async (order_id) => {
 module.exports = {
   getAll,
   getById,
+  // getByCollaboratorId,
+  // getByCustomerId,
+  getByUser,
   create,
   update,
   remove,
   createOrderWithItems,
-  getOrderById,
+  // getOrderById,
   listOrders,
   getOrderDetail,
   getOrderOriginLogs

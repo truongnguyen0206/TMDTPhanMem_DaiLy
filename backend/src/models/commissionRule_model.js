@@ -1,236 +1,180 @@
-// const pool = require("../config/database_config");
-const pool = require("../config/supabaseClient");
+const supabase = require("../config/supabaseClient");
 
-class CommissionRule {
-  // Lấy tất cả quy tắc hoa hồng
+class commissionrule {
+  // 🟩 Lấy tất cả quy tắc hoa hồng
   static async getAll() {
-    try {
-      const query = `
-        SELECT 
-          cr.*,
-          r.role_name,
-          pc.category_name
-        FROM commission_rules cr
-        LEFT JOIN roles r ON cr.role_id = r.role_id
-        LEFT JOIN product_categories pc ON cr.product_category = pc.category_name
-        ORDER BY cr.role_id, cr.min_sales
-      `;
-      const result = await db.query(query);
-      return result.rows;
-    } catch (error) {
-      throw error;
-    }
+    const { data, error } = await supabase
+      .from("commissionrule") // ✅ view
+      .select("*")
+      .order("role_id", { ascending: true })
+      .order("min_sales", { ascending: true });
+
+    if (error) throw new Error(`Lỗi khi lấy danh sách quy tắc hoa hồng: ${error.message}`);
+    return data || [];
   }
 
-  // Lấy quy tắc theo ID
+  // 🟨 Lấy quy tắc theo ID
   static async getById(ruleId) {
-    try {
-      const query = `
-        SELECT 
-          cr.*,
-          r.role_name,
-          pc.category_name
-        FROM commission_rules cr
-        LEFT JOIN roles r ON cr.role_id = r.role_id
-        LEFT JOIN product_categories pc ON cr.product_category = pc.category_name
-        WHERE cr.rule_id = $1
-      `;
-      const result = await db.query(query, [ruleId]);
-      return result.rows[0];
-    } catch (error) {
-      throw error;
-    }
+    const { data, error } = await supabase
+      .from("commissionrule")
+      .select("*")
+      .eq("rule_id", ruleId)
+      .single();
+
+    if (error) throw new Error(`Lỗi khi lấy quy tắc hoa hồng: ${error.message}`);
+    return data;
   }
 
-  // Lấy quy tắc theo role
+  // 🟦 Lấy quy tắc theo Role
   static async getByRole(roleId) {
-    try {
-      const query = `
-        SELECT 
-          cr.*,
-          r.role_name,
-          pc.category_name
-        FROM commission_rules cr
-        LEFT JOIN roles r ON cr.role_id = r.role_id
-        LEFT JOIN product_categories pc ON cr.product_category = pc.category_name
-        WHERE cr.role_id = $1
-        ORDER BY cr.min_sales
-      `;
-      const result = await db.query(query, [roleId]);
-      return result.rows;
-    } catch (error) {
-      throw error;
-    }
+    const { data, error } = await supabase
+      .from("commissionrule")
+      .select("*")
+      .eq("role_id", roleId)
+      .order("min_sales", { ascending: true });
+
+    if (error) throw new Error(`Lỗi khi lấy quy tắc theo vai trò: ${error.message}`);
+    return data || [];
   }
 
-  // Tạo quy tắc mới
+  // 🟧 Tạo quy tắc mới (ghi vào bảng thật)
   static async create(ruleData) {
-    try {
-      const {
-        role_id,
-        min_sales,
-        max_sales,
-        commission_rate,
-        product_category,
-        start_date,
-        end_date,
-        description
-      } = ruleData;
+    const {
+      role_id,
+      min_sales = 0,
+      max_sales,
+      commission_rate,
+      product_category,
+      start_date = new Date().toISOString().split("T")[0],
+      end_date,
+      description,
+    } = ruleData;
 
-      const query = `
-        INSERT INTO commission_rules 
-        (role_id, min_sales, max_sales, commission_rate, product_category, start_date, end_date, description)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        RETURNING *
-      `;
-      
-      const values = [
-        role_id,
-        min_sales || 0,
-        max_sales,
-        commission_rate,
-        product_category,
-        start_date || new Date(),
-        end_date,
-        description
-      ];
+    const { data, error } = await supabase
+      .from("commissionrule") // ✅ bảng thật
+      .insert([
+        {
+          role_id,
+          min_sales,
+          max_sales,
+          commission_rate,
+          product_category,
+          start_date,
+          end_date,
+          description,
+        },
+      ])
+      .select()
+      .single();
 
-      const result = await db.query(query, values);
-      return result.rows[0];
-    } catch (error) {
-      throw error;
-    }
+    if (error) throw new Error(`Lỗi khi tạo quy tắc hoa hồng: ${error.message}`);
+    return data;
   }
 
-  // Cập nhật quy tắc
+  // 🟪 Cập nhật quy tắc
   static async update(ruleId, ruleData) {
-    try {
-      const {
+    const {
+      role_id,
+      min_sales = 0,
+      max_sales,
+      commission_rate,
+      product_category,
+      start_date,
+      end_date,
+      description,
+    } = ruleData;
+
+    const { data, error } = await supabase
+      .from("commissionrule")
+      .update({
         role_id,
         min_sales,
-        max_sales,
-        commission_rate,
-        product_category,
-        start_date,
-        end_date,
-        description
-      } = ruleData;
-
-      const query = `
-        UPDATE commission_rules 
-        SET 
-          role_id = $1,
-          min_sales = $2,
-          max_sales = $3,
-          commission_rate = $4,
-          product_category = $5,
-          start_date = $6,
-          end_date = $7,
-          description = $8
-        WHERE rule_id = $9
-        RETURNING *
-      `;
-      
-      const values = [
-        role_id,
-        min_sales || 0,
         max_sales,
         commission_rate,
         product_category,
         start_date,
         end_date,
         description,
-        ruleId
-      ];
+      })
+      .eq("rule_id", ruleId)
+      .select()
+      .single();
 
-      const result = await db.query(query, values);
-      return result.rows[0];
-    } catch (error) {
-      throw error;
-    }
+    if (error) throw new Error(`Lỗi khi cập nhật quy tắc hoa hồng: ${error.message}`);
+    return data;
   }
 
-  // Xóa quy tắc
+  // 🟥 Xóa quy tắc
   static async delete(ruleId) {
-    try {
-      const query = 'DELETE FROM commission_rules WHERE rule_id = $1 RETURNING *';
-      const result = await db.query(query, [ruleId]);
-      return result.rows[0];
-    } catch (error) {
-      throw error;
-    }
+    const { data, error } = await supabase
+      .from("commissionrule")
+      .delete()
+      .eq("rule_id", ruleId)
+      .select()
+      .single();
+
+    if (error) throw new Error(`Lỗi khi xóa quy tắc hoa hồng: ${error.message}`);
+    return data;
   }
 
-  // Lấy danh sách roles
+  // 🟨 Lấy danh sách Roles
   static async getRoles() {
-    try {
-      const query = 'SELECT * FROM roles ORDER BY role_name';
-      const result = await db.query(query);
-      return result.rows;
-    } catch (error) {
-      throw error;
-    }
+    const { data, error } = await supabase
+      .from("web_auth.roles")
+      .select("*")
+      .order("role_name", { ascending: true });
+
+    if (error) throw new Error(`Lỗi khi lấy danh sách vai trò: ${error.message}`);
+    return data || [];
   }
 
-  // Lấy danh sách product categories
-  static async getProductCategories() {
-    try {
-      const query = 'SELECT * FROM product_categories ORDER BY category_name';
-      const result = await db.query(query);
-      return result.rows;
-    } catch (error) {
-      throw error;
-    }
-  }
+  // // 🟩 Lấy danh sách Product Categories
+  // static async getProductCategories() {
+  //   const { data, error } = await supabase
+  //     .from("public.product_categories")
+  //     .select("*")
+  //     .order("category_name", { ascending: true });
 
-  // Kiểm tra xung đột quy tắc
+  //   if (error) throw new Error(`Lỗi khi lấy danh sách danh mục sản phẩm: ${error.message}`);
+  //   return data || [];
+  // }
+
+  // ⚠️ Kiểm tra xung đột quy tắc
   static async checkConflict(ruleData, excludeRuleId = null) {
-    try {
-      const {
-        role_id,
-        min_sales,
-        max_sales,
-        product_category,
-        start_date,
-        end_date
-      } = ruleData;
+    const {
+      role_id,
+      min_sales,
+      max_sales,
+      product_category,
+      start_date,
+      end_date,
+    } = ruleData;
 
-      let query = `
-        SELECT * FROM commission_rules 
-        WHERE role_id = $1 
-        AND product_category = $2
-        AND (
-          (start_date <= $4 AND (end_date IS NULL OR end_date >= $3)) OR
-          (start_date <= $3 AND (end_date IS NULL OR end_date >= $4)) OR
-          ($3 <= start_date AND ($4 IS NULL OR $4 >= start_date))
-        )
-        AND (
-          (min_sales <= $6 AND (max_sales IS NULL OR max_sales >= $5)) OR
-          (min_sales <= $5 AND (max_sales IS NULL OR max_sales >= $6)) OR
-          ($5 <= min_sales AND ($6 IS NULL OR $6 >= min_sales))
-        )
-      `;
+    let query = supabase
+      .from("commissionrule")
+      .select("*")
+      .eq("role_id", role_id)
+      .eq("product_category", product_category);
 
-      const values = [
-        role_id,
-        product_category,
-        start_date,
-        end_date || start_date,
-        min_sales,
-        max_sales
-      ];
+    if (excludeRuleId) query = query.neq("rule_id", excludeRuleId);
 
-      if (excludeRuleId) {
-        query += ' AND rule_id != $7';
-        values.push(excludeRuleId);
-      }
+    const { data, error } = await query;
+    if (error) throw new Error(`Lỗi khi kiểm tra xung đột quy tắc: ${error.message}`);
 
-      const result = await db.query(query, values);
-      return result.rows.length > 0;
-    } catch (error) {
-      throw error;
-    }
+    const filtered = (data || []).filter((rule) => {
+      const overlapDate =
+        (!rule.end_date || new Date(rule.end_date) >= new Date(start_date)) &&
+        (!end_date || new Date(end_date) >= new Date(rule.start_date));
+
+      const overlapSales =
+        (rule.max_sales === null || rule.max_sales >= min_sales) &&
+        (max_sales === null || max_sales >= rule.min_sales);
+
+      return overlapDate && overlapSales;
+    });
+
+    return filtered.length > 0;
   }
 }
 
-module.exports = CommissionRule;
+module.exports = commissionrule;

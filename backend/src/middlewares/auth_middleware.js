@@ -86,3 +86,29 @@ module.exports = {
   requireRole,
   authMiddleware
  };
+
+
+// const supabase = require("../config/supabaseClient");
+
+// /**
+//  * Xác thực người dùng qua Supabase token.
+//  */
+// const authenticateUser = async (req, res, next) => {
+//   try {
+//     const token = req.header("Authorization")?.split(" ")[1];
+//     if (!token) return res.status(401).json({ message: "Thiếu token" });
+
+//     const { data, error } = await supabase.auth.getUser(token);
+//     if (error || !data?.user) {
+//       return res.status(403).json({ message: "Token không hợp lệ" });
+//     }
+
+//     req.user = data.user;
+//     next();
+//   } catch (err) {
+//     console.error("Auth Error:", err);
+//     res.status(500).json({ message: "Lỗi xác thực", error: err.message });
+//   }
+// };
+
+// module.exports = { authenticateUser };

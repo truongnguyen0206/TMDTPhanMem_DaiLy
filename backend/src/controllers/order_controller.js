@@ -35,19 +35,82 @@ const list = async (req, res) => {
   }
 };
 
-// ========================
-// 🟨 LẤY 1 ĐƠN HÀNG (KÈM ITEMS)
-// ========================
-const getOne = async (req, res) => {
+// // ========================
+// // 🟧 LẤY ĐƠN HÀNG THEO CỘNG TÁC VIÊN
+// // ========================
+// const getOrdersByCollaborator = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const orders = await Order.getByCollaboratorId(id);
+
+//     if (!orders || orders.length === 0) {
+//       return res.status(404).json({ message: "❌ Không tìm thấy đơn hàng nào cho cộng tác viên này." });
+//     }
+
+//     return res.status(200).json({
+//       message: "✅ Lấy danh sách đơn hàng theo cộng tác viên thành công!",
+//       data: orders,
+//     });
+//   } catch (error) {
+//     console.error("❌ Lỗi trong getOrdersByCollaborator:", error);
+//     return res.status(500).json({ message: "Lỗi server!", error: error.message });
+//   }
+// };
+
+// // ========================
+// // 🟦 LẤY ĐƠN HÀNG THEO KHÁCH HÀNG
+// // ========================
+// const getOrdersByCustomer = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const orders = await Order.getByCustomerId(id);
+
+//     if (!orders || orders.length === 0) {
+//       return res.status(404).json({ message: "❌ Không tìm thấy đơn hàng nào cho khách hàng này." });
+//     }
+
+//     return res.status(200).json({
+//       message: "✅ Lấy danh sách đơn hàng theo khách hàng thành công!",
+//       data: orders,
+//     });
+//   } catch (error) {
+//     console.error("❌ Lỗi trong getOrdersByCustomer:", error);
+//     return res.status(500).json({ message: "Lỗi server!", error: error.message });
+//   }
+// };
+
+const getOrdersByUser = async (req, res) => {
   try {
-    const order = await Order.getOrderById(req.params.id);
-    if (!order) return res.status(404).json({ message: "Order not found" });
-    res.json(order);
-  } catch (err) {
-    console.error("❌ Error in getOne order:", err);
-    res.status(500).json({ message: err.message });
+    const { user_id, role_id } = req.query; // GET /api/orders/byUser?user_id=5&role_id=3
+    const orders = await Order.getByUser(user_id, role_id);
+
+    if (!orders.length) {
+      return res.status(404).json({ message: "❌ Không có đơn hàng nào phù hợp." });
+    }
+
+    return res.status(200).json({
+      message: "✅ Lấy danh sách đơn hàng theo user thành công!",
+      data: orders,
+    });
+  } catch (error) {
+    console.error("❌ Lỗi trong getOrdersByUser:", error);
+    return res.status(500).json({ message: "Lỗi server!", error: error.message });
   }
 };
+
+// // ========================
+// // 🟨 LẤY 1 ĐƠN HÀNG (KÈM ITEMS)
+// // ========================
+// const getOne = async (req, res) => {
+//   try {
+//     const order = await Order.getOrderById(req.params.id);
+//     if (!order) return res.status(404).json({ message: "Order not found" });
+//     res.json(order);
+//   } catch (err) {
+//     console.error("❌ Error in getOne order:", err);
+//     res.status(500).json({ message: err.message });
+//   }
+// };
 
 // ========================
 // 🟧 TẠO ĐƠN HÀNG
@@ -174,6 +237,40 @@ const getOrigin = async (req, res) => {
   }
 };
 
+
+// ========================
+// 🟦 LẤY TOÀN BỘ NGUỒN GỐC ĐƠN HÀNG
+// ========================
+const getAllOrigin = async (req, res) => {
+  try {
+    const { limit, offset, user_id, from, to } = req.query;
+
+    // 🔹 Dùng lại model listOrders() đã có (truy v_order_detail)
+    const orders = await Order.listOrders({
+      limit: limit ? parseInt(limit) : 1000,
+      offset: offset ? parseInt(offset) : 0,
+      user_id,
+      from,
+      to,
+    });
+
+    if (!orders || orders.length === 0) {
+      return res.status(404).json({ message: "Không tìm thấy đơn hàng nào." });
+    }
+
+    res.status(200).json({
+      total: orders.length,
+      data: orders,
+    });
+  } catch (err) {
+    console.error("❌ Lỗi trong getAllOrigin:", err);
+    res.status(500).json({
+      message: "Lỗi hệ thống khi lấy nguồn gốc đơn hàng.",
+      error: err.message,
+    });
+  }
+};
+
 // ========================
 // 📊 XUẤT EXCEL
 // ========================
@@ -239,11 +336,15 @@ const exportOrdersPDF = async (req, res) => {
 module.exports = {
   getAll,
   list,
-  getOne,
+  // getOrdersByCollaborator,
+  // getOrdersByCustomer,
+  getOrdersByUser,
+  // getOne,
   create,
   update,
   remove,
   getOrigin,
+  getAllOrigin,
   exportOrdersExcel,
   exportOrdersPDF,
 };

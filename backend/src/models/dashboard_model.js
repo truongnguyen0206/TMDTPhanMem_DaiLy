@@ -1,4 +1,5 @@
-const supabase = require('../config/database_config');
+// const supabase = require('../config/database_config');
+const supabase = require("../config/supabaseClient");
 
 // Lấy thông tin user cơ bản và role
 const findUserAndRoleById = (userId) => {
@@ -73,6 +74,24 @@ const createWithdrawalRequest = (requestData) => {
         .single();
 };
 
+/**
+ * Đếm tổng số đại lý thuộc 1 nhà phân phối
+ * @param {number} nppId
+ * @returns {number}
+ */
+const countAgentsByDistributor = async (nppId) => {
+    const { count, error } = await supabase
+      .from('agent_view')
+      .select('agent_id', { count: 'exact', head: true })
+      .eq('npp_id', nppId);
+  
+    if (error) {
+      throw new Error(`Supabase error: ${error.message}`);
+    }
+  
+    return count || 0;
+  };
+
 module.exports = {
     findUserAndRoleById,
     findBalanceByUserId,
@@ -82,4 +101,5 @@ module.exports = {
     findStatisticsByUserId,
     findTopProductsByUserId,
     createWithdrawalRequest,
+    countAgentsByDistributor
 };

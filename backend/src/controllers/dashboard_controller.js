@@ -1,4 +1,6 @@
 const dashboardService = require('../services/dashboard_service');
+const { getDistributorKpi } = require('../services/dashboard_service');
+
 
 const getPersonalDashboard = async (req, res) => {
     try {
@@ -78,11 +80,38 @@ const errorHandler = (err, req, res, next) => {
     });
 };
 
+/**
+ * Dashboard dành cho nhà phân phối
+ * Lấy tổng số đại lý thuộc tài khoản distributor
+ */
+const getDistributorDashboard = async (req, res, next) => {
+    try {
+      const nppId = Number(req.params.npp_id);
+  
+      if (!nppId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Missing npp_id in params',
+        });
+      }
+  
+      const data = await getDistributorKpi(nppId);
+  
+      return res.status(200).json({
+        success: true,
+        message: 'Distributor dashboard fetched successfully.',
+        data,
+      });
+    } catch (err) {
+      next(err);
+    }
+  };
 // Sửa lỗi CRITICAL: Hợp nhất tất cả các hàm controller vào một module.exports
 module.exports = {
     getPersonalDashboard,
     uploadExcel,
     getStatistics,
     getProductsSummary,
-    errorHandler
+    errorHandler,
+    getDistributorDashboard,
 };

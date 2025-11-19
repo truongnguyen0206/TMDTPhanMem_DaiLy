@@ -2,7 +2,8 @@ const supabase = require('../config/database_config');
 const xlsx = require('xlsx');
 const fs = require('fs');
 const UserModel = require('../models/user_model'); // Nếu dùng model, nếu không thì dùng trực tiếp supabase
-
+// const { countAgentsByDistributor } = require('../models/dashboard_model');
+    
 /**
  * Lấy dữ liệu tổng hợp cho Dashboard cá nhân.
  * Sử dụng các VIEWS và logic đã thiết kế trong DB.
@@ -182,6 +183,19 @@ const submitWithdrawalRequest = async (userId, amount) => {
     }
 };
 
+const { countAgentsByDistributor } = require('../models/dashboard_model');
+
+/**
+ * Lấy KPI cho nhà phân phối (Distributor)
+ * @param {number} nppId
+ */
+const getDistributorKpi = async (nppId) => {
+  const totalAgents = await countAgentsByDistributor(nppId);
+
+  return {
+    totalAgents,
+  };
+};
 
 // SỬA LỖI EXPORT CRITICAL: Export tất cả các hàm cần thiết
 module.exports = {
@@ -190,4 +204,5 @@ module.exports = {
     getStatistics, 
     getProductsSummary,
     submitWithdrawalRequest, // Bổ sung hàm bị thiếu
+    getDistributorKpi,
 };

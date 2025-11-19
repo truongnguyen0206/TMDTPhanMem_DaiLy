@@ -74,24 +74,43 @@ const createUser = async (req, res) => {
 const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { username, email, phone, role_id, status } = req.body;
+    const { username, password, email, phone, role_id, status } = req.body;
+
+    const updates = { username, email, phone, role_id, status };
+
+    // 🔥 Nếu có truyền password → mã hoá
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      updates.password = hashedPassword;
+    }
 
     const { data, error } = await supabase
       .from("users_view")
-      .update({ username, email, phone, role_id, status })
+      .update(updates)
       .eq("user_id", id)
       .select()
-      .single();
-
+      .maybeSingle();
     if (error) throw error;
-    if (!data) return res.status(404).json({ message: "Không tìm thấy user" });
 
-    res.status(200).json({ message: "Cập nhật user thành công", user: data });
+    if (!data) {
+      return res.status(404).json({ message: "Không tìm thấy user" });
+    }
+
+    res.status(200).json({
+      message: "Cập nhật user thành công",
+      user: data,
+    });
+
   } catch (error) {
-    console.error("Error updating user:", error);
-    res.status(500).json({ message: "Internal Server Error", error: error.message });
+    console.error("❌ Error updating user:", error);
+    res.status(500).json({
+      message: "Internal Server Error",
+      error: error.message,
+    });
   }
 };
+
+
 
 // 🟢 Xóa user
 const deleteUser = async (req, res) => {

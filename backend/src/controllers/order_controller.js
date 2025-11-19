@@ -123,7 +123,8 @@ const create = async (req, res) => {
       created_by,
       customer_id,
       order_source,
-      status,
+      order_status,
+      payment_status,
       product
     } = req.body;
 
@@ -142,7 +143,7 @@ const create = async (req, res) => {
     if (Array.isArray(product) && items.length > 0) {
       // 🧾 Tạo order kèm items
       newOrder = await Order.createOrderWithItems({
-        order: { order_date, total_amount, created_by, customer_id, order_source, status },
+        order: { order_date, total_amount, created_by, customer_id, order_source, order_status, payment_status },
         items,
       });
     } else {
@@ -153,7 +154,8 @@ const create = async (req, res) => {
         created_by,
         customer_id,
         order_source,
-        status,
+        order_status, 
+        payment_status
       });
       newOrder = await Order.getOrderById(insertId);
     }

@@ -175,6 +175,64 @@ const login = async (req, res) => {
   }
 };
 
+/**
+ * Đăng ký tài khoản bằng Google (Google OAuth Sign-up)
+ */
+const registerWithGoogle = async (req, res) => {
+  try {
+    const { token } = req.body;
+
+    if (!token)
+      return res.status(400).json({ message: "Thiếu mã xác thực Google!" });
+
+    // 🔍 Xác minh token với Google
+    const ticket = await googleClient.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const { email, name, picture } = payload;
+
+    // 🔍 Kiểm tra email tồn tại chưa
+    const existing = await findByEmailOrUsername(email, email);
+    if (existing.length > 0) {
+      return res.status(400).json({
+        message: "Email này đã tồn tại trong hệ thống!",
+        suggestion: "Vui lòng dùng đăng nhập bằng Google.",
+      });
+    }
+
+    // 🟦 Tạo username không trùng
+    let baseUsername = name.replace(/\s+/g, "").toLowerCase();
+    let finalUsername = baseUsername;
+    let counter = 1;
+
+    while (await findByUsername(finalUsername)) {
+      finalUsername = `${baseUsername}${counter}`;
+      counter++;
+    }
+
+    // 🟢 Tạo tài khoản mới
+    const newUser = await createUser({
+      username: finalUsername,
+      email,
+      password: null,
+      role_id: 4,
+    });
+
+    res.status(201).json({
+      message: "Đăng ký Google thành công!",
+      user: newUser,
+    });
+  } catch (err) {
+    console.error("🔥 Lỗi đăng ký Google:", err);
+    res.status(500).json({
+      message: "Không thể đăng ký bằng Google!",
+      error: err.message,
+    });
+  }
+};
 
 /**
  * Đăng nhập bằng Google
@@ -250,5 +308,6 @@ module.exports = {
   updateUser,
   deleteUser,
   checkPasswordStrength,
+  registerWithGoogle,
   loginWithGoogle,
 };

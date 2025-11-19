@@ -81,7 +81,8 @@ const create = async (order) => {
       created_by: order.created_by || null,
       customer_id: order.customer_id || null,
       order_source: order.order_source || "system",
-      status: order.status ?? 1
+      order_status: order.order_status ?? 1,
+      payment_status: order.payment_status ?? 1
     }])
     .select("order_id")
     .single();
@@ -93,13 +94,13 @@ const create = async (order) => {
 // Update order
 const update = async (order_id, updates) => {
   const allowedFields = [
-    "customer_name",
-    "customer_phone",
+    "customer_id",
+    "product_id",
+    "quantity",
     "total_amount",
-    "status",
     "order_source",
-    "agent_id",
-    "collaborator_id",
+    "order_status",
+    "payment_status",
     "created_by"
   ];
 

@@ -229,7 +229,7 @@ const exportOrdersPDF = async (req, res) => {
         {
           table: {
             headerRows: 1,
-            widths: ["*", "*", "*", "*", "*", "*", "*"],
+            widths: ["*", "*", "*", "*", "*", "*", "*", "*"],
             body: [
               [
                 { text: "Mã đơn", bold: true },
@@ -238,16 +238,18 @@ const exportOrdersPDF = async (req, res) => {
                 { text: "Nguồn", bold: true },
                 { text: "Sản phẩm", bold: true },
                 { text: "Tổng tiền", bold: true },
-                { text: "Trạng thái", bold: true },
+                { text: "Trạng thái đơn hàng", bold: true },
+                { text: "Trạng thái thanh toán", bold: true },
               ],
               ...enriched.map((order) => [
                 order.order_code,
                 new Date(order.order_date).toLocaleDateString("vi-VN"),
                 order.customer_name,
                 order.order_source || "-",
-                order.product_name, // ✅ hiển thị tên sản phẩm
+                order.product_name,
                 (order.total_amount || 0).toLocaleString("vi-VN") + " ₫",
-                order.status || "-",
+                order.order_status || "-",
+                order.payment_status || "-",
               ]),
             ],
           },

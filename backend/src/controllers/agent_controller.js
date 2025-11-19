@@ -136,6 +136,56 @@ const updateManyAgents = async (req, res) => {
   }
 };
 
+async function getOrdersByAgent(req, res) {
+  try {
+    const agentId = Number(req.params.id);
+    if (!agentId) {
+      return res.status(400).json({ message: 'agent_id không hợp lệ.' });
+    }
+
+    const opts = {
+      search: req.query.search || '',
+      status: req.query.status || null,
+    };
+
+    const orders = await Agent.getOrdersByAgent(agentId, opts);
+
+    return res.status(200).json({ data: orders });
+  } catch (err) {
+    console.error('getOrdersByAgent error:', err);
+    return res.status(500).json({
+      message: 'Lỗi server khi lấy đơn hàng đại lý.',
+      error: err.message
+    });
+  }
+}
+
+/** Lấy đơn hàng của tất cả CTV do đại lý quản lý */
+async function getOrdersOfCTVByAgent(req, res) {
+  try {
+    const agentId = Number(req.params.id);
+    if (!agentId) {
+      return res.status(400).json({ message: 'agent_id không hợp lệ.' });
+    }
+
+    const opts = {
+      search: req.query.search || '',
+      status: req.query.status || null
+    };
+
+    const orders = await Agent.getOrdersOfCTVByAgent(agentId, opts);
+
+    return res.status(200).json({ data: orders });
+
+  } catch (err) {
+    console.error('getOrdersOfCTVByAgent error:', err);
+    return res.status(500).json({
+      message: 'Lỗi server khi lấy đơn hàng CTV của đại lý.',
+      error: err.message
+    });
+  }
+}
+
 
 module.exports = {
   createAgent,
@@ -146,4 +196,6 @@ module.exports = {
   listAgents,
   getAllAgents,
   updateManyAgents,
+  getOrdersByAgent,
+  getOrdersOfCTVByAgent
 };

@@ -34,9 +34,9 @@ const LoginPage = () => {
         navigate('/admin/dashboard'); 
       } else if (decodedUser.role === 'Nhà phân phối') {
         navigate('/'); 
-      } else if (decodedUser.role === 'CTV') {
+      } else if (decodedUser.role === 'Cộng tác viên') {
         navigate('/ctv/dashboard');
-      }else if (decodedUser.role === 'Agent') {
+      }else if (decodedUser.role === 'Đại lý') {
         navigate('/dl/dashboard'); 
       }else {
         navigate('/'); // Vai trò không xác định, chuyển về trang chủ hoặc trang lỗi

@@ -8,6 +8,22 @@ const Header = ({ toggleSidebar, pageTitle }) => {
     const { user } = useAuth();
     const { t } = useTranslation(); // <-- 2. Lấy hàm t
 
+    const getProfileLink = () => {
+        if (!user) return '#';
+        switch (user.role) {
+            case 'Admin':
+                return '/admin/profile';
+            case 'Nhà phân phối':
+                return '/npp/profile'; // Bạn sẽ cần tạo trang /npp/profile
+            case 'Đại lý':
+                return '/dl/profile'; // Bạn sẽ cần tạo trang /dl/profile
+            case 'Cộng tác viên':
+                return '/ctv/profile'; // Bạn sẽ cần tạo trang /ctv/profile
+            default:
+                return '#';
+        }
+    }
+
     return (
         <header className="bg-white p-4 flex items-center justify-between border-b border-border-color z-10 sticky top-0 dark:bg-gray-800 dark:border-gray-700">
             <div className="flex items-center gap-4">
@@ -41,14 +57,14 @@ const Header = ({ toggleSidebar, pageTitle }) => {
                 </div>
 
                 {user && (
-                    <div className="flex items-center gap-3">
+                    <Link to={getProfileLink()} className="flex items-center gap-3 cursor-pointer" title="Xem hồ sơ">
                         <div className="text-right">
                             <p className="font-semibold text-gray-800 capitalize dark:text-white">{user.username}</p>
                             {/* Có thể dịch vai trò nếu cần, nhưng thường giữ nguyên */}
                             <p className="text-xs text-text-muted dark:text-gray-400">{user.role}</p>
                         </div>
                         <img src={avatar} alt="Avatar" className="h-10 w-10 rounded-full object-cover border-2 border-primary" />
-                    </div>
+                    </Link>
                 )}
             </div>
         </header>

@@ -78,11 +78,30 @@ const errorHandler = (err, req, res, next) => {
     });
 };
 
+//=======================================
+//Controller sẽ gọi Service tương ứng và trả về JSON( An Làm )
+// =======================================
+
+const getAdminStats = async (req, res) => {
+    try {
+        // 🆕 Lấy tham số groupBy từ query URL (mặc định là 'month')
+        const { groupBy } = req.query; 
+        
+        // Truyền tham số vào service
+        const stats = await dashboardService.getAdminOrderStats(groupBy);
+        
+        res.json({ success: true, data: stats });
+    } catch (err) {
+        console.error('Error in getAdminStats:', err.message);
+        res.status(500).json({ error: 'Failed to retrieve admin stats', details: err.message });
+    }
+};
 // Sửa lỗi CRITICAL: Hợp nhất tất cả các hàm controller vào một module.exports
 module.exports = {
     getPersonalDashboard,
     uploadExcel,
     getStatistics,
     getProductsSummary,
-    errorHandler
+    errorHandler,
+    getAdminStats
 };

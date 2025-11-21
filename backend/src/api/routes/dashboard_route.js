@@ -4,7 +4,7 @@ const upload = multer({ dest: 'uploads' }); // Thư mục tạm để lưu file 
 
 const router = express.Router();
 const dashboardController = require('../../controllers/dashboard_controller');
-const { authenticateToken } = require('../../middlewares/auth_middleware');
+const { authenticateToken } = require('../../middlewares/auth_middleware'); // có thêm require role( nếu cần An Làm thêm )
 
 const { validateExcelUpload } = require('../../middlewares/validator_middleware');
 
@@ -32,5 +32,6 @@ router.get('/statistics', authenticateToken, dashboardController.getStatistics);
 // GET: Lấy tóm tắt về sản phẩm
 router.get('/products-summary', authenticateToken, dashboardController.getProductsSummary);
 
-
+// Thêm route mới dành riêng cho Admin ( An Làm)
+router.get('/admin/stats', authenticateToken, dashboardController.getAdminStats);
 module.exports = router;

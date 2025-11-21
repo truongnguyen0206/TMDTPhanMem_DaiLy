@@ -174,6 +174,23 @@ const updateUsername = async (id, username) => {
   return data;
 };
 
+//========================================
+//Làm Thêm( An Làm)
+//========================================
+const countUsersByDateRange = async (startDate, endDate) => {
+  const { count, error } = await supabase
+    .from("users_view")
+    .select("*", { count: "exact", head: true })
+    .gte("created_at", startDate)
+    .lte("created_at", endDate)
+    // Nếu muốn lọc chỉ lấy role Khách hàng (giả sử role_id = 5) thì mở comment dưới
+    // .eq("role_id", 5); 
+
+  if (error) throw error;
+  return count || 0;
+};
+
+
 module.exports = {
   findByEmailOrUsername,
   createUser,
@@ -182,4 +199,5 @@ module.exports = {
   updateUser,
   deleteUser,
   updateUsername,
+  countUsersByDateRange,
 };

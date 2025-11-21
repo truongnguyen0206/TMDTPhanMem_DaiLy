@@ -3,7 +3,7 @@ const supabase = require("../config/supabaseClient");
 // === Lấy toàn bộ sản phẩm trong tất cả đơn hàng ===
 const getAllProducts = async () => {
   const { data, error } = await supabase
-    .from("v_order_product")
+    .from("product")
     .select("*")
     .order("product_id", { ascending: true });
 
@@ -16,9 +16,9 @@ const createOrderProduct = async (data) => {
   const { order_id, product_id, product_name, description, quantity, unit_price } = data;
 
   const { data: result, error } = await supabase
-    .from("v_order_product")
+    .from("product")
     .insert([
-      { order_id, product_id, product_name, description, quantity, unit_price },
+      { product_id, product_name, description, quantity, unit_price },
     ])
     .select("*")
     .single();
@@ -37,7 +37,7 @@ const updateOrderProduct = async (id, updates) => {
   if (Object.keys(validUpdates).length === 0) return null;
 
   const { data, error } = await supabase
-    .from("v_order_product")
+    .from("product")
     .update(validUpdates)
     .eq("id", id)
     .select("*")
@@ -50,7 +50,7 @@ const updateOrderProduct = async (id, updates) => {
 // === Xóa sản phẩm ===
 const deleteOrderProduct = async (id) => {
   const { data, error } = await supabase
-    .from("v_order_product")
+    .from("product")
     .delete()
     .eq("id", id)
     .select("*")
@@ -63,7 +63,7 @@ const deleteOrderProduct = async (id) => {
 // === Lấy danh sách sản phẩm theo order_id ===
 const getProductsByOrder = async (order_id) => {
   const { data, error } = await supabase
-    .from("v_order_product")
+    .from("product")
     .select("*")
     .eq("order_id", order_id)
     .order("id", { ascending: true });

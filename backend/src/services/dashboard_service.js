@@ -1,7 +1,8 @@
-const supabase = require('../config/supabaseClient');
+const supabase = require('../config/database_config');
 const xlsx = require('xlsx');
 const fs = require('fs');
 const UserModel = require('../models/user_model'); // Nếu dùng model, nếu không thì dùng trực tiếp supabase
+const OrderModel = require('../models/order_model');// Mới thêm để lấy thống kê Admin (An làm)
 
 /**
  * Lấy dữ liệu tổng hợp cho Dashboard cá nhân.
@@ -182,12 +183,159 @@ const submitWithdrawalRequest = async (userId, amount) => {
     }
 };
 
+//========================================
+//Làm thêm phần lấy thông kê tổng quan cho Admin Dashboard ( an almf)
+//========================================
+// 🆕 Hàm helper: Tính số thứ tự tuần trong năm (ISO Week Date)
+const getStartAndEndOfWeek = (date) => {
+    const day = date.getDay();
+    const diff = date.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
+    const start = new Date(date.setDate(diff));
+    start.setHours(0, 0, 0, 0);
+    
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
+    
+    return { start, end };
+};
 
-// SỬA LỖI EXPORT CRITICAL: Export tất cả các hàm cần thiết
+// Helper: Tính % tăng trưởng
+const calculateGrowth = (current, previous) => {
+    if (previous === 0) return current > 0 ? 100 : 0;
+    return ((current - previous) / previous) * 100;
+};
+
+// Helper: Lấy ngày bắt đầu và kết thúc của tháng
+const getMonthRange = (year, month) => {
+    const start = new Date(Date.UTC(year, month, 1));
+    const end = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59, 999));
+    return { start: start.toISOString(), end: end.toISOString() };
+};
+
+const normalize = (str) => str ? str.toLowerCase().trim() : '';
+
+// 3. Hàm xử lý dữ liệu biểu đồ (processChartData)
+const processChartData = (targetArray, rawOrdersYear, indexResolver, dateFilter = null) => {
+    if (rawOrdersYear && rawOrdersYear.length > 0) {
+        rawOrdersYear.forEach(order => {
+            if (order.tao_vao_luc) {
+                const date = new Date(order.tao_vao_luc);
+                
+                // Nếu có bộ lọc ngày (ví dụ: chỉ lấy tuần này), kiểm tra trước
+                if (dateFilter && (date < dateFilter.start || date > dateFilter.end)) {
+                    return; // Bỏ qua đơn không thuộc khoảng thời gian
+                }
+
+                const idx = indexResolver(date);
+                const status = normalize(order.trang_thai_don_hang); // Chuẩn hóa trạng thái
+
+                if (idx >= 0 && idx < targetArray.length) {
+                    // 🟢 ĐẾM "HOÀN THÀNH" (Chỉnh sửa để khớp với DB của bạn: 'Đã hoàn thành')
+                    if (
+                        status === 'hoàn thành' || 
+                        status === 'đã hoàn thành' || // <--- QUAN TRỌNG
+                        status === 'đã giao' || 
+                        status === 'đã xác nhận'
+                    ) {
+                        targetArray[idx].Approved += 1;
+                    } 
+                    // 🔴 ĐẾM "ĐÃ HỦY"
+                    else if (
+                        status === 'đã hủy' || 
+                        status === 'hủy' || 
+                        status === 'cancelled'
+                    ) {
+                        targetArray[idx].Cancelled += 1;
+                    }
+                }
+            }
+        });
+    }
+};
+
+// Cập nhật hàm getAdminOrderStats nhận tham số groupBy
+// 4. Hàm chính lấy thống kê Admin
+const getAdminOrderStats = async (groupBy = 'year') => {
+  try {
+    console.log(`🔄 Thống kê Admin (Mode: ${groupBy})...`);
+    const currentYear = new Date().getFullYear();
+
+    const [
+      agentOrders, pendingPayment, ctvOrders,
+      nppOrders, returnedOrders, revenue, 
+      rawTopPartners, 
+      rawOrdersYear
+    ] = await Promise.all([
+      OrderModel.countOrders({ source: 'Đại lý' }), 
+      OrderModel.countOrders({ payment_status: 'Chờ thanh toán' }), 
+      OrderModel.countOrders({ source: 'Cộng tác viên' }), 
+      OrderModel.countOrders({ source: 'Nhà phân phối' }),
+      OrderModel.countOrders({ status: 'Đã hủy' }), 
+      OrderModel.getTotalRevenue(),
+      OrderModel.getOrdersForTopPartners(),
+      OrderModel.getOrdersByYear(currentYear) 
+    ]);
+
+    // Xử lý Top Đối Tác
+    const partnerMap = {};
+    rawTopPartners.forEach(order => {
+        const name = order.nguoi_tao_don;
+        const amount = Number(order.tong_tien) || 0;
+        if (name) {
+            if (!partnerMap[name]) partnerMap[name] = { name, orders: 0, revenue: 0 };
+            partnerMap[name].orders += 1;
+            partnerMap[name].revenue += amount;
+        }
+    });
+    const topPartners = Object.values(partnerMap).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
+
+    // Xử lý Biểu đồ
+    let chartData = [];
+
+    if (groupBy === 'week') {
+        // --- CHẾ ĐỘ: TUẦN NÀY (T2 -> CN) ---
+        const { start, end } = getStartAndEndOfWeek(new Date());
+        const daysOfWeek = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+        
+        chartData = daysOfWeek.map(day => ({ name: day, Approved: 0, Cancelled: 0 }));
+        
+        // Gọi hàm processChartData với bộ lọc ngày
+        processChartData(chartData, rawOrdersYear, (date) => {
+            let dayIndex = date.getDay(); 
+            return dayIndex === 0 ? 6 : dayIndex - 1; // CN=0 -> index 6
+        }, { start, end });
+
+    } else {
+        // --- CHẾ ĐỘ: NĂM NAY (T1 -> T12) ---
+        chartData = Array.from({ length: 12 }, (_, i) => ({ name: `T${i + 1}`, Approved: 0, Cancelled: 0 }));
+        
+        // Gọi hàm processChartData không cần bộ lọc ngày (lấy cả năm)
+        processChartData(chartData, rawOrdersYear, (date) => date.getMonth());
+    }
+
+    return {
+      via_agent: agentOrders,
+      pending_payment: pendingPayment,
+      via_ctv: ctvOrders,
+      via_npp: nppOrders,
+      returned: returnedOrders,
+      total_revenue: revenue,
+      top_partners: topPartners,
+      monthly_stats: chartData 
+    };
+
+  } catch (error) {
+    console.error("❌ Service Error:", error);
+    throw new Error(`Lỗi khi lấy thống kê Admin: ${error.message}`);
+  }
+};
+
 module.exports = {
     getPersonalData,
     processExcelUpload,
     getStatistics, 
     getProductsSummary,
-    submitWithdrawalRequest, // Bổ sung hàm bị thiếu
+    submitWithdrawalRequest,
+    getAdminOrderStats 
 };

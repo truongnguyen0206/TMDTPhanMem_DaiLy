@@ -1,5 +1,9 @@
 const dashboardService = require('../services/dashboard_service');
 const { getDistributorKpi } = require('../services/dashboard_service');
+// const { countOrderByDistributor } = require("../services/dashboard_service");
+const { countOrderByDistributor } = require("../models/dashboard_model");
+// const { countOrderByDistributor } = require("../services/dashboard_model");
+
 
 
 const getPersonalDashboard = async (req, res) => {
@@ -106,6 +110,33 @@ const getDistributorDashboard = async (req, res, next) => {
       next(err);
     }
   };
+
+  const getDistributorOrderCount = async (req, res, next) => {
+    try {
+      const nppId = Number(req.params.npp_id);
+  
+      if (!nppId || isNaN(nppId)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid or missing npp_id in params",
+        });
+      }
+  
+      const totalOrders = await countOrderByDistributor(nppId);
+  
+      return res.status(200).json({
+        success: true,
+        message: "Distributor order count fetched successfully",
+        data: {
+          npp_id: nppId,
+          total_orders: totalOrders,
+        },
+      });
+    } catch (err) {
+      console.error("Error in getDistributorOrderCount:", err);
+      next(err);
+    }
+  };
 // Sửa lỗi CRITICAL: Hợp nhất tất cả các hàm controller vào một module.exports
 module.exports = {
     getPersonalDashboard,
@@ -114,4 +145,5 @@ module.exports = {
     getProductsSummary,
     errorHandler,
     getDistributorDashboard,
+    getDistributorOrderCount,
 };

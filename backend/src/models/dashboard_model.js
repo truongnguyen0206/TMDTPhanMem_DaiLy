@@ -92,6 +92,34 @@ const countAgentsByDistributor = async (nppId) => {
     return count || 0;
   };
 
+const countOrderByDistributor = async (userId) => {
+    const { data: npp, error: errorDistributor } = await supabase
+      .from("nhaphanphoi_view")
+      .select("npp_id")
+      .eq("user_id", userId)
+      .maybeSingle();
+  
+    if (errorDistributor) {
+      throw new Error(`Supabase error: ${errorDistributor.message}`);
+    }
+  
+    const nppId = npp?.npp_id;
+    if (!nppId) return 0;
+  
+    // Đếm order theo npp_id
+    const { count, error: errorOrder } = await supabase
+      .from("orders_view")
+      .select("order_id", { count: "exact", head: true })
+      .eq("npp_id", nppId);
+  
+    if (errorOrder) {
+      throw new Error(`Supabase error: ${errorOrder.message}`);
+    }
+  
+    return count || 0;
+  };
+  
+
 module.exports = {
     findUserAndRoleById,
     findBalanceByUserId,
@@ -101,5 +129,6 @@ module.exports = {
     findStatisticsByUserId,
     findTopProductsByUserId,
     createWithdrawalRequest,
-    countAgentsByDistributor
+    countAgentsByDistributor,
+    countOrderByDistributor
 };

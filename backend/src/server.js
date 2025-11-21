@@ -14,6 +14,8 @@ const commissionRoutes = require('./api/routes/commissionRule_route.js');
 const commissionRuleRoutes = require('./api/routes/commissionRule_route.js');
 const dashboardRoutes = require('./api/routes/dashboard_route.js'); // Thêm route dashboard
 const withdrawalRoutes = require('./api/routes/withdrawal_route.js'); // <--- IMPORT MỚI
+const DistributorRoutes = require("./api/routes/distributor_route");
+
 const app = express();
 
 // Middleware
@@ -28,6 +30,7 @@ app.use("/report", reportRoutes);
 app.use("/agent", agentRoutes);
 app.use("/product", productRoutes);
 app.use("/CTV", collaboratorRoute);
+app.use("/npp",DistributorRoutes);
 app.use('/api/commissions', commissionRoutes);
 app.use('/api/commission-rules', commissionRuleRoutes);
 app.use('/api/dashboard', dashboardRoutes);

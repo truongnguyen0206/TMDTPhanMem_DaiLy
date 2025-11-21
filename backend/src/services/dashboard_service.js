@@ -191,11 +191,13 @@ const { countAgentsByDistributor } = require('../models/dashboard_model');
  */
 const getDistributorKpi = async (nppId) => {
   const totalAgents = await countAgentsByDistributor(nppId);
-
+  const totalOrders = await countOrderByDistributor(nppId);
   return {
     totalAgents,
+    totalOrders,
   };
 };
+
 
 // SỬA LỖI EXPORT CRITICAL: Export tất cả các hàm cần thiết
 module.exports = {

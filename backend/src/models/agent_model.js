@@ -155,16 +155,21 @@ const getOrdersByAgent = async (agent_id, opts = {}) => {
 
   // 2️⃣ Lấy danh sách đơn hàng theo user_id của đại lý
   let query = supabase
-    .from("orders_view") // hoặc orders.orders nếu bạn dùng bảng
+    .from("orders_with_product")
     .select(`
-      order_id,
-      order_code,
-      order_date,
-      customer_id,
-      total_amount,
-      order_status,
-      payment_status,
-      user_id
+        order_id,
+        order_code,
+        order_date,
+        customer_id,
+        product_id,
+        product_code,
+        product_name,
+        quantity,
+        total_amount,
+        order_source,
+        order_status,
+        payment_status,
+        user_id
     `)
     .eq("user_id", agent.user_id)
     .order("order_date", { ascending: false });
@@ -208,15 +213,21 @@ const getOrdersOfCTVByAgent = async (agent_id, opts = {}) => {
 
   // 2️⃣ Query tất cả đơn hàng của những user_id này
   let query = supabase
-    .from("orders_view")
+    .from("orders_with_product")
     .select(`
       order_id,
-      order_code,
-      order_date,
-      total_amount,
-      order_status,
-      payment_status,
-      user_id
+        order_code,
+        order_date,
+        customer_id,
+        product_id,
+        product_code,
+        product_name,
+        quantity,
+        total_amount,
+        order_source,
+        order_status,
+        payment_status,
+        user_id
     `)
     .in("user_id", ctvUserIds)     // 👈 lấy đơn hàng của CTV
     .order("order_date", { ascending: false });
@@ -237,6 +248,23 @@ const getOrdersOfCTVByAgent = async (agent_id, opts = {}) => {
   return data || [];
 };
 
+/**
+ * Lấy danh sách sản phẩm được phân phối cho 1 đại lý
+ */
+const getProductsByAgent = async (agentId, opts) => {
+  if (!agentId) throw new Error("agentId is required");
+
+  const { search = '', status = null } = opts;
+  
+  const { data, error } = await supabase
+    .from("agent_product_view") // VIEW đã tạo
+    .select("*")
+    .eq("agent_id", agentId);
+
+  if (error) throw error;
+  return data;
+};
+
 module.exports = {
   getAllAgents,
   getCTVByAgent,
@@ -247,5 +275,6 @@ module.exports = {
   deleteAgent,
   updateManyAgents,
   getOrdersByAgent,
-  getOrdersOfCTVByAgent
+  getOrdersOfCTVByAgent,
+  getProductsByAgent
 };

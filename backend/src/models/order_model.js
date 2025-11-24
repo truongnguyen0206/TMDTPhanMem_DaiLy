@@ -242,6 +242,85 @@ const getOrderOriginLogs = async (order_id) => {
   return data || [];
 };
 
+//========================================
+//Làm Thêm Phần đếm cơ bản( An Làm)
+//========================================
+
+// Hàm đếm chung cho đơn hàng theo bộ lọc
+const countOrders = async (filters = {}) => {
+  // ✅ SỬA LẠI TÊN VIEW ĐÚNG LÀ: v_order_detail
+  let query = supabase.from("v_order_detail").select("*", { count: "exact", head: true });
+  
+  // 1. Lọc theo Trạng thái đơn hàng
+  if (filters.status) {
+      query = query.eq("trang_thai_don_hang", filters.status);
+  }
+
+  // 2. Lọc theo Nguồn tạo đơn
+  if (filters.source) {
+      query = query.eq("nguon_tao_don", filters.source);
+  }
+  
+  // 3. Lọc theo Trạng thái thanh toán
+  if (filters.payment_status) {
+      query = query.eq("trang_thai_thanh_toan", filters.payment_status);
+  }
+  
+  const { count, error } = await query;
+  
+  if (error) {
+      // Log lỗi chi tiết ra terminal để dễ debug nếu sai tên cột
+      console.error(`❌ Lỗi đếm đơn (Status: ${filters.status}, Source: ${filters.source}):`, error);
+      throw error;
+  }
+  return count || 0;
+};
+
+// Hàm tính tổng doanh thu
+const getTotalRevenue = async () => {
+  // ✅ SỬA LẠI TÊN VIEW: v_order_detail
+  const { data, error } = await supabase
+    .from("v_order_detail")
+    .select("tong_tien") // Cột này chỉ có trong v_order_detail
+    .not("tong_tien", "is", null); 
+    
+  if (error) {
+      console.error("❌ Lỗi tính tổng doanh thu:", error);
+      throw error;
+  }
+  
+  return data.reduce((sum, order) => sum + (Number(order.tong_tien) || 0), 0);
+};
+
+
+const getOrdersForTopPartners = async () => {
+  // Lấy cột người tạo và nguồn tạo, loại bỏ các đơn đã hủy
+  const { data, error } = await supabase
+    .from("v_order_detail")
+    .select("nguoi_tao_don, nguon_tao_don, so_luong, tong_tien")
+    .neq("trang_thai_don_hang", "Đã hủy") // Không tính đơn hủy vào thành tích
+    .not("nguoi_tao_don", "is", null);    // Bỏ qua nếu không có người tạo
+
+  if (error) throw error;
+  return data;
+};
+
+
+const getOrdersByYear = async (year) => {
+  const startDate = `${year}-01-01T00:00:00.000Z`;
+  const endDate = `${year}-12-31T23:59:59.999Z`;
+
+  // Lấy ngày tạo và trạng thái của tất cả đơn trong năm
+  const { data, error } = await supabase
+    .from("v_order_detail")
+    .select("tao_vao_luc, trang_thai_don_hang")
+    .gte("tao_vao_luc", startDate)
+    .lte("tao_vao_luc", endDate);
+
+  if (error) throw error;
+  return data || [];
+};
+
 module.exports = {
   getAll,
   getById,
@@ -255,5 +334,9 @@ module.exports = {
   // getOrderById,
   listOrders,
   getOrderDetail,
-  getOrderOriginLogs
+  getOrderOriginLogs,
+  countOrders,
+  getTotalRevenue,
+  getOrdersForTopPartners,
+  getOrdersByYear,
 };

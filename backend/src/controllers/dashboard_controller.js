@@ -1,8 +1,7 @@
 const dashboardService = require('../services/dashboard_service');
 const { getDistributorKpi } = require('../services/dashboard_service');
-// const { countOrderByDistributor } = require("../services/dashboard_service");
-const { countOrderByDistributor } = require("../models/dashboard_model");
-// const { countOrderByDistributor } = require("../services/dashboard_model");
+const { countOrderByDistributor } = require("../services/dashboard_service");
+// const { countOrderByDistributor } = require("../models/dashboard_model");
 
 
 
@@ -137,6 +136,26 @@ const getDistributorDashboard = async (req, res, next) => {
       next(err);
     }
   };
+
+//=======================================
+//Controller sẽ gọi Service tương ứng và trả về JSON( An Làm )
+// =======================================
+
+const getAdminStats = async (req, res) => {
+  try {
+      // 🆕 Lấy tham số groupBy từ query URL (mặc định là 'month')
+      const { groupBy } = req.query; 
+      
+      // Truyền tham số vào service
+      const stats = await dashboardService.getAdminOrderStats(groupBy);
+      
+      res.json({ success: true, data: stats });
+  } catch (err) {
+      console.error('Error in getAdminStats:', err.message);
+      res.status(500).json({ error: 'Failed to retrieve admin stats', details: err.message });
+  }
+};
+
 // Sửa lỗi CRITICAL: Hợp nhất tất cả các hàm controller vào một module.exports
 module.exports = {
     getPersonalDashboard,
@@ -146,4 +165,5 @@ module.exports = {
     errorHandler,
     getDistributorDashboard,
     getDistributorOrderCount,
+    
 };

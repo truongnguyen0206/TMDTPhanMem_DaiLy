@@ -25,60 +25,52 @@ const getFilteredOrders = async (from, to) => {
   return data;
 };
 
+
+// ================================
+// XUẤT EXCEL ĐƠN HÀNG
+// ================================
 const exportOrdersExcel = async (req, res) => {
   try {
-    // 🟦 1. Lấy danh sách đơn hàng cơ bản
     const { data: orders, error } = await supabase
-      .from("orders_view")
+      .from("v_order_detail")
       .select("*")
-      .order("order_date", { ascending: false });
+      .order("tao_vao_luc", { ascending: false });
 
     if (error) throw error;
     if (!orders || orders.length === 0)
       return res.status(404).json({ message: "Không có đơn hàng nào để xuất Excel" });
 
-    // 🟦 2. Bổ sung tên khách hàng & sản phẩm
-    const enriched = await Promise.all(
-      orders.map(async (order) => {
-        // 🔹 Lấy tên khách hàng
-        const { data: cust } = await supabase
-          .from("customer_view")
-          .select("customer_name")
-          .eq("customer_id", order.customer_id)
-          .maybeSingle();
-
-        // 🔹 Lấy tên sản phẩm theo product_id
-        const { data: prod } = await supabase
-          .from("product")
-          .select("product_name")
-          .eq("product_id", order.product_id)
-          .maybeSingle();
-
-        return {
-          ...order,
-          customer_name: cust?.customer_name || "-",
-          product_name: prod?.product_name || "-",
-        };
-      })
-    );
-
-    // 🟦 3. Tạo workbook và worksheet
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Orders");
 
-    // ==== HEADER CÔNG TY ====
-    worksheet.mergeCells("A1", "G1");
+    // ================================
+    // TÊN SHEET CÓ NGÀY XUẤT
+    // ================================
+    let sheetName;
+
+    if (req.query.from && req.query.to) {
+      sheetName = `Bao_cao_don_hang (${req.query.from} → ${req.query.to})`;
+    } else {
+      const exportDate = new Date().toLocaleDateString("vi-VN").replace(/\//g, "-");
+      sheetName = `Bao_cao_don_hang - ${exportDate}`;
+    }
+
+    const worksheet = workbook.addWorksheet(sheetName);
+
+    // ================================
+    //   HEADER CÔNG TY
+    // ================================
+    worksheet.mergeCells("A1:H1");
     worksheet.getCell("A1").value = "CÔNG TY CỔ PHẦN AMIT GROUP";
     worksheet.getCell("A1").font = { bold: true, size: 14 };
     worksheet.getCell("A1").alignment = { horizontal: "center" };
 
-    worksheet.mergeCells("A2", "G2");
+    worksheet.mergeCells("A2:H2");
     worksheet.getCell("A2").value =
-      "Địa chỉ: Số 7, đường 7C, Khu đô thị An Phú An Khánh, Phường An Phú, TP Thủ Đức, TP HCM.";
+      "Địa chỉ: Số 7, đường 7C, Khu đô thị An Phú An Khánh, P. An Phú, TP Thủ Đức, TP.HCM.";
     worksheet.getCell("A2").font = { size: 10 };
     worksheet.getCell("A2").alignment = { horizontal: "center" };
 
-    worksheet.mergeCells("A3", "G3");
+    worksheet.mergeCells("A3:H3");
     worksheet.getCell("A3").value =
       "SĐT: 0123 456 789 | Website: www.abc.com | Email: contact@abc.com";
     worksheet.getCell("A3").font = { size: 10 };
@@ -86,112 +78,176 @@ const exportOrdersExcel = async (req, res) => {
 
     worksheet.addRow([]);
 
-    // ==== TITLE BÁO CÁO ====
-    worksheet.mergeCells("A5", "G5");
+    // ================================
+    //   TITLE BÁO CÁO
+    // ================================
+    worksheet.mergeCells("A5:H5");
     worksheet.getCell("A5").value = "BÁO CÁO ĐƠN HÀNG";
     worksheet.getCell("A5").font = { bold: true, size: 16 };
     worksheet.getCell("A5").alignment = { horizontal: "center" };
 
+    // ================================
+    //  Dòng “Từ ngày – Đến ngày”
+    // ================================
+    const exportRange =
+      req.query.from && req.query.to
+        ? `Từ ngày: ${req.query.from}    Đến ngày: ${req.query.to}`
+        : `Ngày xuất: ${new Date().toLocaleString("vi-VN")}`;
+
+    worksheet.mergeCells("A6:H6");
+    worksheet.getCell("A6").value = exportRange;
+    worksheet.getCell("A6").font = { size: 10 };
+    worksheet.getCell("A6").alignment = { horizontal: "left" };
+
     worksheet.addRow([]);
 
-    // ==== HEADER CỘT ====
-    worksheet.columns = [
-      { header: "Mã đơn", key: "order_code", width: 15 },
-      { header: "Ngày", key: "order_date", width: 20 },
-      { header: "Khách hàng", key: "customer_name", width: 25 },
-      { header: "Sản phẩm", key: "product_name", width: 25 },
-      { header: "Nguồn", key: "order_source", width: 15 },
-      { header: "Tổng tiền", key: "total_amount", width: 15 },
-      { header: "Trạng thái", key: "status", width: 12 },
-    ];
+    // ================================
+    // TẠO HEADER BẢNG (KHÔNG ĐƯỢC DÙNG worksheet.columns)
+    // ================================
+    const headerRow = worksheet.addRow([
+      "Mã đơn",
+      "Ngày",
+      "Khách hàng",
+      "Nguồn",
+      "Sản phẩm",
+      "Tổng tiền",
+      "Trạng thái đơn hàng",
+      "Trạng thái thanh toán",
+    ]);
 
-    // ==== DỮ LIỆU ====
-    enriched.forEach((order) => {
-      worksheet.addRow({
-        order_code: order.order_code,
-        order_date: order.order_date
-          ? new Date(order.order_date).toLocaleDateString("vi-VN")
-          : "-",
-        customer_name: order.customer_name,
-        product_name: order.product_name,
-        order_source: order.order_source || "-",
-        total_amount: order.total_amount || 0,
-        status: order.status || "-",
-      });
+    // Set width cho 8 cột
+    const colWidths = [15, 15, 25, 20, 25, 18, 25, 25];
+    colWidths.forEach((w, idx) => {
+      worksheet.getColumn(idx + 1).width = w;
     });
 
-    // ==== ĐỊNH DẠNG ====
-    worksheet.getColumn("total_amount").numFmt = '#,##0 "₫"';
-    worksheet.getColumn("order_date").alignment = { horizontal: "center" };
-    worksheet.getColumn("status").alignment = { horizontal: "center" };
+    // ==== Format header ====
+    headerRow.eachCell((cell) => {
+      cell.font = { bold: true };
+      cell.alignment = { horizontal: "center", vertical: "middle" };
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFD9D9D9" }, // xám nhạt
+      };
+      cell.border = {
+        top: { style: "thin" },
+        left: { style: "thin" },
+        bottom: { style: "thin" },
+        right: { style: "thin" },
+      };
+    });
 
-    // ==== DÒNG NGÀY XUẤT ====
+    // ================================
+    //  DỮ LIỆU
+    // ================================
+    orders.forEach((order) => {
+      worksheet.addRow([
+        order.ma_don_hang,
+        order.tao_vao_luc
+          ? new Date(order.tao_vao_luc).toLocaleDateString("vi-VN")
+          : "-",
+        order.ten_khach_hang,
+        order.nguon_tao_don || "-",
+        order.san_pham,
+        order.tong_tien || 0,
+        order.trang_thai_don_hang || "-",
+        order.trang_thai_thanh_toan || "-",
+      ]);
+    });
+
+    // Format số tiền
+    worksheet.getColumn(6).numFmt = '#,##0 "₫"';
+
+    // Căn giữa cột ngày
+    worksheet.getColumn(2).alignment = { horizontal: "center" };
+    worksheet.getColumn(8).alignment = { horizontal: "center" };
+
+    // ================================
+    // FOOTER
+    // ================================
     worksheet.addRow([]);
-    const exportDateRow = worksheet.addRow([
-      `Ngày xuất: ${new Date().toLocaleString("vi-VN")}`,
+    const footerRow = worksheet.addRow([
+      "AMIT GROUP - THỰC TẬP SINH ĐẠI HỌC HOA SEN",
     ]);
-    worksheet.mergeCells(`A${exportDateRow.number}:G${exportDateRow.number}`);
-    exportDateRow.getCell(1).alignment = { horizontal: "right" };
-    exportDateRow.getCell(1).font = { size: 10 };
 
-    // ==== GỬI FILE EXCEL ====
+    worksheet.mergeCells(`A${footerRow.number}:H${footerRow.number}`);
+    footerRow.getCell(1).alignment = { horizontal: "right" };
+    footerRow.getCell(1).font = { size: 10, italic: true };
+
+    // ================================
+    // TRẢ FILE
+    // ================================
+    let filename = "";
+
+    if (req.query.from && req.query.to) {
+      const fromClean = req.query.from.replace(/\//g, "-");
+      const toClean = req.query.to.replace(/\//g, "-");
+      filename = `Bao_cao_don_hang-(${fromClean}→${toClean})`;
+    } else {
+      const exportDate = new Date().toLocaleDateString("vi-VN").replace(/\//g, "-");
+      filename = `Bao_cao_don_hang-(${exportDate})`;
+    }
+    
+    const buffer = await workbook.xlsx.writeBuffer();
+
     res.setHeader(
       "Content-Type",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     );
-    res.setHeader("Content-Disposition", "attachment; filename=orders.xlsx");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${filename}.xlsx"`
+    );
+    res.setHeader("Content-Length", buffer.length);
+    
+    return res.send(buffer);
 
-    await workbook.xlsx.write(res);
-    res.end();
   } catch (err) {
-    console.error("❌ Lỗi trong exportOrdersExcel:", err);
+    console.error("❌ Lỗi exportOrdersExcel:", err);
     res.status(500).json({ message: "Lỗi xuất Excel", error: err.message });
   }
 };
 
 
+// =============================
+//  XUẤT FILE PDF ĐƠN HÀNG
+// =============================
 const exportOrdersPDF = async (req, res) => {
   try {
-    // 🟦 1. Lấy danh sách đơn hàng cơ bản
     const { data: orders, error } = await supabase
-      .from("orders_view")
+      .from("v_order_detail")
       .select("*")
-      .order("order_date", { ascending: false });
+      .order("tao_vao_luc", { ascending: false });
 
     if (error) throw error;
     if (!orders || orders.length === 0)
       return res.status(404).json({ message: "Không có đơn hàng nào để xuất PDF" });
 
-    // 🟦 2. Bổ sung dữ liệu khách hàng & sản phẩm
-    const enriched = await Promise.all(
-      orders.map(async (order) => {
-        // Lấy tên khách hàng
-        const { data: cust } = await supabase
-          .from("customer_view")
-          .select("customer_name")
-          .eq("customer_id", order.customer_id) // ✅ sửa lỗi dấu ngoặc thừa
-          .maybeSingle();
+    const enriched = orders;
 
-        // Lấy tên sản phẩm dựa trên product_id
-        const { data: prod, error: prodErr} = await supabase
-          .from("product")
-          .select("product_name")
-          .eq("product_id", order.product_id)
-          .maybeSingle();
+    // =============================
+    //  CHIA THÀNH TỪNG NHÓM 10 DÒNG
+    // =============================
+    const chunkSize = 10;
+    const chunks = [];
+    for (let i = 0; i < enriched.length; i += chunkSize) {
+      chunks.push(enriched.slice(i, i + chunkSize));
+    }
 
-          console.log("🔸 Kết quả truy vấn product:", prod, prodErr);
+    // =============================
+    //  CẤU HÌNH PDF
+    // =============================
+    let filename = "";
 
-        return {
-          ...order,
-          customer_name: cust?.customer_name || "-",
-          product_name: prod?.product_name || "-",
-        };
-      })
-    );
-
-    // 🟦 3. Thiết lập header PDF
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", "attachment; filename=orders.pdf");
+    if (req.query.from && req.query.to) {
+      const fromClean = req.query.from.replace(/\//g, "-");
+      const toClean = req.query.to.replace(/\//g, "-");
+      filename = `Bao_cao_don_hang-(${fromClean}→${toClean}).pdf`;
+    } else {
+      const exportDate = new Date().toLocaleDateString("vi-VN").replace(/\//g, "-");
+      filename = `Bao_cao_don_hang-(${exportDate}).pdf`;
+    }
 
     const fonts = {
       TimesNewRoman: {
@@ -204,63 +260,95 @@ const exportOrdersPDF = async (req, res) => {
 
     const printer = new PDF(fonts);
 
-    // 🟦 4. Định nghĩa layout PDF
+    // =============================
+    //  CONTENT CHO TOÀN BỘ PDF
+    // =============================
+    const content = [];
+
+    // ----- HEADER CHỈ XUẤT HIỆN 1 LẦN -----
+    content.push({
+      columns: [
+        { image: path.join(__dirname, "../../public/logo2.png"), width: 80 },
+        [
+          { text: "CÔNG TY CỔ PHẦN AMIT GROUP", style: "headerRight" },
+          {
+            text: "Địa chỉ: Số 7, đường 7C, Khu đô thị An Phú An Khánh, P. An Phú, TP Thủ Đức, TP.HCM.",
+            style: "subTextRight",
+          },
+          { text: "SĐT: 0123 456 789", style: "subTextRight" },
+          { text: "Website: www.abc.com", style: "subTextRight" },
+          { text: "Email: contact@abc.com", style: "subTextRight" },
+        ],
+      ],
+    });
+
+    content.push({ text: "\n\nBÁO CÁO ĐƠN HÀNG", style: "title" });
+    content.push({ text: "\n" });
+    content.push({
+      text:
+        req.query.from && req.query.to
+          ? `Từ ngày: ${req.query.from}    Đến ngày: ${req.query.to}`
+          : `Ngày xuất: ${new Date().toLocaleString("vi-VN")}`,
+      margin: [0, 5, 0, 15], // căn khoảng cách dưới title
+      alignment: "left",
+      fontSize: 10,
+    });
+    content.push({ text: "\n" });
+
+    // =============================
+    //  TẠO TỪNG BẢNG 10 DÒNG
+    // =============================
+    chunks.forEach((chunk, index) => {
+      const tableBody = [
+        [
+          { text: "Mã đơn", bold: true },
+          { text: "Ngày", bold: true },
+          { text: "Khách hàng", bold: true },
+          { text: "Nguồn", bold: true },
+          { text: "Sản phẩm", bold: true },
+          { text: "Tổng tiền", bold: true },
+          { text: "Trạng thái đơn hàng", bold: true },
+          { text: "Trạng thái thanh toán", bold: true },
+        ],
+        ...chunk.map((order) => [
+          order.ma_don_hang,
+          new Date(order.tao_vao_luc).toLocaleDateString("vi-VN"),
+          order.ten_khach_hang,
+          order.nguon_tao_don || "-",
+          order.san_pham,
+          (order.tong_tien || 0).toLocaleString("vi-VN") + " ₫",
+          order.trang_thai_don_hang || "-",
+          order.trang_thai_thanh_toan || "-",
+        ]),
+      ];
+
+      content.push({
+        table: {
+          headerRows: 1,
+          widths: ["*", "*", "*", "*", "*", "*", "*", "*"],
+          body: tableBody,
+        },
+        layout: "lightHorizontalLines",
+        // Xuống trang sau bảng trừ bảng cuối
+        pageBreak: index < chunks.length - 1 ? "after" : undefined,
+        margin: [0, 0, 0, 20],
+      });
+    });
+
+    // ----- FOOTER -----
+    content.push({
+      text: "AMIT GROUP - THỰC TẬP SINH ĐẠI HỌC HOA SEN",
+      alignment: "right",
+      fontSize: 9,
+    });
+
+    // =============================
+    //  PDF DOCUMENT
+    // =============================
     const docDefinition = {
       pageMargins: [40, 60, 40, 60],
       defaultStyle: { font: "TimesNewRoman" },
-      content: [
-        {
-          columns: [
-            { image: path.join(__dirname, "../../public/logo.png"), width: 80 },
-            [
-              { text: "CÔNG TY CỔ PHẦN AMIT GROUP", style: "headerRight" },
-              {
-                text: "Địa chỉ: Số 7, đường 7C, Khu đô thị An Phú An Khánh, Phường An Phú, TP Thủ Đức, TP HCM.",
-                style: "subTextRight",
-              },
-              { text: "SĐT: 0123 456 789", style: "subTextRight" },
-              { text: "Website: www.abc.com", style: "subTextRight" },
-              { text: "Email: contact@abc.com", style: "subTextRight" },
-            ],
-          ],
-        },
-        { text: "\n\nBÁO CÁO ĐƠN HÀNG", style: "title" },
-        { text: "\n" },
-        {
-          table: {
-            headerRows: 1,
-            widths: ["*", "*", "*", "*", "*", "*", "*", "*"],
-            body: [
-              [
-                { text: "Mã đơn", bold: true },
-                { text: "Ngày", bold: true },
-                { text: "Khách hàng", bold: true },
-                { text: "Nguồn", bold: true },
-                { text: "Sản phẩm", bold: true },
-                { text: "Tổng tiền", bold: true },
-                { text: "Trạng thái đơn hàng", bold: true },
-                { text: "Trạng thái thanh toán", bold: true },
-              ],
-              ...enriched.map((order) => [
-                order.order_code,
-                new Date(order.order_date).toLocaleDateString("vi-VN"),
-                order.customer_name,
-                order.order_source || "-",
-                order.product_name,
-                (order.total_amount || 0).toLocaleString("vi-VN") + " ₫",
-                order.order_status || "-",
-                order.payment_status || "-",
-              ]),
-            ],
-          },
-          layout: "lightHorizontalLines",
-        },
-        {
-          text: "\nNgày xuất: " + new Date().toLocaleString("vi-VN"),
-          alignment: "right",
-          fontSize: 9,
-        },
-      ],
+      content,
       styles: {
         headerRight: { fontSize: 14, bold: true, alignment: "right" },
         subTextRight: { fontSize: 10, alignment: "right" },
@@ -268,7 +356,6 @@ const exportOrdersPDF = async (req, res) => {
       },
     };
 
-    // 🟦 5. Xuất file PDF
     const pdfDoc = printer.createPdfKitDocument(docDefinition);
     pdfDoc.pipe(res);
     pdfDoc.end();
@@ -277,6 +364,8 @@ const exportOrdersPDF = async (req, res) => {
     res.status(500).json({ message: "Lỗi xuất PDF", error: err.message });
   }
 };
+
+
 
 
 module.exports = { getFilteredOrders, exportOrdersExcel, exportOrdersPDF };

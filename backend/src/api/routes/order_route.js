@@ -22,7 +22,7 @@ router.get('/origin/:code', orderController.getOrigin);            // GET /api/o
 
 router.get("/byUser", orderController.getOrdersByUser);
 
-router.get('/export/excel', orderController.exportOrdersExcel);
-router.get('/export/pdf', orderController.exportOrdersPDF);
+// router.get('/export/excel', orderController.exportOrdersExcel);
+// router.get('/export/pdf', orderController.exportOrdersPDF);
 
 module.exports = router;

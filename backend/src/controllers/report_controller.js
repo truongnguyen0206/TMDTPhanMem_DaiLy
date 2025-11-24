@@ -268,7 +268,7 @@ const exportOrdersPDF = async (req, res) => {
     // ----- HEADER CHỈ XUẤT HIỆN 1 LẦN -----
     content.push({
       columns: [
-        { image: path.join(__dirname, "../../public/logo2.png"), width: 80 },
+        { image: path.join(__dirname, "../../public/logo.png"), width: 80 },
         [
           { text: "CÔNG TY CỔ PHẦN AMIT GROUP", style: "headerRight" },
           {

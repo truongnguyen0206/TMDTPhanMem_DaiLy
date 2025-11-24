@@ -273,67 +273,67 @@ const getAllOrigin = async (req, res) => {
   }
 };
 
-// ========================
-// 📊 XUẤT EXCEL
-// ========================
-const exportOrdersExcel = async (req, res) => {
-  try {
-    const { user_id, from, to } = req.query;
-    const orders = await Order.listOrders({ limit: 10000, offset: 0, user_id, from, to });
+// // ========================
+// // 📊 XUẤT EXCEL
+// // ========================
+// const exportOrdersExcel = async (req, res) => {
+//   try {
+//     const { user_id, from, to } = req.query;
+//     const orders = await Order.listOrders({ limit: 10000, offset: 0, user_id, from, to });
 
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet("Orders");
+//     const workbook = new ExcelJS.Workbook();
+//     const sheet = workbook.addWorksheet("Orders");
 
-    sheet.columns = [
-      { header: "Mã đơn hàng", key: "ma_don_hang", width: 15 },
-      { header: "Sản phẩm", key: "san_pham", width: 25 },
-      { header: "Số lượng", key: "so_luong", width: 10 },
-      { header: "Giá", key: "gia", width: 15 },
-      { header: "Tổng tiền", key: "tong_tien", width: 15 },
-      { header: "Trạng thái", key: "trang_thai", width: 15 },
-      { header: "Nguồn tạo đơn", key: "nguon_tao_don", width: 20 },
-      { header: "Người giới thiệu", key: "nguoi_gioi_thieu", width: 20 },
-      { header: "Ngày tạo", key: "tao_vao_luc", width: 20 },
-    ];
+//     sheet.columns = [
+//       { header: "Mã đơn hàng", key: "ma_don_hang", width: 15 },
+//       { header: "Sản phẩm", key: "san_pham", width: 25 },
+//       { header: "Số lượng", key: "so_luong", width: 10 },
+//       { header: "Giá", key: "gia", width: 15 },
+//       { header: "Tổng tiền", key: "tong_tien", width: 15 },
+//       { header: "Trạng thái", key: "trang_thai", width: 15 },
+//       { header: "Nguồn tạo đơn", key: "nguon_tao_don", width: 20 },
+//       { header: "Người giới thiệu", key: "nguoi_gioi_thieu", width: 20 },
+//       { header: "Ngày tạo", key: "tao_vao_luc", width: 20 },
+//     ];
 
-    orders.forEach((o) => sheet.addRow(o));
+//     orders.forEach((o) => sheet.addRow(o));
 
-    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-    res.setHeader("Content-Disposition", `attachment; filename="orders_${Date.now()}.xlsx"`);
-    await workbook.xlsx.write(res);
-    res.end();
-  } catch (err) {
-    console.error("❌ Error exporting Excel:", err);
-    res.status(500).json({ message: err.message });
-  }
-};
+//     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+//     res.setHeader("Content-Disposition", `attachment; filename="orders_${Date.now()}.xlsx"`);
+//     await workbook.xlsx.write(res);
+//     res.end();
+//   } catch (err) {
+//     console.error("❌ Error exporting Excel:", err);
+//     res.status(500).json({ message: err.message });
+//   }
+// };
 
-// ========================
-// 📄 XUẤT PDF
-// ========================
-const exportOrdersPDF = async (req, res) => {
-  try {
-    const { user_id, from, to } = req.query;
-    const orders = await Order.listOrders({ limit: 10000, offset: 0, user_id, from, to });
+// // ========================
+// // 📄 XUẤT PDF
+// // ========================
+// const exportOrdersPDF = async (req, res) => {
+//   try {
+//     const { user_id, from, to } = req.query;
+//     const orders = await Order.listOrders({ limit: 10000, offset: 0, user_id, from, to });
 
-    const doc = new PDFDocument({ margin: 30, size: "A4" });
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="orders_${Date.now()}.pdf"`);
-    doc.pipe(res);
+//     const doc = new PDFDocument({ margin: 30, size: "A4" });
+//     res.setHeader("Content-Type", "application/pdf");
+//     res.setHeader("Content-Disposition", `attachment; filename="orders_${Date.now()}.pdf"`);
+//     doc.pipe(res);
 
-    doc.fontSize(16).text("Orders Report", { align: "center" }).moveDown();
+//     doc.fontSize(16).text("Orders Report", { align: "center" }).moveDown();
 
-    orders.forEach((o) => {
-      doc.fontSize(10).text(`Mã: ${o.ma_don_hang} | Sản phẩm: ${o.san_pham} | Tổng: ${o.tong_tien} | Nguồn: ${o.nguon_tao_don}`);
-      doc.moveDown(0.3);
-    });
+//     orders.forEach((o) => {
+//       doc.fontSize(10).text(`Mã: ${o.ma_don_hang} | Sản phẩm: ${o.san_pham} | Tổng: ${o.tong_tien} | Nguồn: ${o.nguon_tao_don}`);
+//       doc.moveDown(0.3);
+//     });
 
-    doc.end();
-  } catch (err) {
-    console.error("❌ Error exporting PDF:", err);
-    res.status(500).json({ message: err.message });
-  }
-};
+//     doc.end();
+//   } catch (err) {
+//     console.error("❌ Error exporting PDF:", err);
+//     res.status(500).json({ message: err.message });
+//   }
+// };
 
 module.exports = {
   getAll,
@@ -347,6 +347,6 @@ module.exports = {
   remove,
   getOrigin,
   getAllOrigin,
-  exportOrdersExcel,
-  exportOrdersPDF,
+  // exportOrdersExcel,
+  // exportOrdersPDF,
 };

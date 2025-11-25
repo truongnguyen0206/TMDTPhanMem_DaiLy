@@ -165,5 +165,5 @@ module.exports = {
     errorHandler,
     getDistributorDashboard,
     getDistributorOrderCount,
-    
+    getAdminStats,
 };

@@ -34,6 +34,6 @@ router.get('/products-summary', authenticateToken, dashboardController.getProduc
 
 router.get('/tongdlcuanpp/:npp_id', dashboardController.getDistributorDashboard);
 router.get("/distributor/orders-count/:npp_id", dashboardController.getDistributorOrderCount);
-
+router.get('/admin/stats', authenticateToken, dashboardController.getAdminStats);
 
 module.exports = router;

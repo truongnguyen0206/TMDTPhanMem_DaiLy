@@ -1,201 +1,122 @@
 const CommissionRuleService = require('../services/commissionRule_service');
 
 class CommissionRuleController {
-  // Lấy tất cả quy tắc hoa hồng
   static async getAllRules(req, res) {
-    try {
-      const result = await CommissionRuleService.getAllRules();
-      
-      if (result.success) {
-        res.status(200).json(result);
-      } else {
-        res.status(400).json(result);
-      }
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        data: null,
-        message: 'Lỗi server: ' + error.message
-      });
-    }
+    const result = await CommissionRuleService.getAllRules();
+    return res.status(result.success ? 200 : 400).json(result);
   }
 
-  // Lấy quy tắc theo ID
   static async getRuleById(req, res) {
-    try {
-      const { ruleId } = req.params;
-      const result = await CommissionRuleService.getRuleById(ruleId);
-      
-      if (result.success) {
-        res.status(200).json(result);
-      } else {
-        res.status(404).json(result);
-      }
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        data: null,
-        message: 'Lỗi server: ' + error.message
-      });
-    }
+    const result = await CommissionRuleService.getRuleById(req.params.ruleId);
+    return res.status(result.success ? 200 : 404).json(result);
   }
 
-  // Lấy quy tắc theo role
   static async getRulesByRole(req, res) {
-    try {
-      const { roleId } = req.params;
-      const result = await CommissionRuleService.getRulesByRole(roleId);
-      
-      if (result.success) {
-        res.status(200).json(result);
-      } else {
-        res.status(400).json(result);
-      }
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        data: null,
-        message: 'Lỗi server: ' + error.message
-      });
-    }
+    const result = await CommissionRuleService.getRulesByRole(req.params.roleId);
+    return res.status(result.success ? 200 : 400).json(result);
   }
 
-  // Tạo quy tắc mới
+ // 4. Tạo quy tắc mới (Đã FIX lỗi created_by null)
   static async createRule(req, res) {
     try {
       const ruleData = req.body;
+      
+      // Kiểm tra body rỗng
+      if (!ruleData || Object.keys(ruleData).length === 0) {
+           return res.status(400).json({
+               success: false,
+               message: 'Dữ liệu đầu vào không được để trống.'
+           });
+      }
+      
+      // 🔍 DEBUG: In ra thông tin user từ token để kiểm tra
+      console.log("🔑 [Controller] User from Token:", req.user);
+
+      // Tự động gán người tạo
+      if (req.user) {
+          // 💡 FIX: Thử lấy ID từ các trường phổ biến (user_id, id, userId)
+          const adminId = req.user.user_id || req.user.id || req.user.userId;
+          
+          if (adminId) {
+              ruleData.created_by = adminId;
+              console.log("✅ [Controller] Gán created_by =", adminId);
+          } else {
+              console.warn("⚠️ [Controller] Không tìm thấy ID trong req.user!");
+          }
+      }
+
       const result = await CommissionRuleService.createRule(ruleData);
       
       if (result.success) {
-        res.status(201).json(result);
+        return res.status(201).json(result);
       } else {
-        res.status(400).json(result);
+        return res.status(400).json(result);
       }
+
     } catch (error) {
-      res.status(500).json({
-        success: false,
-        data: null,
-        message: 'Lỗi server: ' + error.message
-      });
+      console.error("Lỗi Controller createRule:", error);
+      return res.status(500).json({ success: false, message: 'Lỗi server: ' + error.message });
     }
   }
 
-  // Cập nhật quy tắc
+  // 5. Cập nhật quy tắc
   static async updateRule(req, res) {
     try {
-      const { ruleId } = req.params;
+      // 💡 SỬA LỖI: Lấy 'id' từ params và gán vào biến ruleId
+      const { id } = req.params; 
+      const ruleId = id; // Hoặc dùng trực tiếp ruleId = req.params.id
+
+
       const ruleData = req.body;
+      
+      if (!ruleId) {
+        return res.status(400).json({ success: false, message: 'Thiếu ID quy tắc.' });
+      }
+
+      // Tự động gán người sửa đổi
+      if (req.user && req.user.user_id) {
+          ruleData.created_by = req.user.user_id; 
+      }
+
       const result = await CommissionRuleService.updateRule(ruleId, ruleData);
       
       if (result.success) {
-        res.status(200).json(result);
+        return res.status(200).json(result);
       } else {
-        res.status(400).json(result);
+        return res.status(400).json(result);
       }
     } catch (error) {
-      res.status(500).json({
-        success: false,
-        data: null,
-        message: 'Lỗi server: ' + error.message
-      });
+      // ...
     }
   }
 
-  // Xóa quy tắc
+  // 6. Xóa quy tắc
   static async deleteRule(req, res) {
     try {
-      const { ruleId } = req.params;
+      // 💡 SỬA LỖI: Lấy 'id' từ URL thay vì 'ruleId'
+      const ruleId = req.params.id; 
+      
+      if (!ruleId) {
+        return res.status(400).json({ success: false, message: 'Thiếu ID quy tắc.' });
+      }
+
+      // Kiểm tra xem quy tắc có tồn tại không trước khi xóa (Optional nhưng recommended)
+      // const existingRule = await CommissionRuleService.getRuleById(ruleId);
+      // if (!existingRule.success) {
+      //    return res.status(404).json({ success: false, message: 'Quy tắc không tồn tại.' });
+      // }
+
       const result = await CommissionRuleService.deleteRule(ruleId);
       
+      // Trả về kết quả
       if (result.success) {
-        res.status(200).json(result);
+        return res.status(200).json(result);
       } else {
-        res.status(400).json(result);
+        return res.status(400).json(result);
       }
     } catch (error) {
-      res.status(500).json({
-        success: false,
-        data: null,
-        message: 'Lỗi server: ' + error.message
-      });
-    }
-  }
-
-  // Lấy dữ liệu dropdown (roles, categories)
-  static async getDropdownData(req, res) {
-    try {
-      const result = await CommissionRuleService.getDropdownData();
-      
-      if (result.success) {
-        res.status(200).json(result);
-      } else {
-        res.status(400).json(result);
-      }
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        data: null,
-        message: 'Lỗi server: ' + error.message
-      });
-    }
-  }
-
-  // Lấy quy tắc áp dụng cho user cụ thể
-  static async getApplicableRules(req, res) {
-    try {
-      const { userId } = req.params;
-      const { currentSales, productCategory } = req.query;
-
-      if (!userId || isNaN(userId)) {
-        return res.status(400).json({
-          success: false,
-          data: null,
-          message: 'ID người dùng không hợp lệ'
-        });
-      }
-
-      // Lấy thông tin user và role
-      const db = require('../config/db.config');
-      const userQuery = 'SELECT u.*, r.role_name FROM users u JOIN roles r ON u.role_id = r.role_id WHERE u.user_id = $1';
-      const userResult = await db.query(userQuery, [userId]);
-      
-      if (userResult.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          data: null,
-          message: 'Không tìm thấy người dùng'
-        });
-      }
-
-      const user = userResult.rows[0];
-      const sales = parseFloat(currentSales) || 0;
-
-      // Lấy quy tắc áp dụng
-      const rulesQuery = `
-        SELECT * FROM commission_rules 
-        WHERE role_id = $1
-        AND (product_category IS NULL OR product_category = $2)
-        AND (min_sales IS NULL OR $3 >= min_sales)
-        AND (max_sales IS NULL OR $3 < max_sales)
-        AND (start_date IS NULL OR CURRENT_DATE >= start_date)
-        AND (end_date IS NULL OR CURRENT_DATE <= end_date)
-        ORDER BY commission_rate DESC
-      `;
-      
-      const rulesResult = await db.query(rulesQuery, [user.role_id, productCategory, sales]);
-      
-      res.status(200).json({
-        success: true,
-        data: {
-          user: user,
-          currentSales: sales,
-          applicableRules: rulesResult.rows,
-          recommendedRule: rulesResult.rows[0] || null
-        },
-        message: 'Lấy quy tắc áp dụng thành công'
-      });
-    } catch (error) {
-      res.status(500).json({
+      console.error("Lỗi Controller deleteRule:", error);
+      return res.status(500).json({
         success: false,
         data: null,
         message: 'Lỗi server: ' + error.message

@@ -33,6 +33,25 @@ const updateUserStatus = async (user_id, status) => {
   }
 };
 
+const getAllRoles = async () => {
+    try {
+      const roles = await UserModel.getAllRoles();
+  
+      return {
+        success: true,
+        message: "Lấy danh sách role thành công",
+        data: roles,
+      };
+    } catch (err) {
+      return {
+        success: false,
+        message: "Không thể lấy danh sách role",
+        error: err.message,
+      };
+    }
+  };
+
 module.exports = {
   updateUserStatus,
+  getAllRoles,
 };

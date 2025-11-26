@@ -217,6 +217,16 @@ const countUsersByDateRange = async (startDate, endDate) => {
   return count || 0;
 };
 
+const getAllRoles = async () => {
+  const { data, error } = await supabase
+    .from("users_roles") // bảng role
+    .select("*")
+    .order("role_id", { ascending: true });
+
+  if (error) throw error;
+  return data;
+};
+
 module.exports = {
   findByEmailOrUsername,
   createUser,
@@ -228,4 +238,5 @@ module.exports = {
   updateUserStatus,
   updateUsername,
   countUsersByDateRange,
+  getAllRoles,
 };

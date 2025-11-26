@@ -148,18 +148,45 @@ const updateUser = async (id, fields) => {
   return data;
 };
 
-// ❌ Xóa user
-const deleteUser = async (id) => {
+// // ❌ Xóa user
+// const deleteUser = async (id) => {
+//   const { data, error } = await supabase
+//     .from("users_view")
+//     .delete()
+//     .eq("user_id", id)
+//     .select()
+//     .single();
+
+//   if (error) throw error;
+//   return data;
+// };
+
+// // 🟢 Soft delete (deactivate) user
+// const deactivateUser = async (id) => {
+//   const { data, error } = await supabase
+//     .from("web_auth.users")   // bảng thật
+//     .update({ status: "Inactive" })
+//     .eq("user_id", id)
+//     .select()
+//     .single();
+
+//   if (error) throw error;
+//   return data;
+// };
+
+const updateUserStatus = async (user_id, newStatus) => {
   const { data, error } = await supabase
     .from("users_view")
-    .delete()
-    .eq("user_id", id)
+    .update({ status: newStatus })
+    .eq("user_id", user_id)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
   return data;
 };
+
+
 
 // ✏️ Cập nhật username
 const updateUsername = async (id, username) => {
@@ -196,7 +223,9 @@ module.exports = {
   findByUsername,
   getUsers,
   updateUser,
-  deleteUser,
+  // deleteUser,
+  // deactivateUser,
+  updateUserStatus,
   updateUsername,
   countUsersByDateRange,
 };

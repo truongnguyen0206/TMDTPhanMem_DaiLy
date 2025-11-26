@@ -1,4 +1,5 @@
 const supabase = require("../config/supabaseClient");
+const UserService = require("../services/user_service");
 const bcrypt = require("bcrypt");
 
 // 🟢 Lấy toàn bộ users (join roles)
@@ -112,37 +113,58 @@ const updateUser = async (req, res) => {
 
 
 
-// 🟢 Xóa user
-const deleteUser = async (req, res) => {
+// // 🟢 Xóa user
+// const deleteUser = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+
+//     // Xóa agent & ctv trước nếu có
+//     await supabase.from("member.agent").delete().eq("user_id", id);
+//     await supabase.from("member.ctv").delete().eq("user_id", id);
+
+//     // Xóa user chính
+//     const { data, error } = await supabase
+//       .from("users_view")
+//       .delete()
+//       .eq("user_id", id)
+//       .select()
+//       .single();
+
+//     if (error) throw error;
+//     if (!data) return res.status(404).json({ message: "User not found" });
+
+//     res.json({ message: "User deleted successfully", user: data });
+//   } catch (err) {
+//     console.error("Error deleting user:", err);
+//     res.status(500).json({ message: "Server error", error: err.message });
+//   }
+// };
+
+
+const updateUserStatus = async (req, res) => {
   try {
     const { id } = req.params;
+    const { status } = req.body; // client gửi status vào body
 
-    // Xóa agent & ctv trước nếu có
-    await supabase.from("member.agent").delete().eq("user_id", id);
-    await supabase.from("member.ctv").delete().eq("user_id", id);
+    const result = await UserService.updateUserStatus(id, status);
 
-    // Xóa user chính
-    const { data, error } = await supabase
-      .from("users_view")
-      .delete()
-      .eq("user_id", id)
-      .select()
-      .single();
+    return res.status(result.success ? 200 : 400).json(result);
 
-    if (error) throw error;
-    if (!data) return res.status(404).json({ message: "User not found" });
-
-    res.json({ message: "User deleted successfully", user: data });
   } catch (err) {
-    console.error("Error deleting user:", err);
-    res.status(500).json({ message: "Server error", error: err.message });
+    console.error("Error:", err.message);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err.message,
+    });
   }
 };
-
 module.exports = {
   getAllUsers,
   getUserById,
   createUser,
   updateUser,
-  deleteUser,
+  // deleteUser,
+  // deactivateUser,
+  updateUserStatus,
 };

@@ -168,7 +168,7 @@ const exportOrdersExcel = async (req, res) => {
     // ================================
     worksheet.addRow([]);
     const footerRow = worksheet.addRow([
-      "AMIT GROUP - THỰC TẬP SINH ĐẠI HỌC HOA SEN",
+      "AMIT GROUP - THỰC TẬP SINH",
     ]);
 
     worksheet.mergeCells(`A${footerRow.number}:H${footerRow.number}`);
@@ -337,7 +337,7 @@ const exportOrdersPDF = async (req, res) => {
 
     // ----- FOOTER -----
     content.push({
-      text: "AMIT GROUP - THỰC TẬP SINH ĐẠI HỌC HOA SEN",
+      text: "AMIT GROUP - THỰC TẬP SINH",
       alignment: "right",
       fontSize: 9,
     });

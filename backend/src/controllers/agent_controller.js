@@ -1,5 +1,7 @@
 const Agent = require('../models/agent_model');
 const { getCTVByAgent } = require("../models/agent_model");
+const AgentProductService = require("../services/agent_service");
+
 
 // 🟩 Tạo agent mới
 const createAgent = async (req, res) => {
@@ -186,6 +188,20 @@ async function getOrdersOfCTVByAgent(req, res) {
   }
 }
 
+const getProductsOfAgent = async (req, res) => {
+  try {
+    const { agent_id } = req.params;
+    const result = await AgentProductService.getAgentProducts(agent_id);
+
+    return res.status(result.success ? 200 : 400).json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};
 
 module.exports = {
   createAgent,
@@ -197,5 +213,6 @@ module.exports = {
   getAllAgents,
   updateManyAgents,
   getOrdersByAgent,
-  getOrdersOfCTVByAgent
+  getOrdersOfCTVByAgent,
+  getProductsOfAgent,
 };

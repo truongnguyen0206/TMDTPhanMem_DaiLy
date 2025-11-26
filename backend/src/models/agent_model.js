@@ -251,15 +251,12 @@ const getOrdersOfCTVByAgent = async (agent_id, opts = {}) => {
 /**
  * Lấy danh sách sản phẩm được phân phối cho 1 đại lý
  */
-const getProductsByAgent = async (agentId, opts) => {
-  if (!agentId) throw new Error("agentId is required");
-
-  const { search = '', status = null } = opts;
-  
+const getProductsByAgent = async (agent_id) => {
   const { data, error } = await supabase
-    .from("agent_product_view") // VIEW đã tạo
+    .from("agent_product_view")
     .select("*")
-    .eq("agent_id", agentId);
+    .eq("agent_id", agent_id)
+    .order("ngay_phanphoi", { ascending: false });
 
   if (error) throw error;
   return data;

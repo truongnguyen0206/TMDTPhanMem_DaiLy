@@ -1,4 +1,10 @@
 const { fetchDistributorOrders } = require("../services/distributor_service");
+const NPPService = require("../services/distributor_service");
+
+const getAllNPP = async (req, res) => {
+  const result = await NPPService.getAllNPP();
+  return res.status(result.success ? 200 : 400).json(result);
+};
 
 /**
  * ✔ Controller: Nhà phân phối xem danh sách đơn hàng
@@ -32,4 +38,5 @@ const getDistributorOrders = async (req, res) => {
 
 module.exports = {
   getDistributorOrders,
+  getAllNPP,
 };

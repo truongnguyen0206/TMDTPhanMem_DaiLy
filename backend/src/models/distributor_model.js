@@ -1,5 +1,17 @@
 const supabase = require("../config/supabaseClient");
 
+
+// 🟢 Lấy toàn bộ danh sách nhà phân phối
+const getAllNPP = async () => {
+  const { data, error } = await supabase
+    .from("nhaphanphoi_view")  // bảng trong schema member
+    .select("*")
+    .order("npp_id", { ascending: true });
+
+  if (error) throw error;
+  return data;
+};
+
 /**
  * ✔ Lấy danh sách đơn hàng thuộc nhà phân phối
  * @param {number} nppId - ID nhà phân phối
@@ -19,4 +31,6 @@ const getOrdersByDistributor = async (nppId) => {
     return data;
   };
 
-module.exports = { getOrdersByDistributor };
+
+
+module.exports = { getOrdersByDistributor, getAllNPP };

@@ -1,4 +1,6 @@
 const OrderProduct = require("../models/product_model");
+const ReferralService = require("../services/product_service");
+
 
 // === Lấy tất cả sản phẩm trong toàn bộ hệ thống ===
 const getAllOProducts = async (req, res) => {
@@ -69,10 +71,49 @@ const getProducts = async (req, res) => {
   }
 };
 
+async function createLinkProduct(req, res) {
+  try {
+    console.log("BODY RECEIVED:", req.body);
+
+    const { owner_id, owner_role_id, product_id } = req.body;
+
+    const data = await ReferralService.createReferralLink(
+      owner_id,
+      owner_role_id,
+      product_id
+    );
+
+    res.status(201).json({ success: true, data });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+}
+
+async function getByProduct(req, res) {
+  try {
+    const data = await ReferralService.listReferralByProduct(req.params.product_id);
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+}
+
+async function disableLinkProduct(req, res) {
+  try {
+    await ReferralService.disableReferral(req.params.referral_code);
+    res.json({ success: true, message: "Đã vô hiệu hóa link" });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+}
+
 module.exports = {
     getAllOProducts,
     addProduct,
     updateProduct,
     deleteProduct,
     getProducts,
+    createLinkProduct,
+    getByProduct,
+    disableLinkProduct
 };

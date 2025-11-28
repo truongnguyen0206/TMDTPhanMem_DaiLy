@@ -5,6 +5,8 @@ const orderController = require("../../controllers/order_controller");
 router.get("/all", orderController.getAll);
 // router.get("/", orderController.list);
 // router.get("/:id", orderController.getOne);
+// Tạo link giới thiệu
+router.post("/createOrderLink", orderController.createReferral);
 router.post("/createOrder", orderController.create);
 router.put("/updateOrder/:id", orderController.update);
 router.delete("/remove/:id", orderController.remove);
@@ -21,6 +23,7 @@ router.get('/origin/:code', orderController.getOrigin);            // GET /api/o
 // router.get("/customer/:id", orderController.getOrdersByCustomer);
 
 router.get("/byUser", orderController.getOrdersByUser);
+
 
 // router.get('/export/excel', orderController.exportOrdersExcel);
 // router.get('/export/pdf', orderController.exportOrdersPDF);

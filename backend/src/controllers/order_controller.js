@@ -1,4 +1,5 @@
 const Order = require("../models/order_model");
+const referralService = require("../services/order_service");
 const ExcelJS = require("exceljs");
 const PDFDocument = require("pdfkit");
 
@@ -249,7 +250,7 @@ const getAllOrigin = async (req, res) => {
 
     // 🔹 Dùng lại model listOrders() đã có (truy v_order_detail)
     const orders = await Order.listOrders({
-      limit: limit ? parseInt(limit) : 1000,
+      limit: limit ? parseInt(limit) : 10,
       offset: offset ? parseInt(offset) : 0,
       user_id,
       from,
@@ -335,6 +336,27 @@ const getAllOrigin = async (req, res) => {
 //   }
 // };
 
+
+async function createReferral(req, res) {
+  try {
+    const { owner_id, owner_role_id } = req.body;
+
+    const result = await referralService.createReferralLink(owner_id, owner_role_id);
+
+    res.status(201).json({
+      success: true,
+      message: "Tạo link giới thiệu thành công",
+      data: result
+    });
+  } catch (err) {
+    res.status(400).json({
+      success: false,
+      message: err.message
+    });
+  }
+}
+
+
 module.exports = {
   getAll,
   list,
@@ -349,4 +371,5 @@ module.exports = {
   getAllOrigin,
   // exportOrdersExcel,
   // exportOrdersPDF,
+  createReferral,
 };

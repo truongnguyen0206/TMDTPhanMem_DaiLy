@@ -12,6 +12,16 @@ const getAll = async () => {
   return data;
 };
 
+const getOrderById = async (orderId) => {
+  const { data, error } = await supabase
+    .from("orders_view")
+    .select("*")
+    .eq("order_id", orderId)
+    .single();
+
+  if (error) throw error;
+  return data;
+};
 
 // // ========================================
 // // 🟧 LẤY ĐƠN HÀNG THEO CỘNG TÁC VIÊN
@@ -70,26 +80,46 @@ const getById = async (order_id) => {
   return data;
 };
 
-
-// // Tạo order
-// const create = async (order) => {
-//   const { data, error } = await supabase
-//     .from("orders_view")
-//     .insert([{
-//       order_date: order.order_date || new Date(),
-//       total_amount: order.total_amount || 0,
-//       created_by: order.created_by || null,
-//       customer_id: order.customer_id || null,
-//       order_source: order.order_source || "Khách hàng",
-//       order_status: order.order_status ?? 1,
-//       payment_status: order.payment_status ?? 1
-//     }])
-//     .select("order_id")
-//     .single();
-
-//   if (error) throw error;
-//   return data.order_id;
+// // =========================
+// // MAP TRẠNG THÁI
+// // =========================
+// const ORDER_STATUS_MAP = {
+//   1: "chờ xử lý",
+//   2: "đã xác nhận",
+//   3: "đã hoàn thành",
+//   4: "đã hủy"
 // };
+
+// const PAYMENT_STATUS_MAP = {
+//   1: "chờ thanh toán",
+//   2: "đã thanh toán",
+//   3: "đã hoàn tiền"
+// };
+
+
+const create = async (order) => {
+
+  const { data, error } = await supabase
+    .from("orders_view")
+    .insert([
+      {
+        order_date: order.order_date || new Date(),
+        total_amount: order.total_amount || 0,
+        created_by: order.created_by || null,
+        customer_id: order.customer_id || null,
+        order_source: order.order_source || "Khách hàng",
+
+        // nhận y nguyên từ FE
+        order_status: order.order_status,
+        payment_status: order.payment_status
+      }
+    ])
+    .select("order_id")
+    .single();
+
+  if (error) throw error;
+  return data.order_id;
+};
 
 
 async function createOrderRow(orderData) {
@@ -395,12 +425,12 @@ module.exports = {
   // getByCollaboratorId,
   // getByCustomerId,
   getByUser,
-  // create,
+  create,
   createOrderRow,
   update,
   remove,
   // createOrderWithItems,
-  // getOrderById,
+  getOrderById,
   listOrders,
   getOrderDetail,
   getOrderOriginLogs,

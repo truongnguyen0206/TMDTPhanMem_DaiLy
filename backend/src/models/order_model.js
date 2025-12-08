@@ -92,13 +92,13 @@ const create = async (order) => {
 // Update order
 const update = async (order_id, updates) => {
   const allowedFields = [
-    "customer_name",
-    "customer_phone",
+    "customer_id",
+    "product_id",
+    "quantity",
     "total_amount",
-    "status",
     "order_source",
-    "agent_id",
-    "collaborator_id",
+    "order_status",
+    "payment_status",
     "created_by"
   ];
 
@@ -110,7 +110,8 @@ const update = async (order_id, updates) => {
   if (Object.keys(validUpdates).length === 0) return null;
 
   const { data, error } = await supabase
-    .from("orders_view")
+    .schema("orders")
+    .from("orders")
     .update(validUpdates)
     .eq("order_id", order_id)
     .select()
@@ -119,8 +120,6 @@ const update = async (order_id, updates) => {
   if (error) throw error;
   return data;
 };
-
-
 
 // Xóa order
 const remove = async (order_id) => {
@@ -318,6 +317,7 @@ const getOrdersByYear = async (year) => {
   if (error) throw error;
   return data || [];
 };
+
 
 module.exports = {
   getAll,

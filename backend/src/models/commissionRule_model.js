@@ -1,11 +1,18 @@
 const supabase = require("../config/supabaseClient");
 
-class commissionrule {
-  // 🟩 Lấy tất cả quy tắc hoa hồng
+class CommissionRuleModel {
+
+  // 🟩 Lấy tất cả quy tắc hoa hồng (Có thể dùng view hoặc bảng thật)
   static async getAll() {
     const { data, error } = await supabase
-      .from("commissionrule") // ✅ view
-      .select("*")
+      .from("commissionrule") 
+      .select(`
+        *, 
+        "scope_type", 
+        "max_commission_cap", 
+        "status", 
+        "created_by"
+      `)
       .order("role_id", { ascending: true })
       .order("min_sales", { ascending: true });
 
@@ -37,33 +44,21 @@ class commissionrule {
     return data || [];
   }
 
-  // 🟧 Tạo quy tắc mới (ghi vào bảng thật)
+  // 🟧 TẠO MỚI (SỬA LỖI: Ghi vào bảng thật FULL_TABLE)
   static async create(ruleData) {
     const {
-      role_id,
-      min_sales = 0,
-      max_sales,
-      commission_rate,
-      product_category,
-      start_date = new Date().toISOString().split("T")[0],
-      end_date,
-      description,
+      role_id, min_sales = 0, max_sales, commission_rate, product_category,
+      start_date = new Date().toISOString().split("T")[0], end_date, description,
+      scope_type = 'CATEGORY', max_commission_cap, status = 'Active', created_by,
     } = ruleData;
 
     const { data, error } = await supabase
-      .from("commissionrule") // ✅ bảng thật
-      .insert([
-        {
-          role_id,
-          min_sales,
-          max_sales,
-          commission_rate,
-          product_category,
-          start_date,
-          end_date,
-          description,
-        },
-      ])
+      .from("commissionrule") // 💡 Đã thay đổi từ "commissionrule" thành this.FULL_TABLE
+      .insert([{
+          role_id, min_sales, max_sales, commission_rate, product_category,
+          start_date, end_date, description,
+          scope_type, max_commission_cap, status, created_by,
+      }])
       .select()
       .single();
 
@@ -71,31 +66,25 @@ class commissionrule {
     return data;
   }
 
-  // 🟪 Cập nhật quy tắc
+  // 🟪 CẬP NHẬT (SỬA LỖI: Ghi vào bảng thật FULL_TABLE)
   static async update(ruleId, ruleData) {
     const {
-      role_id,
-      min_sales = 0,
-      max_sales,
-      commission_rate,
-      product_category,
-      start_date,
-      end_date,
-      description,
+      role_id, min_sales, max_sales, commission_rate, product_category,
+      start_date, end_date, description,
+      scope_type, max_commission_cap, status, created_by,
     } = ruleData;
 
+    // Lọc bỏ undefined
+    const updatePayload = {
+        role_id, min_sales, max_sales, commission_rate, product_category, 
+        start_date, end_date, description,
+        scope_type, max_commission_cap, status, created_by
+    };
+    Object.keys(updatePayload).forEach(key => updatePayload[key] === undefined && delete updatePayload[key]);
+
     const { data, error } = await supabase
-      .from("commissionrule")
-      .update({
-        role_id,
-        min_sales,
-        max_sales,
-        commission_rate,
-        product_category,
-        start_date,
-        end_date,
-        description,
-      })
+      .from("commissionrule") // 💡 Đã thay đổi từ "commissionrule" thành this.FULL_TABLE
+      .update(updatePayload)
       .eq("rule_id", ruleId)
       .select()
       .single();
@@ -104,10 +93,10 @@ class commissionrule {
     return data;
   }
 
-  // 🟥 Xóa quy tắc
+  // 🟥 XÓA (SỬA LỖI: Xóa từ bảng thật FULL_TABLE)
   static async delete(ruleId) {
     const { data, error } = await supabase
-      .from("commissionrule")
+      .from("commissionrule") 
       .delete()
       .eq("rule_id", ruleId)
       .select()
@@ -117,10 +106,10 @@ class commissionrule {
     return data;
   }
 
-  // 🟨 Lấy danh sách Roles
+  // 🟨 Lấy danh sách Roles (Sửa schema)
   static async getRoles() {
     const { data, error } = await supabase
-      .from("web_auth.roles")
+      .from("auth.roles") 
       .select("*")
       .order("role_name", { ascending: true });
 
@@ -128,47 +117,31 @@ class commissionrule {
     return data || [];
   }
 
-  // // 🟩 Lấy danh sách Product Categories
-  // static async getProductCategories() {
-  //   const { data, error } = await supabase
-  //     .from("public.product_categories")
-  //     .select("*")
-  //     .order("category_name", { ascending: true });
-
-  //   if (error) throw new Error(`Lỗi khi lấy danh sách danh mục sản phẩm: ${error.message}`);
-  //   return data || [];
-  // }
-
-  // ⚠️ Kiểm tra xung đột quy tắc
+  // ⚠️ Kiểm tra xung đột
   static async checkConflict(ruleData, excludeRuleId = null) {
-    const {
-      role_id,
-      min_sales,
-      max_sales,
-      product_category,
-      start_date,
-      end_date,
-    } = ruleData;
+    const { role_id, min_sales, max_sales, product_category, start_date, end_date } = ruleData;
 
-    let query = supabase
-      .from("commissionrule")
-      .select("*")
-      .eq("role_id", role_id)
-      .eq("product_category", product_category);
+    let query = supabase.from("commissionrule").select("*").eq("role_id", role_id);
+
+    if (product_category) query = query.eq("product_category", product_category);
+    else query = query.is("product_category", null);
 
     if (excludeRuleId) query = query.neq("rule_id", excludeRuleId);
 
     const { data, error } = await query;
-    if (error) throw new Error(`Lỗi khi kiểm tra xung đột quy tắc: ${error.message}`);
+    if (error) throw new Error(`Lỗi khi kiểm tra xung đột: ${error.message}`);
 
     const filtered = (data || []).filter((rule) => {
-      const overlapDate =
-        (!rule.end_date || new Date(rule.end_date) >= new Date(start_date)) &&
-        (!end_date || new Date(end_date) >= new Date(rule.start_date));
+      const currentStart = new Date(start_date);
+      const currentEnd = end_date ? new Date(end_date) : null;
+      const ruleStart = new Date(rule.start_date);
+      const ruleEnd = rule.end_date ? new Date(rule.end_date) : null;
 
-      const overlapSales =
-        (rule.max_sales === null || rule.max_sales >= min_sales) &&
-        (max_sales === null || max_sales >= rule.min_sales);
+      const overlapDate = (!ruleEnd || ruleEnd >= currentStart) && (!currentEnd || currentEnd >= ruleStart);
+      
+      const rMin = parseFloat(rule.min_sales||0), rMax = rule.max_sales ? parseFloat(rule.max_sales) : null;
+      const cMin = parseFloat(min_sales||0), cMax = max_sales ? parseFloat(max_sales) : null;
+      const overlapSales = (rMax === null || rMax >= cMin) && (cMax === null || cMax >= rMin);
 
       return overlapDate && overlapSales;
     });
@@ -177,4 +150,4 @@ class commissionrule {
   }
 }
 
-module.exports = commissionrule;
+module.exports = CommissionRuleModel;

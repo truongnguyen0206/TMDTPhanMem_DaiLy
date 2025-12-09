@@ -11,24 +11,24 @@ const mockSalesData = [
     { id: 'AN-12350', user: 'Tuan', email: 'user6@email.com', date: '06/08/2025', sales: 0, status: 'inactive', commission: 0 },
 ];
 
-// Component cho các thẻ thống kê nhỏ
+// Component cho các thẻ thống kê
 const StatCard = ({ title, value }) => (
-    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
         <p className="text-sm text-gray-500">{title}</p>
-        <p className="text-2xl font-bold text-gray-800 mt-1 dark:text-white">{value}</p>
+        <p className="text-2xl font-bold text-gray-800 mt-1">{value}</p>
     </div>
 );
 
-// Component cho trạng thái sản phẩm
+// Component cho trạng thái
 const StatusBadge = ({ status }) => {
     const statusStyles = {
-        active: { text: 'Xây dựng', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
-        inactive: { text: 'Không khả dụng', color: 'bg-red-100 text-red-800 dark:bg-green-900 dark:text-green-200' },
+        active: { text: 'Khả dụng', color: 'bg-green-100 text-green-800' },
+        inactive: { text: 'Không khả dụng', color: 'bg-red-100 text-red-800' },
+        pending: { text: 'Chờ xử lý', color: 'bg-yellow-100 text-yellow-800' },
     };
     const style = statusStyles[status] || {};
     return <span className={`px-3 py-1 text-xs font-bold rounded-full ${style.color}`}>{style.text}</span>;
 };
-
 
 const SalesPage = () => {
     const { setPageTitle } = useOutletContext();
@@ -59,10 +59,10 @@ const SalesPage = () => {
             </div>
 
             {/* Bảng dữ liệu */}
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left text-gray-600 dark:text-gray-400 ">
-                        <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    <table className="w-full text-sm text-left text-gray-600">
+                        <thead className="text-xs text-gray-700 uppercase bg-gray-50">
                             <tr>
                                 <th className="px-6 py-3">Mã giới thiệu</th>
                                 <th className="px-6 py-3">Tên User</th>
@@ -75,14 +75,14 @@ const SalesPage = () => {
                         </thead>
                         <tbody>
                             {salesData.map(item => (
-                                <tr key={item.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                                    <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{item.id}</td>
+                                <tr key={item.id} className="bg-white border-b hover:bg-gray-50">
+                                    <td className="px-6 py-4 font-medium text-gray-900">{item.id}</td>
                                     <td className="px-6 py-4">{item.user}</td>
                                     <td className="px-6 py-4">{item.email}</td>
                                     <td className="px-6 py-4">{item.date}</td>
                                     <td className="px-6 py-4">{formatCurrency(item.sales)}</td>
                                     <td className="px-6 py-4"><StatusBadge status={item.status} /></td>
-                                    <td className="px-6 py-4 font-semibold dark:text-white">{formatCurrency(item.commission)}</td>
+                                    <td className="px-6 py-4 font-semibold">{formatCurrency(item.commission)}</td>
                                 </tr>
                             ))}
                         </tbody>

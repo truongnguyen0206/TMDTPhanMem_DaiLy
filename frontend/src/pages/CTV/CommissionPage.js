@@ -11,17 +11,17 @@ const mockHistory = [
 
 // Các component con để tái sử dụng
 const StatCard = ({ title, value }) => (
-    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
-        <p className="text-sm text-gray-500 dark:text-gray-400">{title}</p>
-        <p className="text-2xl font-bold text-gray-800 mt-1 dark:text-white">{value}</p>
+    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+        <p className="text-sm text-gray-500">{title}</p>
+        <p className="text-2xl font-bold text-gray-800 mt-1">{value}</p>
     </div>
 );
 
 const StatusBadge = ({ status }) => {
     const styles = {
-        approved: { text: 'Khả dụng', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
-        rejected: { text: 'Không khả dụng', color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' },
-        pending: { text: 'Chờ xử lý', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' },
+        approved: { text: 'Khả dụng', color: 'bg-green-100 text-green-800' },
+        rejected: { text: 'Không khả dụng', color: 'bg-red-100 text-red-800' },
+        pending: { text: 'Chờ xử lý', color: 'bg-yellow-100 text-yellow-800' },
     };
     const style = styles[status] || {};
     return <span className={`px-3 py-1 text-xs font-bold rounded-full ${style.color}`}>{style.text}</span>;
@@ -48,21 +48,21 @@ const CommissionPage = () => {
             </div>
 
             {/* Biểu mẫu yêu cầu rút tiền */}
-            <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
-                <h3 className="text-lg font-bold text-gray-800 dark:text-white">Biểu mẫu yêu cầu rút tiền</h3>
-                <p className="text-sm text-gray-500 mt-1 dark:text-gray-400 ">Yêu cầu rút tiền hoa hồng của bạn sẽ được kiểm duyệt. Yêu cầu thường được xử lý trong vòng 3-5 ngày làm việc.</p>
+            <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-200">
+                <h3 className="text-lg font-bold text-gray-800">Biểu mẫu yêu cầu rút tiền</h3>
+                <p className="text-sm text-gray-500 mt-1">Yêu cầu rút tiền hoa hồng của bạn sẽ được kiểm duyệt. Yêu cầu thường được xử lý trong vòng 3-5 ngày làm việc.</p>
 
                 <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                     {/* Cột 1 */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Số tiền rút (VND)</label>
-                        <input type="text" placeholder="Nhập số tiền" className="w-full bg-gray-100 border-transparent rounded-md p-3 focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white dark:border-gray-600" />
-                        <p className="text-xs text-gray-400 mt-1 dark:text-gray-500">Khả dụng: 10,000,000VND | Tối thiểu: 5,000,000VND</p>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Số tiền rút (VND)</label>
+                        <input type="text" placeholder="Nhập số tiền" className="w-full bg-gray-100 border-transparent rounded-md p-3 focus:ring-2 focus:ring-primary" />
+                        <p className="text-xs text-gray-400 mt-1">Khả dụng: 10,000,000VND | Tối thiểu: 5,000,000VND</p>
                     </div>
                     {/* Cột 2 */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Phương thức thanh toán</label>
-                        <select className="w-full bg-gray-100 border-transparent rounded-md p-3 focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white dark:border-gray-600">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Phương thức thanh toán</label>
+                        <select className="w-full bg-gray-100 border-transparent rounded-md p-3 focus:ring-2 focus:ring-primary">
                             <option>Chọn phương thức thanh toán</option>
                             <option>Chuyển khoản ngân hàng</option>
                             <option>Paypal</option>
@@ -70,12 +70,12 @@ const CommissionPage = () => {
                     </div>
                     {/* Hàng ngang */}
                     <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Nhập thông tin tài khoản</label>
-                        <input type="text" placeholder="Số tài khoản, email Paypal" className="w-full bg-gray-100 border-transparent rounded-md p-3 focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white dark:border-gray-600" />
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Nhập thông tin tài khoản</label>
+                        <input type="text" placeholder="Số tài khoản, email Paypal" className="w-full bg-gray-100 border-transparent rounded-md p-3 focus:ring-2 focus:ring-primary" />
                     </div>
                     <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Ghi chú bổ sung (tùy chọn)</label>
-                        <textarea rows="3" placeholder="Thêm bất kỳ thông tin bổ sung nào" className="w-full bg-gray-100 border-transparent rounded-md p-3 focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white dark:border-gray-600"></textarea>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Ghi chú bổ sung (tùy chọn)</label>
+                        <textarea rows="3" placeholder="Thêm bất kỳ thông tin bổ sung nào" className="w-full bg-gray-100 border-transparent rounded-md p-3 focus:ring-2 focus:ring-primary"></textarea>
                     </div>
                 </div>
                 <div className="flex justify-end mt-6">
@@ -86,11 +86,11 @@ const CommissionPage = () => {
             </div>
 
             {/* Bảng lịch sử rút tiền */}
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
-                <h3 className="text-lg font-bold text-gray-800 mb-4 dark:text-white">Lịch sử yêu cầu rút tiền</h3>
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                <h3 className="text-lg font-bold text-gray-800 mb-4">Lịch sử yêu cầu rút tiền</h3>
                 <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left text-gray-600 dark:text-gray-400">
-                        <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    <table className="w-full text-sm text-left text-gray-600">
+                        <thead className="text-xs text-gray-700 uppercase bg-gray-50">
                             <tr>
                                 <th className="px-6 py-3">Mã yêu cầu</th>
                                 <th className="px-6 py-3">Số tiền</th>
@@ -102,8 +102,8 @@ const CommissionPage = () => {
                         </thead>
                         <tbody>
                             {history.map(item => (
-                                <tr key={item.id} className="bg-white border-b hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700">
-                                    <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{item.id}</td>
+                                <tr key={item.id} className="bg-white border-b hover:bg-gray-50">
+                                    <td className="px-6 py-4 font-medium text-gray-900">{item.id}</td>
                                     <td className="px-6 py-4">{formatCurrency(item.amount)}</td>
                                     <td className="px-6 py-4">{item.content}</td>
                                     <td className="px-6 py-4">{item.date}</td>

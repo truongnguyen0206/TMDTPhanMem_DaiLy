@@ -1,3 +1,4 @@
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate  } from 'react-router-dom';
 
 // Auth pages
@@ -17,6 +18,7 @@ import NPPUpdateAgentPage from '../pages/NPP/UpdateAgentPage';
 import NPPBalancePage from '../pages/NPP/BalancePage';
 import NPPTransactionDetailPage from '../pages/NPP/TransactionDetailPage';
 import NPPWithdrawalRequestPage from '../pages/NPP/WithdrawalRequestPage';
+import NPPProfilePage from '../pages/NPP/ProfilePage';
 
 //DLpages
 import DLDashboardPage from '../pages/DL/DashboardPage';
@@ -31,12 +33,15 @@ import DLProductCommissionFormPage from '../pages/DL/ProductCommissionFormPage';
 import DLBalancePage from '../pages/DL/BalancePage';
 import DLWithdrawalRequestPage from '../pages/DL/WithdrawalRequestPage';
 import DLTransactionDetailPage from '../pages/DL/TransactionDetailPage';
+import DLProfilePage from '../pages/DL/ProfilePage';
 
 // CTV Pages
 import CtvDashboardPage from '../pages/CTV/DashboardPage';
 import ProductPage from '../pages/CTV/ProductPage';
 import SalesPage from '../pages/CTV/SalesPage';
 import CtvCommissionPage from '../pages/CTV/CommissionPage';
+import CtvProfilePage from '../pages/CTV/ProfilePage';
+import CtvRequestChangeInfoPage from '../pages/CTV/RequestChangeInfoPage';
 
 // Admin Pages
 import AdminDashboardPage from '../pages/Admin/DashboardPage';
@@ -45,9 +50,8 @@ import AddAccountPage from '../pages/Admin/AddAccountPage';
 import AdminCommissionPage from '../pages/Admin/CommissionPage';
 import CommissionFormPage from '../pages/Admin/CommissionFormPage';
 import OrdersPage from '../pages/Admin/OrdersPage';
-
-//khác pages
-import SettingsPage from '../pages/Shared/SettingsPage';
+import AdminProfilePage from '../pages/Admin/ProfilePage';
+import UpdateAccountPage from '../pages/Admin/UpdateAccountPage';
 
 import ProtectedRoute from './ProtectedRoute';
 
@@ -60,7 +64,7 @@ const AppRouter = () => {
         <Route path="/signup" element={<RegisterPage />} />
 
         {/* --- Route cha dùng chung cho tất cả các trang cần bảo vệ (NPP & CTV) --- */}
-        <Route element={<ProtectedRoute allowedRoles={['Nhà phân phối']} />}>
+        <Route element={<ProtectedRoute />}>
         
             {/* --- Cấu hình cho NPP: NppLayout là layout cha cung cấp context --- */}
             <Route path="/npp" element={<Layout />}>
@@ -75,9 +79,8 @@ const AppRouter = () => {
               <Route path="balance" element={<NPPBalancePage />} />
               <Route path="withdrawal" element={<NPPWithdrawalRequestPage />} />
               <Route path="transaction/:id" element={<NPPTransactionDetailPage />} />
+              <Route path="profile" element={<NPPProfilePage />} />
             </Route>
-          </Route>
-          <Route element={<ProtectedRoute allowedRoles={['Đại lý', 'Agent']} />}>
             <Route path="/dl" element={<Layout />}>
               <Route index element={<Navigate to="dashboard" replace />} /> // Chuyển index về dashboard
               <Route path="dashboard" element={<DLDashboardPage />} />
@@ -90,20 +93,21 @@ const AppRouter = () => {
               <Route path="products" element={<DLProductPage />} />
               <Route path="products/commission/edit/:id" element={<DLProductCommissionFormPage />} /> 
               <Route path="balance" element={<DLBalancePage />} />
-              <Route path="balance/withdrawal" element={<DLWithdrawalRequestPage />} />
+              <Route path="withdrawal" element={<DLWithdrawalRequestPage />} />
               <Route path="balance/transaction/:id" element={<DLTransactionDetailPage />} />
+              <Route path="profile" element={<DLProfilePage />} />
             </Route>
-          </Route>
-          <Route element={<ProtectedRoute allowedRoles={['Cộng tác viên', 'CTV']} />}>
+
              {/* --- Cấu hình cho CTV --- */}
             <Route path="/ctv" element={<Layout />}>
               <Route path="dashboard" element={<CtvDashboardPage />} />
               <Route path="products" element={<ProductPage />} />
               <Route path="sales" element={<SalesPage />} />
               <Route path="commission" element={<CtvCommissionPage />} />
+              <Route path="profile" element={<CtvProfilePage />} />
+              <Route path="request-change-info" element={<CtvRequestChangeInfoPage />} />
             </Route>
-          </Route>
-          <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
+
             {/* --- Cấu hình cho ADMIN --- */}
             <Route path="/admin" element={<Layout />}>
               <Route path="dashboard" element={<AdminDashboardPage />} />
@@ -113,21 +117,14 @@ const AppRouter = () => {
                <Route path="commission/new" element={<CommissionFormPage mode="new" />} />
                <Route path="commission/edit/:id" element={<CommissionFormPage mode="edit" />} />
                <Route path="orders" element={<OrdersPage />} />
-            </Route>
-          </Route>
-        {/* --- Các trang chung cho tất cả người dùng đã đăng nhập --- */}
-        <Route element={<ProtectedRoute />}>
-            <Route element={<Layout />}>
-                <Route path="/settings" element={<SettingsPage />} />
-                {/* Bạn cũng có thể thêm các trang chung khác ở đây */}
-                {/* <Route path="/guide" element={<GuidePage />} /> */}
-                {/* <Route path="/messages" element={<MessagesPage />} /> */}
+               <Route path="profile" element={<AdminProfilePage />} />
+               <Route path="accounts/edit/:id" element={<UpdateAccountPage />} />
             </Route>
             
         </Route>
         
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<Navigate to="/npp/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );

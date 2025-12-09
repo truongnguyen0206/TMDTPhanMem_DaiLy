@@ -36,7 +36,27 @@ const getDistributorOrders = async (req, res) => {
   }
 };
 
+async function getAgentsByNPP(req, res) {
+  const { npp_id } = req.params;
+
+  if (!npp_id) {
+    return res.status(400).json({
+      success: false,
+      message: "Thiếu npp_id",
+    });
+  }
+
+  const result = await NPPService.listAgentsByNPP(npp_id);
+
+  if (!result.success) {
+    return res.status(400).json(result);
+  }
+
+  return res.status(200).json(result);
+}
+
 module.exports = {
   getDistributorOrders,
   getAllNPP,
+  getAgentsByNPP,
 };

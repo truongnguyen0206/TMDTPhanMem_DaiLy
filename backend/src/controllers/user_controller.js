@@ -159,6 +159,14 @@ const updateUserStatus = async (req, res) => {
     });
   }
 };
+
+const getAllRoles = async (req, res) => {
+  const result = await UserService.getAllRoles();
+  return res.status(result.success ? 200 : 400).json(result);
+};
+
+
+
 module.exports = {
   getAllUsers,
   getUserById,
@@ -167,4 +175,5 @@ module.exports = {
   // deleteUser,
   // deactivateUser,
   updateUserStatus,
+  getAllRoles,
 };

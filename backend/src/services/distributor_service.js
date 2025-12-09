@@ -26,7 +26,27 @@ const fetchDistributorOrders = async (nppId) => {
   return await getOrdersByDistributor(nppId);
 };
 
+async function listAgentsByNPP(npp_id) {
+  try {
+    const data = await NPPModel.getAgentsByNPP(npp_id);
+
+    return {
+      success: true,
+      message: "Lấy danh sách đại lý thành công",
+      data,
+    };
+  } catch (err) {
+    return {
+      success: false,
+      message: err.message,
+      data: null,
+    };
+  }
+}
+
+
 module.exports = {
   fetchDistributorOrders,
   getAllNPP,
+  listAgentsByNPP,
 };

@@ -21,6 +21,7 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }))
   
 // Routes
 app.use("/auth", authRoutes);
@@ -46,6 +47,30 @@ app.get("/api/test", (req, res) => {
 app.get("/", (req, res) => {
   res.send("Server chạy ngon lành 🚀");
 });
+
+app.get("/api/test/products", async (req, res) => {
+  try {
+    const response = await fetch("http://100.65.202.126:9000/store/products", {
+      headers: {
+        // "Authorization": `Bearer ${process.env.MEDUSA_API_KEY}`,
+        "Content-Type": "application/json",
+        "x-publishable-api-key": process.env.MEDUSA_API_KEY
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Medusa API trả lỗi: ${response.status}`);
+    }
+
+    const data = await response.json();
+    res.json(data);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 // Khởi động server 
 const PORT = process.env.PORT || 5001;

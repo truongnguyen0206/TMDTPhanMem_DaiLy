@@ -72,10 +72,69 @@ const getProductsByOrder = async (order_id) => {
   return data;
 };
 
+//========================================
+//Phần tạo link cho sản phẩm
+//========================================
+
+// Kiểm tra code trùng
+async function checkReferralExists(referral_code) {
+  const { data, error } = await supabase
+    .from("referral_links")
+    .select("referral_id")
+    .eq("referral_code", referral_code)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data !== null;
+}
+
+// Tìm link theo referral_code
+async function findReferral(referral_code) {
+  const { data, error } = await supabase
+    .from("referral_links")
+    .select("referral_id, referral_code, owner_id, owner_role_id, status")
+    .eq("referral_code", referral_code)
+    .eq("status", true)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+// Tạo 1 row referral mới
+async function createReferralRow(rowData) {
+  const { data, error } = await supabase
+    .from("referral_links")
+    .insert(rowData)
+    .select()
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+// Lấy role_name của user
+async function getRoleName(user_id) {
+  if (!user_id) return "Không xác định";
+
+  const { data, error } = await supabase
+    .from("web_auth.users")
+    .select("role_id, roles(role_name)")
+    .eq("user_id", user_id)
+    .single();
+
+  if (error) throw error;
+  return data.roles.role_name;
+}
+
 module.exports = {
   getAllProducts,
   createOrderProduct,
   updateOrderProduct,
   deleteOrderProduct,
   getProductsByOrder,
+  checkReferralExists,
+  findReferral,
+  createReferralRow,
+  getRoleName,
 };

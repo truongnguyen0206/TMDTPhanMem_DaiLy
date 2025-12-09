@@ -12,6 +12,16 @@ const getAll = async () => {
   return data;
 };
 
+const getOrderById = async (orderId) => {
+  const { data, error } = await supabase
+    .from("orders_view")
+    .select("*")
+    .eq("order_id", orderId)
+    .single();
+
+  if (error) throw error;
+  return data;
+};
 
 // // ========================================
 // // 🟧 LẤY ĐƠN HÀNG THEO CỘNG TÁC VIÊN
@@ -70,26 +80,58 @@ const getById = async (order_id) => {
   return data;
 };
 
+// // =========================
+// // MAP TRẠNG THÁI
+// // =========================
+// const ORDER_STATUS_MAP = {
+//   1: "chờ xử lý",
+//   2: "đã xác nhận",
+//   3: "đã hoàn thành",
+//   4: "đã hủy"
+// };
 
-// Tạo order
+// const PAYMENT_STATUS_MAP = {
+//   1: "chờ thanh toán",
+//   2: "đã thanh toán",
+//   3: "đã hoàn tiền"
+// };
+
+
 const create = async (order) => {
+
   const { data, error } = await supabase
     .from("orders_view")
-    .insert([{
-      order_date: order.order_date || new Date(),
-      total_amount: order.total_amount || 0,
-      created_by: order.created_by || null,
-      customer_id: order.customer_id || null,
-      order_source: order.order_source || "system",
-      order_status: order.order_status ?? 1,
-      payment_status: order.payment_status ?? 1
-    }])
+    .insert([
+      {
+        order_date: order.order_date || new Date(),
+        total_amount: order.total_amount || 0,
+        created_by: order.created_by || null,
+        customer_id: order.customer_id || null,
+        order_source: order.order_source || "Khách hàng",
+
+        // nhận y nguyên từ FE
+        order_status: order.order_status,
+        payment_status: order.payment_status
+      }
+    ])
     .select("order_id")
     .single();
 
   if (error) throw error;
   return data.order_id;
 };
+
+
+async function createOrderRow(orderData) {
+  const { data, error } = await supabase
+    .from("orders_view")
+    .insert(orderData)
+    .select("order_id")
+    .single();
+
+  if (error) throw error;
+  return data.order_id;
+}
 
 // Update order
 const update = async (order_id, updates) => {
@@ -135,20 +177,20 @@ const remove = async (order_id) => {
   return true;
 };
 
-// Tạo order kèm items (transaction)
-const createOrderWithItems = async ({ order, items }) => {
-  const { data, error } = await supabase.rpc("fn_create_order_with_items", {
-    order_data: order,
-    items: items,
-  });
+// // Tạo order kèm items (transaction)
+// const createOrderWithItems = async ({ order, items }) => {
+//   const { data, error } = await supabase.rpc("fn_create_order_with_items", {
+//     order_data: order,
+//     items: items,
+//   });
 
-  if (error) {
-    console.error("❌ Error creating order:", error);
-    throw error;  
-  }
+//   if (error) {
+//     console.error("❌ Error creating order:", error);
+//     throw error;  
+//   }
 
-  return data;
-};
+//   return data;
+// };
 
 // // Lấy order kèm items
 // const getOrderById = async (order_id) => {
@@ -321,6 +363,62 @@ const getOrdersByYear = async (year) => {
   return data || [];
 };
 
+
+//========================================
+//Phần tạo link cho đơn hàng
+//========================================
+
+// Kiểm tra code trùng
+async function checkReferralExists(referral_code) {
+  const { data, error } = await supabase
+    .from("referral_links")
+    .select("referral_id")
+    .eq("referral_code", referral_code)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data !== null;
+}
+
+// Tìm link theo referral_code
+async function findReferral(referral_code) {
+  const { data, error } = await supabase
+    .from("referral_links")
+    .select("referral_id, referral_code, owner_id, owner_role_id, status")
+    .eq("referral_code", referral_code)
+    .eq("status", true)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+// Tạo 1 row referral mới
+async function createReferralRow(rowData) {
+  const { data, error } = await supabase
+    .from("referral_links")
+    .insert(rowData)
+    .select()
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+// Lấy role_name của user
+async function getRoleName(user_id) {
+  if (!user_id) return "Không xác định";
+
+  const { data, error } = await supabase
+    .from("web_auth.users")
+    .select("role_id, roles(role_name)")
+    .eq("user_id", user_id)
+    .single();
+
+  if (error) throw error;
+  return data.roles.role_name;
+}
+
 module.exports = {
   getAll,
   getById,
@@ -328,10 +426,11 @@ module.exports = {
   // getByCustomerId,
   getByUser,
   create,
+  createOrderRow,
   update,
   remove,
-  createOrderWithItems,
-  // getOrderById,
+  // createOrderWithItems,
+  getOrderById,
   listOrders,
   getOrderDetail,
   getOrderOriginLogs,
@@ -339,4 +438,8 @@ module.exports = {
   getTotalRevenue,
   getOrdersForTopPartners,
   getOrdersByYear,
+  checkReferralExists,
+  findReferral,
+  createReferralRow,
+  getRoleName,
 };

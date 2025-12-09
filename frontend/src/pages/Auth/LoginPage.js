@@ -33,7 +33,7 @@ const LoginPage = () => {
       if (decodedUser.role === 'Admin') {
         navigate('/admin/dashboard'); 
       } else if (decodedUser.role === 'Nhà phân phối') {
-        navigate('/'); 
+        navigate('/npp/dashboard'); 
       } else if (decodedUser.role === 'Cộng tác viên') {
         navigate('/ctv/dashboard');
       }else if (decodedUser.role === 'Đại lý') {

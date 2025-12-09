@@ -5,16 +5,14 @@ const StatCard = ({ title, value, change, changeType, children, bgColorClass }) 
 
     // Xác định màu chữ và màu badge dựa trên việc có bgColorClass hay không
     const hasBg = !!bgColorClass;
-    const titleColor = hasBg ? 'text-white opacity-80' : 'text-gray-500 dark:text-gray-400';
-    const valueColor = hasBg ? 'text-white' : 'text-gray-800 dark:text-white';
+    const titleColor = hasBg ? 'text-white opacity-80' : 'text-gray-500';
+    const valueColor = hasBg ? 'text-white' : 'text-gray-800';
     const changeBadgeColor = hasBg 
         ? 'bg-white/30 text-white' 
-        : (isPositive 
-            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
-            : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200');
+        : (isPositive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800');
 
     return (
-        <div className={`p-6 rounded-lg shadow-md ${bgColorClass || 'bg-white dark:bg-gray-800 dark:border dark:border-gray-700'}`}>
+        <div className={`p-6 rounded-lg shadow-md ${bgColorClass || 'bg-white'}`}>
             <div className="flex items-start justify-between">
                 <div>
                     <p className={`text-sm font-medium ${titleColor}`}>{title}</p>

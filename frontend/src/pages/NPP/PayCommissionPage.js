@@ -1,77 +1,80 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useTranslation } from 'react-i18next'; // Import
 
-// Component InfoField (Giữ nguyên)
+// ... (Component InfoField và formatCurrency giữ nguyên) ...
 const InfoField = ({ label, value }) => (
     <div>
-        <label className="block text-sm font-medium text-gray-500 mb-1 dark:text-gray-400">{label}</label>
-        <div className="bg-gray-100 p-3 rounded-md text-gray-800 font-semibold min-h-[44px] flex items-center dark:bg-gray-700 dark:text-gray-200">
+        <label className="block text-sm font-medium text-gray-500 mb-1">{label}</label>
+        <div className="bg-gray-100 p-3 rounded-md text-gray-800 font-semibold">
             {value}
         </div>
     </div>
 );
 
+const formatCurrency = (value) => {
+    if (typeof value !== 'number') return value;
+    return new Intl.NumberFormat('vi-VN').format(value);
+};
+
+
 const PayCommissionPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { t, i18n } = useTranslation(); // Lấy t và i18n
-
+    
     const { commissionData } = location.state || { commissionData: {} };
+    
+    // Kiểm tra xem hoa hồng đã được thanh toán chưa
     const isPaid = commissionData.status === 'paid';
-
-    const formatCurrency = (value) => {
-        if (typeof value !== 'number') return value;
-        return new Intl.NumberFormat(i18n.language === 'vi' ? 'vi-VN' : 'en-US', { style: 'currency', currency: 'VND' }).format(value);
-    };
 
     if (!commissionData.id) {
         return (
             <div>
-                <h1 className="text-3xl font-bold text-gray-800 mb-6 dark:text-white">{t('npp.payCommission.notFound')}</h1> {/* Dịch */}
-                <button onClick={() => navigate('/npp/commissions')} className="text-blue-500 hover:underline">{t('npp.payCommission.backToList')}</button> {/* Dịch */}
+                <h1 className="text-3xl font-bold text-gray-800 mb-6">Không tìm thấy thông tin hoa hồng</h1>
+                <button onClick={() => navigate('/npp/commissions')} className="text-blue-500">Quay lại danh sách</button>
             </div>
         )
     }
 
     return (
         <div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-6 dark:text-white">{t('npp.payCommission.title')}</h1> {/* Dịch */}
+            <h1 className="text-3xl font-bold text-gray-800 mb-6">Hoa hồng</h1>
 
-            <div className="bg-white p-8 rounded-lg shadow-md max-w-4xl mx-auto dark:bg-gray-800 dark:border dark:border-gray-700">
-                <h2 className="text-xl font-bold text-gray-700 mb-6 dark:text-white">
-                    {isPaid ? t('npp.payCommission.paidDetailTitle') : t('npp.payCommission.payTitle')} {/* Dịch */}
+            <div className="bg-white p-8 rounded-lg shadow-md max-w-4xl mx-auto">
+                <h2 className="text-xl font-bold text-gray-700 mb-6">
+                    {isPaid ? 'Chi tiết hoa hồng đã thanh toán' : 'Thanh toán tiền hoa hồng'}
                 </h2>
 
+                {/* ... (phần grid các InfoField giữ nguyên) ... */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <InfoField label={t('npp.payCommission.commissionCodeLabel')} value={commissionData.id} /> {/* Dịch */}
-                    <InfoField label={t('npp.payCommission.agentLabel')} value={commissionData.agent} /> {/* Dịch */}
-                    <InfoField label={t('npp.payCommission.amountLabel')} value={formatCurrency(commissionData.amount)} /> {/* Dịch */}
-                    <InfoField label={t('npp.payCommission.paymentMethodLabel')} value={t('npp.addAgent.bankTransfer')} /> {/* Dịch */}
-                    <InfoField label={t('npp.payCommission.accountNumberLabel')} value="8888888888" /> {/* Dịch */}
-                    <InfoField label={t('npp.payCommission.transactionDateLabel')} value={`${commissionData.date}   ${commissionData.time}`} /> {/* Dịch */}
+                    <InfoField label="Mã hoa hồng" value={commissionData.id} />
+                    <InfoField label="Đại lý" value={commissionData.agent} />
+                    <InfoField label="Số tiền chuyển (VND)" value={formatCurrency(commissionData.amount)} />
+                    <InfoField label="Phương thức thanh toán" value="Chuyển khoản ngân hàng" />
+                    <InfoField label="Số tài khoản" value="8888888888" />
+                    <InfoField label="Ngày giao dịch" value={`${commissionData.date}   ${commissionData.time}`} />
                 </div>
                 <div className="col-span-2">
-                     <InfoField label={t('npp.payCommission.notesLabel')} value={t('npp.payCommission.notesDefault', { agentName: commissionData.agent })} /> {/* Dịch */}
+                     <InfoField label="Ghi chú bổ sung (tùy chọn)" value={`Thanh toán hoa hồng cho đại lý ${commissionData.agent}`} />
                 </div>
 
                 <div className="flex justify-end gap-4 mt-8">
-                    <button
-                        onClick={() => navigate('/npp/commissions')}
-                        className="bg-gray-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-gray-600 transition-colors dark:bg-gray-600 dark:hover:bg-gray-500"
+                    <button 
+                        onClick={() => navigate('/npp/commissions')} 
+                        className="bg-gray-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-gray-600 transition-colors"
                     >
-                        {isPaid ? t('general.back') : t('general.close')} {/* Dịch */}
+                        {isPaid ? 'Quay lại' : 'Đóng'}
                     </button>
-                    <button
-                        onClick={() => alert(t('npp.payCommission.payConfirm', {amount: formatCurrency(commissionData.amount), agentName: commissionData.agent}))} // Dịch alert
+                    {/* Vô hiệu hóa nút Thanh toán nếu đã thanh toán rồi */}
+                    <button 
+                        onClick={() => alert(`Thanh toán ${formatCurrency(commissionData.amount)} cho đại lý ${commissionData.agent}`)}
                         disabled={isPaid}
-                        className={`font-bold py-2 px-6 rounded-lg transition-colors
-                                    ${isPaid
-                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed dark:bg-gray-600 dark:text-gray-400'
+                        className={`font-bold py-2 px-6 rounded-lg transition-colors 
+                                    ${isPaid 
+                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
                                         : 'bg-green-500 text-white hover:bg-green-600'
                                     }`}
                     >
-                        {isPaid ? t('npp.payCommission.paidButton') : t('npp.payCommission.payButton')} {/* Dịch */}
+                        {isPaid ? 'Đã Thanh Toán' : 'Thanh toán'}
                     </button>
                 </div>
             </div>

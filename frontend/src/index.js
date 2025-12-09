@@ -1,17 +1,11 @@
-// Cập nhật tệp: src/index.js
-
-import React from 'react'; // <-- Import React
+import React from 'react';
 import ReactDOM from 'react-dom/client';
-import './index.css';
+import './index.css'; // Import tệp CSS chính của Tailwind
 import App from './App';
-import './i18n'; // Import i18n
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    {/* Thêm Suspense bao bọc App */}
-    <React.Suspense fallback={<div>Đang tải ngôn ngữ...</div>}> {/* Bạn có thể tùy chỉnh fallback UI */}
-      <App />
-    </React.Suspense>
+    <App />
   </React.StrictMode>
 );

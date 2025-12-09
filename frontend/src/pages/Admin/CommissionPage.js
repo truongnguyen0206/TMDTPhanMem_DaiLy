@@ -1,15 +1,23 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useOutletContext, Link } from 'react-router-dom';
-import axiosClient from '../../api/axiosClient'; // Import axiosClient
-import { LuPlus, LuPencil, LuTrash2, LuFilter } from 'react-icons/lu'; // Thêm icons
+import axiosClient from '../../api/axiosClient';
+import { LuPlus, LuPencil, LuTrash2, LuFilter } from 'react-icons/lu';
 
-// Hàm format tiền tệ (có thể tái sử dụng nếu cần)
+// ✅ 1. DANH SÁCH ROLE CỐ ĐỊNH
+const STATIC_ROLES = [
+    { role_id: 1, role_name: 'Admin' },
+    { role_id: 2, role_name: 'Nhà phân phối' },
+    { role_id: 3, role_name: 'Đại lý' },
+    { role_id: 4, role_name: 'Cộng tác viên' },
+    { role_id: 5, role_name: 'Khách hàng' }
+];
+
+// --- HELPER FUNCTIONS ---
 const formatCurrency = (value) => {
     if (value === null || value === undefined) return '-';
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
 };
 
-// Hàm format ngày (có thể tái sử dụng)
 const formatDate = (dateString) => {
     if (!dateString) return '-';
     try {
@@ -19,30 +27,71 @@ const formatDate = (dateString) => {
     }
 };
 
+// --- COMPONENTS CON ---
+
+// 1. Badge cho Vai trò (Giữ nguyên)
+const RoleBadge = ({ roleId }) => {
+    const role = STATIC_ROLES.find(r => r.role_id === roleId);
+    const roleName = role ? role.role_name : `Unknown ID: ${roleId}`;
+    let colorClasses = 'bg-gray-100 text-gray-800';
+
+    switch (roleId) {
+        case 1: colorClasses = 'bg-red-100 text-red-800'; break;
+        case 2: colorClasses = 'bg-purple-100 text-purple-800'; break;
+        case 3: colorClasses = 'bg-blue-100 text-blue-800'; break;
+        case 4: colorClasses = 'bg-yellow-100 text-yellow-800'; break;
+        case 5: colorClasses = 'bg-green-100 text-green-800'; break;
+        default: colorClasses = 'bg-gray-100 text-gray-600';
+    }
+
+    return (
+        <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full whitespace-nowrap ${colorClasses}`}>
+            {roleName}
+        </span>
+    );
+};
+
+// 🆕 2. Badge cho Trạng thái (Mới thêm)
+const CommissionStatusBadge = ({ status }) => {
+    let style = { text: status || '-', color: 'bg-gray-100 text-gray-600' };
+    
+    // Chuẩn hóa status về chữ thường để so sánh hoặc so sánh trực tiếp nếu DB lưu chuẩn
+    const s = status ? status : ''; 
+
+    if (s === 'Active' || s === 'active') {
+        style = { text: 'Hoạt động', color: 'bg-green-100 text-green-800' };
+    } else if (s === 'Inactive' || s === 'inactive') {
+        style = { text: 'Ngừng', color: 'bg-red-100 text-red-800' };
+    } else if (s === 'Draft' || s === 'draft') {
+        style = { text: 'Nháp', color: 'bg-gray-100 text-gray-800' };
+    }
+
+    return (
+        <span className={`px-2 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${style.color}`}>
+            {style.text}
+        </span>
+    );
+};
+
+
+// --- COMPONENT CHÍNH ---
 const CommissionPage = () => {
     const { setPageTitle } = useOutletContext();
-    // --- State cho dữ liệu, loading, lỗi ---
+    
     const [rules, setRules] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [roles, setRoles] = useState([]); // State để lưu danh sách roles cho bộ lọc
-    const [filterRoleId, setFilterRoleId] = useState(''); // State cho bộ lọc theo vai trò
+    const [filterRoleId, setFilterRoleId] = useState('');
 
     useEffect(() => {
         setPageTitle('Quản lý Quy tắc Hoa hồng');
 
-        // --- Fetch dữ liệu ---
         const fetchData = async () => {
             setLoading(true);
             setError('');
             try {
-                // Lấy danh sách quy tắc
-                const rulesResponse = await axiosClient.get('/api/commission-rules'); //
-                setRules(rulesResponse.data?.data || []); // API trả về { success, data, message }
-
-                // Lấy danh sách vai trò để lọc
-                const rolesResponse = await axiosClient.get('/roles'); //
-                setRoles(rolesResponse.data || []);
+                const rulesResponse = await axiosClient.get('/api/commission-rules'); 
+                setRules(rulesResponse.data?.data || []);
             } catch (err) {
                 console.error("Lỗi khi tải dữ liệu:", err);
                 setError('Không thể tải dữ liệu quy tắc hoa hồng. Vui lòng thử lại.');
@@ -54,12 +103,11 @@ const CommissionPage = () => {
         fetchData();
     }, [setPageTitle]);
 
-    // --- Hàm xử lý xóa quy tắc ---
     const handleDeleteRule = async (ruleId) => {
         if (window.confirm(`Bạn có chắc chắn muốn xóa quy tắc hoa hồng ID: ${ruleId} không?`)) {
             try {
                 setError('');
-                await axiosClient.delete(`/api/commission-rules/${ruleId}`); //
+                await axiosClient.delete(`/api/commission-rules/${ruleId}`);
                 setRules(prevRules => prevRules.filter(rule => rule.rule_id !== ruleId));
                 alert(`Đã xóa thành công quy tắc ID: ${ruleId}.`);
             } catch (err) {
@@ -71,21 +119,16 @@ const CommissionPage = () => {
         }
     };
 
-    // --- Lọc danh sách quy tắc ---
     const filteredRules = useMemo(() => {
-        if (!filterRoleId) {
-            return rules;
-        }
+        if (!filterRoleId) return rules;
         return rules.filter(rule => String(rule.role_id) === filterRoleId);
     }, [rules, filterRoleId]);
 
     return (
         <div className="bg-white p-6 rounded-xl border border-gray-200">
-            {/* Header: Tiêu đề, Bộ lọc, Nút Thêm mới */}
             <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                 <h2 className="text-xl font-bold text-gray-800">Danh sách Quy tắc Hoa hồng</h2>
                 <div className="flex items-center gap-4">
-                     {/* Bộ lọc theo vai trò */}
                     <div className="flex items-center gap-2">
                          <LuFilter size={18} className="text-gray-500" />
                         <select
@@ -94,16 +137,15 @@ const CommissionPage = () => {
                             className="bg-gray-50 border border-gray-200 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-primary w-full md:w-auto text-sm"
                         >
                             <option value="">Lọc theo vai trò</option>
-                            {roles.map(role => (
-                                <option key={role.role_id} value={role.rule_id}>
-                                    {role.role_id} - {role.role_name}
+                            {STATIC_ROLES.map(role => (
+                                <option key={role.role_id} value={role.role_id}>
+                                    {role.role_name}
                                 </option>
                             ))}
                         </select>
                     </div>
-                    {/* Nút Thêm mới */}
                     <Link
-                        to="/admin/commission/new" //
+                        to="/admin/commission/new"
                         className="flex items-center gap-2 bg-primary text-white font-bold px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
                     >
                         <LuPlus size={20} />
@@ -112,24 +154,22 @@ const CommissionPage = () => {
                 </div>
             </div>
 
-            {/* Hiển thị lỗi */}
             {error && <p className="text-red-600 text-center mb-4">{error}</p>}
 
-            {/* Bảng dữ liệu */}
             <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left text-gray-600">
                     <thead className="text-xs text-gray-700 uppercase bg-gray-50">
                         <tr>
-                            <th scope="col" className="px-6 py-3">ID</th>
-                            <th scope="col" className="px-6 py-3">Vai trò</th>
-                            <th scope="col" className="px-6 py-3">Doanh số (Min)</th>
-                            <th scope="col" className="px-6 py-3">Doanh số (Max)</th>
-                            <th scope="col" className="px-6 py-3">Tỷ lệ (%)</th>
-                            <th scope="col" className="px-6 py-3">Danh mục SP</th>
-                            <th scope="col" className="px-6 py-3">Ngày bắt đầu</th>
-                            <th scope="col" className="px-6 py-3">Ngày kết thúc</th>
-                            <th scope="col" className="px-6 py-3">Mô tả</th>
-                            <th scope="col" className="px-6 py-3 text-right">Hành động</th>
+                            <th className="px-6 py-3">ID</th>
+                            <th className="px-6 py-3">Vai trò</th>
+                            <th className="px-6 py-3">Trạng thái</th> {/* 🆕 Cột Mới */}
+                            <th className="px-6 py-3">Doanh số (Min)</th>
+                            <th className="px-6 py-3">Doanh số (Max)</th>
+                            <th className="px-6 py-3">Tỷ lệ (%)</th>
+                            <th className="px-6 py-3">Danh mục SP</th>
+                            <th className="px-6 py-3">Thời gian</th> {/* Gộp Start/End cho gọn */}
+                            <th className="px-6 py-3">Mô tả</th>
+                            <th className="px-6 py-3 text-right">Hành động</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -141,26 +181,40 @@ const CommissionPage = () => {
                             filteredRules.map((rule) => (
                                 <tr key={rule.rule_id} className="bg-white border-b hover:bg-gray-50">
                                     <td className="px-6 py-4 font-medium text-gray-900">{rule.rule_id}</td>
-                                    {/* Giả sử API trả về role_name */}
-                                    <td className="px-6 py-4">{rule.role_name || rule.role_id}</td>
+                                    
+                                    <td className="px-6 py-4">
+                                        <RoleBadge roleId={rule.role_id} />
+                                    </td>
+
+                                    {/* 🆕 Hiển thị Trạng thái */}
+                                    <td className="px-6 py-4">
+                                        <CommissionStatusBadge status={rule.status} />
+                                    </td>
+
                                     <td className="px-6 py-4">{formatCurrency(rule.min_sales)}</td>
                                     <td className="px-6 py-4">{rule.max_sales ? formatCurrency(rule.max_sales) : 'Không giới hạn'}</td>
-                                    <td className="px-6 py-4 font-semibold">{rule.commission_rate}%</td>
-                                    <td className="px-6 py-4">{rule.product_category || '-'}</td>
-                                    <td className="px-6 py-4">{formatDate(rule.start_date)}</td>
-                                    <td className="px-6 py-4">{rule.end_date ? formatDate(rule.end_date) : 'Vô thời hạn'}</td>
-                                    <td className="px-6 py-4 text-xs">{rule.description || '-'}</td>
+                                    <td className="px-6 py-4 font-semibold text-blue-600">{rule.commission_rate}%</td>
+                                    <td className="px-6 py-4">{rule.product_category || 'Tất cả'}</td>
+                                    
+                                    {/* Hiển thị thời gian gộp cho gọn */}
+                                    <td className="px-6 py-4 text-xs">
+                                        <div className="text-gray-900">BĐ: {formatDate(rule.start_date)}</div>
+                                        <div className="text-gray-500">KT: {rule.end_date ? formatDate(rule.end_date) : 'Vô thời hạn'}</div>
+                                    </td>
+                                    
+                                    <td className="px-6 py-4 text-xs max-w-[150px] truncate" title={rule.description}>
+                                        {rule.description || '-'}
+                                    </td>
+                                    
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end gap-3">
-                                            {/* Nút Sửa */}
                                             <Link
-                                                to={`/admin/commission/edit/${rule.rule_id}`} //
+                                                to={`/admin/commission/edit/${rule.rule_id}`}
                                                 className="text-gray-400 hover:text-blue-600"
                                                 title="Sửa quy tắc"
                                             >
                                                 <LuPencil size={18} />
                                             </Link>
-                                            {/* Nút Xóa */}
                                             <button
                                                 onClick={() => handleDeleteRule(rule.rule_id)}
                                                 className="text-gray-400 hover:text-red-600"

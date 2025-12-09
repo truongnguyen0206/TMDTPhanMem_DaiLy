@@ -32,5 +32,8 @@ router.get('/statistics', authenticateToken, dashboardController.getStatistics);
 // GET: Lấy tóm tắt về sản phẩm
 router.get('/products-summary', authenticateToken, dashboardController.getProductsSummary);
 
+router.get('/tongdlcuanpp/:npp_id', dashboardController.getDistributorDashboard);
+router.get("/distributor/orders-count/:npp_id", dashboardController.getDistributorOrderCount);
+router.get('/admin/stats', authenticateToken, dashboardController.getAdminStats);
 
 module.exports = router;

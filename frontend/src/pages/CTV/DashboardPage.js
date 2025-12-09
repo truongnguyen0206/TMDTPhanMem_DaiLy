@@ -17,7 +17,7 @@ const data = [
 const DashboardPage = () => {
   return (
     <div>
-      <h2 className="text-2xl font-semibold text-gray-800 mb-6">Bảng điều khiển CTV</h2>
+      <h2 className="text-2xl font-semibold text-gray-800 mb-6 dark:text-white">Bảng điều khiển CTV</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Tổng đơn hàng"
@@ -53,8 +53,8 @@ const DashboardPage = () => {
         />
       </div>
 
-      <div className="bg-white p-6 rounded-lg shadow-md mt-8">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Thống kê doanh số và hoa hồng</h3>
+      <div className="bg-white p-6 rounded-lg shadow-md mt-8 dark:bg-gray-800 dark:border dark:border-gray-700">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4 dark:text-white">Thống kê doanh số và hoa hồng</h3>
         <ResponsiveContainer width="100%" height={350}>
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />

@@ -1,90 +1,140 @@
-const pool = require("../config/database_config");
+const supabase = require("../config/supabaseClient");
 
 // === Lấy toàn bộ sản phẩm trong tất cả đơn hàng ===
 const getAllProducts = async () => {
-    const result = await pool.query(
-      "SELECT * FROM orders.order_product ORDER BY product_id ASC"
-    );
-    return result.rows;
-  };
-  
+  const { data, error } = await supabase
+    .from("product")
+    .select("*")
+    .order("product_id", { ascending: true });
+
+  if (error) throw error;
+  return data;
+};
 
 // === Thêm sản phẩm ===
 const createOrderProduct = async (data) => {
-  const {order_id, product_id, product_name, description, quantity, unit_price } = data;
+  const { order_id, product_id, product_name, description, quantity, unit_price } = data;
 
-  const result = await pool.query(
-    `INSERT INTO orders.order_product 
-      (order_id, product_id, product_name, description, quantity, unit_price)
-     VALUES ($1, $2, $3, $4, $5, $6)
-     RETURNING *`,
-    [order_id, product_id, product_name, description, quantity, unit_price]
-  );
+  const { data: result, error } = await supabase
+    .from("product")
+    .insert([
+      { product_id, product_name, description, quantity, unit_price },
+    ])
+    .select("*")
+    .single();
 
-  return result.rows[0];
+  if (error) throw error;
+  return result;
 };
 
 // === Cập nhật sản phẩm ===
 const updateOrderProduct = async (id, updates) => {
-  // ✅ Chỉ cho phép cập nhật các cột hợp lệ
-  const allowedFields = [
-    "id",
-    "product_name",
-    "description",
-    "quantity",
-    "unit_price"
-  ];
+  const allowedFields = ["product_name", "description", "quantity", "unit_price"];
+  const validUpdates = Object.fromEntries(
+    Object.entries(updates).filter(([key]) => allowedFields.includes(key))
+  );
 
-  // Lọc ra các key hợp lệ
-  const keys = Object.keys(updates).filter((k) => allowedFields.includes(k));
+  if (Object.keys(validUpdates).length === 0) return null;
 
-  // Nếu không có trường hợp lệ → không update
-  if (keys.length === 0) return null;
+  const { data, error } = await supabase
+    .from("product")
+    .update(validUpdates)
+    .eq("id", id)
+    .select("*")
+    .single();
 
-  // Tạo câu lệnh SET (vd: product_name = $1, quantity = $2)
-  const setClauses = keys.map((k, i) => `${k} = $${i + 1}`).join(", ");
-
-  // Lấy danh sách giá trị theo thứ tự
-  const values = keys.map((k) => updates[k]);
-
-  // Đẩy id vào cuối mảng
-  values.push(id);
-
-  const query = `
-    UPDATE orders.order_product
-    SET ${setClauses}
-    WHERE id = $${values.length}
-    RETURNING *;
-  `;
-
-  const result = await pool.query(query, values);
-
-  // Trả về dòng đã cập nhật hoặc null nếu không có
-  return result.rowCount ? result.rows[0] : null;
+  if (error) throw error;
+  return data;
 };
 
 // === Xóa sản phẩm ===
 const deleteOrderProduct = async (id) => {
-  const result = await pool.query(
-    "DELETE FROM orders.order_product WHERE id = $1 RETURNING *",
-    [id]
-  );
-  return result.rows[0];
+  const { data, error } = await supabase
+    .from("product")
+    .delete()
+    .eq("id", id)
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return data;
 };
 
 // === Lấy danh sách sản phẩm theo order_id ===
 const getProductsByOrder = async (order_id) => {
-  const result = await pool.query(
-    "SELECT * FROM orders.order_product WHERE order_id = $1 ORDER BY id ASC",
-    [order_id]
-  );
-  return result.rows;
+  const { data, error } = await supabase
+    .from("product")
+    .select("*")
+    .eq("order_id", order_id)
+    .order("id", { ascending: true });
+
+  if (error) throw error;
+  return data;
 };
 
+//========================================
+//Phần tạo link cho sản phẩm
+//========================================
+
+// Kiểm tra code trùng
+async function checkReferralExists(referral_code) {
+  const { data, error } = await supabase
+    .from("referral_links")
+    .select("referral_id")
+    .eq("referral_code", referral_code)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data !== null;
+}
+
+// Tìm link theo referral_code
+async function findReferral(referral_code) {
+  const { data, error } = await supabase
+    .from("referral_links")
+    .select("referral_id, referral_code, owner_id, owner_role_id, status")
+    .eq("referral_code", referral_code)
+    .eq("status", true)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+// Tạo 1 row referral mới
+async function createReferralRow(rowData) {
+  const { data, error } = await supabase
+    .from("referral_links")
+    .insert(rowData)
+    .select()
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+// Lấy role_name của user
+async function getRoleName(user_id) {
+  if (!user_id) return "Không xác định";
+
+  const { data, error } = await supabase
+    .from("web_auth.users")
+    .select("role_id, roles(role_name)")
+    .eq("user_id", user_id)
+    .single();
+
+  if (error) throw error;
+  return data.roles.role_name;
+}
+
 module.exports = {
-    getAllProducts,
-    createOrderProduct,
-    updateOrderProduct,
-    deleteOrderProduct,
-    getProductsByOrder,
+  getAllProducts,
+  createOrderProduct,
+  updateOrderProduct,
+  deleteOrderProduct,
+  getProductsByOrder,
+  checkReferralExists,
+  findReferral,
+  createReferralRow,
+  getRoleName,
 };

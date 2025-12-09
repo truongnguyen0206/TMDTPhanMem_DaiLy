@@ -1,150 +1,179 @@
-const userModel = require("../models/user_model");
-const pool = require("../config/database_config");
+const supabase = require("../config/supabaseClient");
+const UserService = require("../services/user_service");
 const bcrypt = require("bcrypt");
 
-
+// 🟢 Lấy toàn bộ users (join roles)
 const getAllUsers = async (req, res) => {
   try {
-    const users = await userModel.getUsers();
-    res.status(200).json(users);
+    const { data, error } = await supabase.rpc("get_users_with_roles");
+
+    if (error) throw error;
+
+    res.status(200).json(data);
   } catch (error) {
     console.error("Error fetching users:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
+// 🟢 Lấy user theo ID
 const getUserById = async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await pool.query("SELECT * FROM auth.users WHERE user_id = $1", [id]);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Người dùng không tồn tại" });
-    }
+    const { data, error } = await supabase
+      .from("users_view")
+      .select("*")
+      .eq("user_id", id)
+      .single();
 
-    res.json(result.rows[0]);
+    if (error) throw error;
+    if (!data) return res.status(404).json({ message: "Người dùng không tồn tại" });
+
+    res.json(data);
   } catch (err) {
     console.error("Error fetching user by id:", err);
-    res.status(500).json({ message: "Lỗi server" });
+    res.status(500).json({ message: "Lỗi server", error: err.message });
   }
 };
 
+// 🟢 Tạo user mới
 const createUser = async (req, res) => {
   try {
     const { username, email, password, phone, role_id } = req.body;
 
-    if (!username || !email || !password) {
-      return res.status(400).json({ message: "Missing required fields" });
-    }
+    if (!username || !email || !password)
+      return res.status(400).json({ message: "Thiếu thông tin bắt buộc" });
 
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUser = await userModel.createUser({
-      username,
-      email,
-      password: hashedPassword,
-      phone,
-      role_id: role_id || 2
-    });
+    const { data, error } = await supabase
+      .from("users_view")
+      .insert([
+        {
+          username,
+          email,
+          password: hashedPassword,
+          phone,
+          role_id: role_id || 2, // mặc định role 2
+          status: "Đang chờ cấp tài khoản",
+        },
+      ])
+      .select()
+      .single();
 
-    res.status(201).json({ message: "User created successfully", user: newUser });
+    if (error) throw error;
+
+    res.status(201).json({ message: "User created successfully", user: data });
   } catch (err) {
     console.error("Error creating user:", err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 
-
+// 🟢 Cập nhật user
 const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { username, email, phone, role_id } = req.body;
+    const { username, password, email, phone, role_id, status } = req.body;
 
-    if (!username || !email || !role_id) {
-      return res.status(400).json({ message: "Thiếu thông tin bắt buộc!" });
+    const updates = { username, email, phone, role_id, status };
+
+    // 🔥 Nếu có truyền password → mã hoá
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      updates.password = hashedPassword;
     }
 
-    const updatedUser = await userModel.updateUser(id, { username, email, phone, role_id });
+    const { data, error } = await supabase
+      .from("users_view")
+      .update(updates)
+      .eq("user_id", id)
+      .select()
+      .maybeSingle();
+    if (error) throw error;
 
-    if (!updatedUser) {
-      return res.status(404).json({ message: "Không tìm thấy người dùng để cập nhật" });
+    if (!data) {
+      return res.status(404).json({ message: "Không tìm thấy user" });
     }
 
     res.status(200).json({
       message: "Cập nhật user thành công",
-      user: updatedUser
+      user: data,
     });
+
   } catch (error) {
-    console.error("Error updating user:", error);
-    res.status(500).json({ message: "Internal Server Error" });
+    console.error("❌ Error updating user:", error);
+    res.status(500).json({
+      message: "Internal Server Error",
+      error: error.message,
+    });
   }
 };
 
 
+
+// // 🟢 Xóa user
 // const deleteUser = async (req, res) => {
 //   try {
 //     const { id } = req.params;
 
-//     const result = await pool.query(
-//       "DELETE FROM auth.users WHERE user_id = $1 RETURNING *",
-//       [id]
-//     );
+//     // Xóa agent & ctv trước nếu có
+//     await supabase.from("member.agent").delete().eq("user_id", id);
+//     await supabase.from("member.ctv").delete().eq("user_id", id);
 
-//     if (result.rows.length === 0) {
-//       return res.status(404).json({ message: "User not found" });
-//     }
+//     // Xóa user chính
+//     const { data, error } = await supabase
+//       .from("users_view")
+//       .delete()
+//       .eq("user_id", id)
+//       .select()
+//       .single();
 
-//     res.json({ message: "User deleted successfully", user: result.rows[0] });
+//     if (error) throw error;
+//     if (!data) return res.status(404).json({ message: "User not found" });
+
+//     res.json({ message: "User deleted successfully", user: data });
 //   } catch (err) {
 //     console.error("Error deleting user:", err);
 //     res.status(500).json({ message: "Server error", error: err.message });
 //   }
 // };
 
-const deleteUser = async (req, res) => {
-  const { id } = req.params;
-  const client = await pool.connect(); // Lấy một client từ pool để thực hiện transaction
 
+const updateUserStatus = async (req, res) => {
   try {
-      await client.query('BEGIN'); // Bắt đầu transaction
+    const { id } = req.params;
+    const { status } = req.body; // client gửi status vào body
 
-      // === BƯỚC 1: Xóa các bản ghi phụ thuộc trước ===
-      // Xóa khỏi bảng agent (nếu có)
-      await client.query('DELETE FROM "member"."agent" WHERE user_id = $1', [id]);
-      
-      // Xóa khỏi bảng ctv (nếu có)
-      await client.query('DELETE FROM "member"."ctv" WHERE user_id = $1', [id]);
-      // (Thêm các lệnh xóa ở các bảng khác nếu user_id cũng là khóa ngoại ở đó)
+    const result = await UserService.updateUserStatus(id, status);
 
-        // === BƯỚC 2: Xóa người dùng chính trong bảng auth.users ===
-        const result = await client.query(
-          'DELETE FROM auth.users WHERE user_id = $1 RETURNING *',
-          [id]
-      );
-
-      if (result.rows.length === 0) {
-          // Nếu không tìm thấy user, hủy bỏ transaction và báo lỗi
-          await client.query('ROLLBACK');
-          return res.status(404).json({ message: "User not found" });
-      }
-
-      await client.query('COMMIT'); // Hoàn tất transaction nếu mọi thứ thành công
-      res.json({ message: "User deleted successfully", user: result.rows[0] });
+    return res.status(result.success ? 200 : 400).json(result);
 
   } catch (err) {
-      await client.query('ROLLBACK'); // Hoàn tác tất cả thay đổi nếu có lỗi
-      console.error("Error deleting user:", err);
-      res.status(500).json({ message: "Server error", error: err.message });
-  } finally {
-      client.release(); // Trả client về lại pool
+    console.error("Error:", err.message);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err.message,
+    });
   }
 };
+
+const getAllRoles = async (req, res) => {
+  const result = await UserService.getAllRoles();
+  return res.status(result.success ? 200 : 400).json(result);
+};
+
+
 
 module.exports = {
   getAllUsers,
   getUserById,
   createUser,
   updateUser,
-  deleteUser,
+  // deleteUser,
+  // deactivateUser,
+  updateUserStatus,
+  getAllRoles,
 };

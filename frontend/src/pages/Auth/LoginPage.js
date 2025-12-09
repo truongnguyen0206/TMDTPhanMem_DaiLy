@@ -33,10 +33,10 @@ const LoginPage = () => {
       if (decodedUser.role === 'Admin') {
         navigate('/admin/dashboard'); 
       } else if (decodedUser.role === 'Nhà phân phối') {
-        navigate('/'); 
-      } else if (decodedUser.role === 'CTV') {
+        navigate('/npp/dashboard'); 
+      } else if (decodedUser.role === 'Cộng tác viên') {
         navigate('/ctv/dashboard');
-      }else if (decodedUser.role === 'Agent') {
+      }else if (decodedUser.role === 'Đại lý') {
         navigate('/dl/dashboard'); 
       }else {
         navigate('/'); // Vai trò không xác định, chuyển về trang chủ hoặc trang lỗi
@@ -121,9 +121,9 @@ const LoginPage = () => {
               <span className="text-sm font-medium text-gray-700">Sign up with Google</span>
             </button>
           </div>
-          <p className="mt-8 text-center text-sm text-gray-600">
+          {/* <p className="mt-8 text-center text-sm text-gray-600">
             Don't have an account? <Link to="/signup" className="text-blue-600 font-medium hover:underline">Sign up</Link>
-          </p>
+          </p> */}
         </div>
       </div>
     </div>

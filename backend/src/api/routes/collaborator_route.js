@@ -23,4 +23,14 @@ router.put('/updateCTV/:id', collaboratorController.updateCTV);
 // DELETE (soft)
 router.delete('/removeCTV/:id', collaboratorController.removeCTV);
 
+router.get("/:id/orders", collaboratorController.getOrdersByCTV);
+
+// router.get(
+//     '/',
+//     authenticateToken,
+//     authorizeRoles('admin', 'npp', 'dl'),
+//     getCollaborators,
+//   );
+  
+
 module.exports = router;

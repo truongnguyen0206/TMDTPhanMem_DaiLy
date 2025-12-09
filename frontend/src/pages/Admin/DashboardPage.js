@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts';
-import { LuEllipsisVertical, LuTrendingUp, LuTrendingDown, LuPackage, LuUsers, LuChartBar, LuCopy } from 'react-icons/lu';
+import { LuEllipsisVertical, LuTrendingUp, LuTrendingDown, LuPackage, LuChartBar, LuCopy, LuUserPlus } from 'react-icons/lu';
 import axiosClient from '../../api/axiosClient';
 
 // --- COMPONENT CON ---
@@ -58,6 +58,7 @@ const StatCard = ({ icon, title, value, growth, subText }) => {
 // --- COMPONENT CHÍNH ---
 const DashboardPage = () => {
     const { setPageTitle } = useOutletContext();
+    const navigate = useNavigate();
     
     // State lưu dữ liệu thực từ API
     const [stats, setStats] = useState({
@@ -94,7 +95,7 @@ const DashboardPage = () => {
 
     // Gọi API khi groupBy thay đổi hoặc mới vào trang
     useEffect(() => {
-        setPageTitle('Dashboard Admin');
+        setPageTitle('Dashboard');
         fetchData(groupBy);
     }, [setPageTitle, groupBy]);
 
@@ -102,6 +103,7 @@ const DashboardPage = () => {
     const formatMoney = (num) => new Intl.NumberFormat('vi-VN', { notation: "compact", compactDisplay: "short" }).format(num || 0) + 'đ';
     const cards = stats.stats_cards || {};
 
+    const clickableCardClass = "cursor-pointer transition-transform hover:scale-105 active:scale-95 h-full";
     return (
         <div className="space-y-8">
             
@@ -119,37 +121,66 @@ const DashboardPage = () => {
   {/* --- HÀNG 2: THẺ THỐNG KÊ (Đã cập nhật logic) --- */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 
-                {/* 1. Tổng đơn hàng phát sinh */}
-                <StatCard 
-                    icon={<LuPackage size={24}/>} 
-                    title="Tổng đơn hàng (Tháng này)" 
-                    value={formatNumber(cards.total_orders?.value)} 
-                    growth={cards.total_orders?.growth} 
-                />
+                {/* 1. Tổng đơn hàng -> Chuyển sang trang Đơn hàng */}
+                <div 
+                    className={clickableCardClass}
+                    onClick={() => navigate('/admin/orders')}
+                >
+                    <StatCard 
+                        icon={<LuPackage size={24}/>} 
+                        title="Tổng đơn hàng (Tháng này)" 
+                        value={formatNumber(cards.total_orders?.value)} 
+                        growth={cards.total_orders?.growth} 
+                    />
+                </div>
 
-                {/* 2. Tổng doanh thu hệ thống */}
-                <StatCard 
-                    icon={<LuChartBar size={24}/>} 
-                    title="Tổng doanh thu (Tháng này)" 
-                    value={formatMoney(cards.total_revenue?.value)} 
-                    growth={cards.total_revenue?.growth} 
-                />
+                {/* 2. Tổng doanh thu -> Chuyển sang trang Đơn hàng */}
+                <div 
+                    className={clickableCardClass}
+                    onClick={() => navigate('/admin/orders')}
+                >
+                    <StatCard 
+                        icon={<LuChartBar size={24}/>} 
+                        title="Tổng doanh thu (Tháng này)" 
+                        value={formatMoney(cards.total_revenue?.value)} 
+                        growth={cards.total_revenue?.growth} 
+                    />
+                </div>
 
-                {/* 3. Đơn chờ xử lý (Icon mới) */}
-                <StatCard 
-                    icon={<LuCopy size={24}/>} 
-                    title="Đơn chờ xử lý" 
-                    value={formatNumber(cards.pending_orders?.value)} 
-                    subText="Cần duyệt ngay" // Text hiển thị khi không có growth
-                />
+                {/* 3. Đơn chờ xử lý -> Chuyển sang trang Đơn hàng + Lọc "Chờ xử lý" */}
+                <div 
+                    className={clickableCardClass}
+                    onClick={() => {
+                        // Gửi kèm state để bên kia biết mà lọc
+                        navigate('/admin/orders', { 
+                            state: { autoFilterStatus: 'pending' } 
+                        });
+                    }}
+                >
+                    <StatCard 
+                        icon={<LuCopy size={24}/>} 
+                        title="Đơn chờ xử lý" 
+                        value={formatNumber(cards.pending_orders?.value)} 
+                        subText="Bấm để xử lý ngay" 
+                    />
+                </div>
 
-                {/* 4. Khách hàng mới */}
-                <StatCard 
-                    icon={<LuUsers size={24}/>} 
-                    title="Khách hàng mới" 
-                    value={formatNumber(cards.new_customers?.value)} 
-                    growth={cards.new_customers?.growth} 
-                />
+                {/* 4. Tài khoản chờ duyệt (Code cũ của bạn - Giữ nguyên) */}
+                <div 
+                    className={clickableCardClass}
+                    onClick={() => {
+                        navigate('/admin/accounts', { 
+                            state: { autoFilterStatus: 'Đang chờ cấp tài khoản' } 
+                        });
+                    }}
+                >
+                    <StatCard 
+                        icon={<LuUserPlus size={24}/>} 
+                        title="Tài khoản chờ duyệt" 
+                        value={formatNumber(cards.new_customers?.value)} 
+                        subText="Cần kích hoạt"
+                    />
+                </div>
             </div>
             {/* --- HÀNG 3: BIỂU ĐỒ --- */}
             <div className="grid grid-cols-1 gap-6">

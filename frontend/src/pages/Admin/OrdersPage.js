@@ -1,131 +1,103 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useOutletContext } from 'react-router-dom';
-import { LuPencil, LuSearch, LuEllipsisVertical } from 'react-icons/lu';
+import { useOutletContext, useLocation } from 'react-router-dom';
+import { LuPencil, LuSearch, LuEye, LuCalendar, LuX, LuFileSpreadsheet, LuFileText, LuTrash2 } from 'react-icons/lu'; // Thêm icon mới
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from 'recharts';
 import axiosClient from '../../api/axiosClient';
+import OrderDetailModal from '../../components/Order/OrderDetailModal';
+import OrderStatusModal from '../../components/Order/OrderStatusModal';
 
-// --- DỮ LIỆU MẪU CHO BIỂU ĐỒ (GIỮ NGUYÊN) ---
+// --- DỮ LIỆU MẪU BIỂU ĐỒ ---
 const weeklyCommissionData = [
-  { name: 'Mon', value: 12000, color: '#FECACA' }, { name: 'Tue', value: 20000, color: '#FECACA' },
-  { name: 'Wed', value: 15000, color: '#FECACA' }, { name: 'Thu', value: 27000, color: '#F87171' },
-  { name: 'Fri', value: 18000, color: '#FECACA' }, { name: 'Sat', value: 23000, color: '#FECACA' },
-  { name: 'Sun', value: 30000, color: '#FECACA' },
+    { name: 'Mon', value: 12000, color: '#FECACA' }, { name: 'Tue', value: 20000, color: '#FECACA' },
+    { name: 'Wed', value: 15000, color: '#FECACA' }, { name: 'Thu', value: 27000, color: '#F87171' },
+    { name: 'Fri', value: 18000, color: '#FECACA' }, { name: 'Sat', value: 23000, color: '#FECACA' },
+    { name: 'Sun', value: 30000, color: '#FECACA' },
 ];
 
 // --- CÁC COMPONENT CON (HELPER) ---
-
-// 1. Thẻ thống kê
-const StatCard = ({ title, value, unit }) => (
+// --- COMPONENT CON ---
+const StatCard = ({ title, value }) => (
     <div className="bg-white p-4 rounded-lg border border-gray-200 text-center shadow-sm hover:shadow-md transition-shadow flex flex-col justify-center h-32">
         <p className="text-gray-500 text-sm mb-2">{title}</p>
-        <p className="text-3xl font-bold text-gray-800">
-            {value} {unit && <span className="text-xl font-medium">{unit}</span>}
-        </p>
+        <p className="text-3xl font-bold text-gray-800">{value}</p>
     </div>
 );
 
-// 2. Helper format tiền tệ
 const formatCurrency = (value) => {
     if (value === null || value === undefined) return '0 ₫';
-    const numValue = parseFloat(value);
-    if (isNaN(numValue)) return '0 ₫';
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(numValue);
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
 };
 
-// 3. Badge cho Nguồn Phát Sinh
 const SourceBadge = ({ source }) => {
-    let style = { text: source || 'Không xác định', color: 'bg-gray-100 text-gray-600' };
+    let style = { text: source || 'Khác', color: 'bg-gray-100 text-gray-600' };
     const s = String(source).toLowerCase();
-
-    if (s.includes('cộng tác viên') || s.includes('ctv')) {
-        style = { text: 'Cộng tác viên', color: 'bg-yellow-100 text-yellow-800' };
-    } else if (s.includes('nhà phân phối') || s.includes('npp') || s === 'system') {
-        style = { text: 'Nhà phân phối', color: 'bg-purple-100 text-purple-800' };
-    } else if (s.includes('đại lý')) {
-        style = { text: 'Đại lý', color: 'bg-blue-100 text-blue-800' };
-    } else if (s.includes('khách hàng')) {
-        style = { text: 'Khách hàng', color: 'bg-green-100 text-green-800' };
-    }
-
-    return (
-        <span className={`px-3 py-1 text-xs font-bold rounded-full whitespace-nowrap ${style.color}`}>
-            {style.text}
-        </span>
-    );
+    if (s.includes('cộng tác viên') || s.includes('ctv')) style = { text: 'Cộng tác viên', color: 'bg-yellow-100 text-yellow-800' };
+    else if (s.includes('nhà phân phối') || s.includes('npp')) style = { text: 'Nhà phân phối', color: 'bg-purple-100 text-purple-800' };
+    else if (s.includes('đại lý')) style = { text: 'Đại lý', color: 'bg-blue-100 text-blue-800' };
+    return <span className={`px-3 py-1 text-xs font-bold rounded-full whitespace-nowrap ${style.color}`}>{style.text}</span>;
 };
 
-// 4. Badge cho Trạng Thái ĐH
 const OrderStatusBadge = ({ status }) => {
     let style = { text: status || 'N/A', color: 'bg-gray-100 text-gray-600' };
-    const s = String(status).toLowerCase();
-
-    if (s.includes('chờ xử lý') || s === 'pending' || s === '1') {
-        style = { text: 'Chờ xử lý', color: 'bg-yellow-100 text-yellow-800' };
-    } else if (s.includes('hoàn thành') || s === 'completed' || s === '2') {
-        style = { text: 'Hoàn thành', color: 'bg-green-100 text-green-800' };
-    } else if (s.includes('đã hủy') || s === 'cancelled' || s === '3') {
-        style = { text: 'Đã hủy', color: 'bg-red-100 text-red-800' };
-    } else if (s.includes('hoàn') || s.includes('returned')) {
-        style = { text: 'Đã hoàn', color: 'bg-gray-200 text-gray-700' };
-    }
-
-    return (
-        <span className={`px-3 py-1 text-xs font-bold rounded-full whitespace-nowrap ${style.color}`}>
-            {style.text}
-        </span>
-    );
+    const s = String(status || '').toLowerCase();
+    if (s.includes('chờ') || s.includes('pending')) style = { text: 'Chờ xử lý', color: 'bg-yellow-100 text-yellow-800' };
+    else if (s.includes('hoàn thành') || s.includes('thành công')) style = { text: 'Hoàn thành', color: 'bg-green-100 text-green-800' };
+    else if (s.includes('hủy')) style = { text: 'Đã hủy', color: 'bg-red-100 text-red-800' };
+    return <span className={`px-3 py-1 text-xs font-bold rounded-full whitespace-nowrap ${style.color}`}>{style.text}</span>;
 };
 
-// 5. Badge cho Thanh Toán
 const PaymentStatusBadge = ({ status }) => {
-    let style = { text: 'Chờ thanh toán', color: 'bg-red-100 text-red-800' }; 
+    let style = { text: 'Chờ thanh toán', color: 'bg-red-100 text-red-800' };
     const s = String(status).toLowerCase();
-    if (s === 'paid' || s === 'đã thanh toán' || s === 'true') {
-        style = { text: 'Đã thanh toán', color: 'bg-green-100 text-green-800' };
-    }
+    if (s === 'paid' || s.includes('đã') || s === 'true') style = { text: 'Đã thanh toán', color: 'bg-green-100 text-green-800' };
     return <span className={`px-3 py-1 text-xs font-bold rounded-full whitespace-nowrap ${style.color}`}>{style.text}</span>;
 };
 
 // --- COMPONENT CHÍNH ---
 const OrdersPage = () => {
     const { setPageTitle } = useOutletContext();
-    
-    // State
+    const location = useLocation();
+
+    // Dữ liệu
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [searchTerm, setSearchTerm] = useState('');
 
-    // State Thống kê (Bao gồm cả top_partners)
+    // --- BỘ LỌC NÂNG CAO (Đáp ứng UC-27 & NF3) ---
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterStatus, setFilterStatus] = useState('');
+    const [filterSource, setFilterSource] = useState('');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+
+    // Phân trang
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
+    // Thống kê
     const [stats, setStats] = useState({
-        pending_orders: 0,
-        pending_payment: 0,
-        via_ctv: 0,
-        via_npp: 0,
-        returned: 0,
-        total_revenue: 0,
-        via_agent: 0,
-        top_partners: [] // Mảng chứa danh sách top đối tác
+        pending_orders: 0, pending_payment: 0, via_ctv: 0, via_npp: 0, returned: 0, total_revenue: 0, via_agent: 0, top_partners: []
     });
-    
+    // State cho Modal
+    const [selectedOrder, setSelectedOrder] = useState(null);
+    const [selectedOrderForEdit, setSelectedOrderForEdit] = useState(null);
+
     useEffect(() => {
-        setPageTitle('Đơn hàng');
-        
+        setPageTitle('Quản lý Đơn hàng');
         const fetchData = async () => {
             setLoading(true);
             setError('');
             try {
-                // 1. Lấy danh sách đơn hàng
-                const ordersRes = await axiosClient.get('/order/with-origin');
+                // Lấy limit lớn để lọc client-side mượt mà
+                const ordersRes = await axiosClient.get('/order/with-origin?limit=10000');
                 setOrders(ordersRes.data || []);
 
-                // 2. Lấy thống kê & Top đối tác
                 const statsRes = await axiosClient.get('/api/dashboard/admin/stats');
                 if (statsRes.data && statsRes.data.success) {
                     setStats(statsRes.data.data);
                 }
             } catch (err) {
-                console.error("Error loading data:", err);
+                console.error("Lỗi tải dữ liệu:", err);
                 setError('Không thể tải dữ liệu.');
             } finally {
                 setLoading(false);
@@ -134,189 +106,369 @@ const OrdersPage = () => {
         fetchData();
     }, [setPageTitle]);
 
-    // Filter logic
-    const filteredOrders = useMemo(() => {
-        if (!searchTerm) return orders;
-        const lowerSearch = searchTerm.toLowerCase();
-        return orders.filter(order => 
-            (order.ma_don_hang && order.ma_don_hang.toLowerCase().includes(lowerSearch)) ||
-            (order.san_pham && order.san_pham.toLowerCase().includes(lowerSearch)) ||
-            (order.nguoi_gioi_thieu && order.nguoi_gioi_thieu.toLowerCase().includes(lowerSearch)) ||
-            (order.nguon_tao_don && order.nguon_tao_don.toLowerCase().includes(lowerSearch))
-        );
-    }, [orders, searchTerm]);
+    useEffect(() => {
+        if (location.state?.autoFilterStatus) {
+            // Set giá trị cho bộ lọc ('pending')
+            setFilterStatus(location.state.autoFilterStatus);
 
-    // Tổng số đơn để tính % biểu đồ (tránh chia cho 0)
-    const totalSourceOrders = (stats.via_npp || 0) + (stats.via_ctv || 0) + (stats.via_agent || 0);
-    const denominator = totalSourceOrders > 0 ? totalSourceOrders : 1;
+            // Xóa state để tránh bị kẹt bộ lọc khi reload
+            window.history.replaceState({}, document.title);
+        }
+    }, [location]);
+
+    // Reset trang khi filter đổi
+    useEffect(() => { setCurrentPage(1); }, [searchTerm, filterStatus, filterSource, startDate, endDate]);
+
+    // --- LOGIC LỌC ĐA ĐIỀU KIỆN ---
+    const filteredOrders = useMemo(() => {
+        return orders.filter(order => {
+            const sLower = searchTerm.toLowerCase();
+            // 1. Tìm kiếm
+            const matchSearch = !searchTerm ||
+                (order.ma_don_hang?.toLowerCase().includes(sLower)) ||
+                (order.nguoi_gioi_thieu?.toLowerCase().includes(sLower));
+
+            // 2. Trạng thái
+            const stLower = (order.trang_thai_don_hang || '').toLowerCase();
+            const matchStatus = !filterStatus ||
+                (filterStatus === 'pending' && stLower.includes('chờ')) ||
+                (filterStatus === 'completed' && (stLower.includes('hoàn thành') || stLower.includes('thành công'))) ||
+                (filterStatus === 'cancelled' && stLower.includes('hủy'));
+
+            // 3. Nguồn đơn
+            const srcLower = (order.nguon_tao_don || '').toLowerCase();
+            const matchSource = !filterSource ||
+                (filterSource === 'agent' && srcLower.includes('đại lý')) ||
+                (filterSource === 'ctv' && srcLower.includes('cộng tác viên')) ||
+                (filterSource === 'npp' && srcLower.includes('nhà phân phối'));
+
+            // 4. Ngày tháng
+            let matchDate = true;
+            if (order.tao_vao_luc) {
+                const d = new Date(order.tao_vao_luc).setHours(0, 0, 0, 0);
+                if (startDate && d < new Date(startDate).setHours(0, 0, 0, 0)) matchDate = false;
+                if (endDate && d > new Date(endDate).setHours(23, 59, 59, 999)) matchDate = false;
+            }
+
+            return matchSearch && matchStatus && matchSource && matchDate;
+        });
+    }, [orders, searchTerm, filterStatus, filterSource, startDate, endDate]);
+
+    // Phân trang
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = filteredOrders.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+
+    const renderPagination = () => { /* Logic pagination như cũ */
+        let pages = [];
+        for (let i = 1; i <= Math.min(totalPages, 5); i++) pages.push(
+            <button key={i} onClick={() => setCurrentPage(i)} className={`w-8 h-8 rounded border ${currentPage === i ? 'bg-blue-600 text-white' : 'bg-white'}`}>{i}</button>
+        );
+        return pages;
+    };
+
+    const handleExportExcel = () => {
+        window.open('http://localhost:5001/report/orders/excel', '_blank');
+    };
+
+    const handleExportPDF = () => {
+        window.open('http://localhost:5001/report/orders/pdf', '_blank');
+    };
+
+    const handleViewDetail = async (order) => {
+        setSelectedOrder(order);
+    };
+
+    const handleCloseModal = () => {
+        setSelectedOrder(null);
+    };
+
+    const handleEditClick = (order) => {
+        setSelectedOrderForEdit(order);
+    };
+
+    // Hàm xử lý Update gọi API
+    const handleUpdateStatus = async (orderId, updateData) => {
+        try {
+            // Gọi API lên Backend (Backend sẽ dùng model để xử lý DB)
+            await axiosClient.put(`/order/updateOrder/${orderId}`, updateData);
+
+            // Cập nhật giao diện
+            setOrders(prevOrders => prevOrders.map(o =>
+                o.order_id === orderId ? {
+                    ...o,
+                    trang_thai_don_hang: updateData.order_status,
+                    trang_thai_thanh_toan: updateData.payment_status
+                } : o
+            ));
+
+            alert(`Cập nhật thành công!`);
+            setSelectedOrderForEdit(null);
+        } catch (err) {
+            console.error("Lỗi update:", err);
+            alert("Cập nhật thất bại.");
+        }
+    };
 
     return (
         <div className="space-y-6">
-            {/* --- PHẦN 1: THẺ THỐNG KÊ --- */}
+            {/* THỐNG KÊ */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                 {/* 1. Đơn hàng chờ xử lý */}
-                 <StatCard title="Đơn hàng chờ xử lý" value={stats.pending_orders} />
-                 
-                 {/* 2. Đơn hàng chờ thanh toán */}
-                 <StatCard title="Đơn hàng chờ thanh toán" value={stats.pending_payment} />
-                 
-                 {/* 3. Đơn hàng qua CTV */}
-                 <StatCard title="Đơn hàng qua CTV" value={stats.via_ctv} />
-                 
-                 {/* 4. Đơn hàng qua NPP */}
-                 <StatCard title="Đơn hàng qua NPP" value={stats.via_npp} />
-                 
-                 {/* 5. Đơn hàng bị hoàn */}
-                 <StatCard title="Đơn hàng bị hoàn" value={stats.returned} />
-                 
-                 {/* 6. Tổng doanh thu */}
-                 <StatCard title="Tổng doanh thu" value={formatCurrency(stats.total_revenue)} />
+                <StatCard title="Đơn chờ xử lý" value={stats.pending_orders} />
+                <StatCard title="Chờ thanh toán" value={stats.pending_payment} />
+                <StatCard title="Qua CTV" value={stats.via_ctv} />
+                <StatCard title="Qua NPP" value={stats.via_npp} />
+                <StatCard title="Đã hủy" value={stats.returned} />
+                <StatCard title="Tổng doanh thu" value={formatCurrency(stats.total_revenue)} />
             </div>
 
-            {/* --- PHẦN 2: BẢNG DANH SÁCH ĐƠN HÀNG --- */}
+            {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative text-sm" role="alert">
+                    <strong className="font-bold">Đã có lỗi xảy ra: </strong>
+                    <span className="block sm:inline">{error}</span>
+                </div>
+            )}
+
+            {/* MAIN CONTENT */}
             <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
-                    <h3 className="text-lg font-bold text-gray-800">Danh sách đơn hàng được phân phối</h3>
-                    <div className="relative">
-                        <input 
-                            type="text" 
-                            placeholder="Tìm theo mã đơn, tên SP, tên ĐL/CTV" 
-                            className="w-full sm:w-80 bg-gray-50 border border-gray-200 rounded-lg py-2 px-4 pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                        <LuSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+
+                {/* --- TOOLBAR NÂNG CAO  --- */}
+                <div className="flex flex-col gap-4 mb-6">
+                    <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-bold text-gray-800">Danh sách đơn hàng</h3>
+                        {/* Nút Xuất Excel */}
+                        <div className="flex gap-2">
+                            <button onClick={handleExportExcel} className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm font-medium">
+                                <LuFileSpreadsheet /> Xuất Excel
+                            </button>
+                            <button onClick={handleExportPDF} className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm font-medium">
+                                <LuFileText /> Xuất PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Filter Bar */}
+                    <div className="flex flex-wrap gap-3 items-center bg-gray-50 p-3 rounded-lg border border-gray-100">
+                        <div className="relative">
+                            <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <input type="text" placeholder="Mã đơn, Người GT..." className="pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:border-blue-500 w-60"
+                                value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                        </div>
+
+                        {/* Dropdown Status */}
+                        <select className="py-2 px-3 border border-gray-300 rounded-md text-sm bg-white cursor-pointer"
+                            value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+                            <option value="">Tất cả trạng thái</option>
+                            <option value="pending">Chờ xử lý</option>
+                            <option value="completed">Hoàn thành</option>
+                            <option value="cancelled">Đã hủy</option>
+                        </select>
+
+                        {/* Dropdown Source */}
+                        <select className="py-2 px-3 border border-gray-300 rounded-md text-sm bg-white cursor-pointer"
+                            value={filterSource} onChange={e => setFilterSource(e.target.value)}>
+                            <option value="">Tất cả nguồn</option>
+                            <option value="npp">Nhà phân phối</option>
+                            <option value="agent">Đại lý</option>
+                            <option value="ctv">Cộng tác viên</option>
+                        </select>
+
+                        {/* Date Range */}
+                        <div className="flex items-center gap-2 bg-white border border-gray-300 rounded-md px-2 py-1">
+                            <LuCalendar className="text-gray-400" />
+                            <input type="date" className="text-sm outline-none text-gray-600" value={startDate} onChange={e => setStartDate(e.target.value)} />
+                            <span className="text-gray-400">-</span>
+                            <input type="date" className="text-sm outline-none text-gray-600" value={endDate} onChange={e => setEndDate(e.target.value)} />
+                        </div>
+
+                        {(searchTerm || filterStatus || filterSource || startDate) && (
+                            <button onClick={() => { setSearchTerm(''); setFilterStatus(''); setFilterSource(''); setStartDate(''); setEndDate('') }} className="text-red-500 hover:text-red-700 text-sm flex items-center gap-1">
+                                <LuX /> Xóa lọc
+                            </button>
+                        )}
                     </div>
                 </div>
-                
-                {error && <div className="text-red-500 text-center mb-4">{error}</div>}
 
-                 <div className="overflow-x-auto">
+                {/* TABLE */}
+                <div className="overflow-x-auto border border-gray-100 rounded-lg">
                     <table className="w-full text-sm text-left text-gray-600">
                         <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-100">
                             <tr>
-                                <th className="px-6 py-3 font-semibold">MÃ ĐƠN HÀNG</th>
-                                <th className="px-6 py-3 font-semibold">SẢN PHẨM</th>
-                                <th className="px-6 py-3 font-semibold text-center">SỐ LƯỢNG</th>
-                                <th className="px-6 py-3 font-semibold">GIÁ</th>
-                                <th className="px-6 py-3 font-semibold">TỔNG TIỀN</th>
-                                <th className="px-6 py-3 font-semibold">NGUỒN PHÁT SINH</th>
-                                <th className="px-6 py-3 font-semibold">TÀI KHOẢN</th>
-                                <th className="px-6 py-3 font-semibold">NGÀY TẠO</th>
-                                <th className="px-6 py-3 font-semibold text-center">TRẠNG THÁI ĐH</th>
-                                <th className="px-6 py-3 font-semibold text-center">THANH TOÁN</th>
-                                <th className="px-6 py-3"></th>
+                                <th className="px-6 py-3">Mã Đơn</th>
+                                <th className="px-6 py-3">Sản phẩm</th>
+                                <th className="px-6 py-3 text-center">SL</th>
+                                <th className="px-6 py-3">Tổng tiền</th>
+                                <th className="px-6 py-3">Nguồn</th>
+                                <th className="px-6 py-3">Người tạo đơn</th>
+                                <th className="px-6 py-3">Ngày tạo</th>
+                                <th className="px-6 py-3 text-center">Trạng thái</th>
+                                <th className="px-6 py-3 text-center">Thanh toán</th>
+                                <th className="px-6 py-3 text-right">Hành động</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody className="divide-y divide-gray-100">
                             {loading ? (
-                                <tr><td colSpan="11" className="text-center py-10 text-gray-500">Đang tải dữ liệu...</td></tr>
-                            ) : filteredOrders.length === 0 ? (
-                                <tr><td colSpan="11" className="text-center py-10 text-gray-500">Không tìm thấy đơn hàng nào.</td></tr>
+                                <tr><td colSpan="10" className="text-center py-10">Đang tải...</td></tr>
+                            ) : currentItems.length === 0 ? (
+                                <tr><td colSpan="10" className="text-center py-10">Không tìm thấy đơn hàng.</td></tr>
                             ) : (
-                                filteredOrders.map((order, index) => (
-                                    <tr key={order.ma_don_hang || index} className="bg-white border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                                        <td className="px-6 py-4 font-medium text-gray-900">{order.ma_don_hang}</td>
-                                        <td className="px-6 py-4 text-gray-600">{order.san_pham || 'test'}</td>
-                                        <td className="px-6 py-4 text-center text-gray-600">{order.so_luong}</td>
-                                        <td className="px-6 py-4 text-gray-600">{formatCurrency(order.gia)}</td>
-                                        <td className="px-6 py-4 font-medium text-gray-900">{formatCurrency(order.tong_tien)}</td>
-                                        <td className="px-6 py-4"><SourceBadge source={order.nguon_tao_don} /></td>
-                                        <td className="px-6 py-4 text-gray-600">{order.nguoi_gioi_thieu || order.nguoi_tao_don || 'N/A'}</td>
-                                        <td className="px-6 py-4 text-gray-600">{order.tao_vao_luc ? new Date(order.tao_vao_luc).toLocaleDateString('en-GB') : '-'}</td>
-                                        <td className="px-6 py-4 text-center"><OrderStatusBadge status={order.trang_thai_don_hang || 'Chờ xử lý'} /></td>
-                                        <td className="px-6 py-4 text-center"><PaymentStatusBadge status={order.trang_thai_thanh_toan} /></td>
-                                        <td className="px-6 py-4 text-center">
-                                            <button className="text-gray-400 hover:text-blue-600 p-1 rounded-full hover:bg-blue-50 transition-colors">
-                                                <LuPencil size={18} />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))
+                                currentItems.map((order) => {
+                                    // ✅ LOGIC QUAN TRỌNG (UC-15 B2): Kiểm tra trạng thái để khóa sửa xóa
+                                    const statusLower = (order.trang_thai_don_hang || '').toLowerCase();
+                                    const isCompleted = statusLower.includes('hoàn thành') || statusLower.includes('thành công');
+                                    const isCancelled = statusLower.includes('hủy');
+                                    const isLocked = isCompleted || isCancelled; // Đơn đã xong hoặc hủy thì khóa
+
+                                    return (
+                                        <tr key={order.ma_don_hang} className="bg-white hover:bg-gray-50">
+                                            <td className="px-6 py-4 font-medium text-blue-600 cursor-pointer" onClick={() => handleViewDetail(order)}>
+                                                {order.ma_don_hang}
+                                            </td>
+
+                                            {/* 🛡️ 1. SẢN PHẨM: Nếu null thì hiện text xám */}
+                                            <td className="px-6 py-4 truncate max-w-[150px]" title={order.san_pham}>
+                                                {order.san_pham || <span className="text-gray-400 italic">Chưa cập nhật</span>}
+                                            </td>
+
+                                            {/* 🛡️ 2. SỐ LƯỢNG: Nếu null thì hiện 0 */}
+                                            <td className="px-6 py-4 text-center">
+                                                {order.so_luong || 0}
+                                            </td>
+
+                                            <td className="px-6 py-4 font-bold text-gray-900">{formatCurrency(order.tong_tien)}</td>
+                                            <td className="px-6 py-4"><SourceBadge source={order.nguon_tao_don} /></td>
+
+                                            {/* 🛡️ 3. NGƯỜI TẠO ĐƠN: Nếu null thì hiện 'Khách lẻ / System' */}
+                                            <td className="px-6 py-4">
+                                                {order.nguoi_tao_don || <span className="text-gray-400">Khách lẻ / System</span>}
+                                            </td>
+
+                                            <td className="px-6 py-4">{order.tao_vao_luc ? new Date(order.tao_vao_luc).toLocaleDateString('vi-VN') : '-'}</td>
+                                            <td className="px-6 py-4 text-center"><OrderStatusBadge status={order.trang_thai_don_hang} /></td>
+                                            <td className="px-6 py-4 text-center"><PaymentStatusBadge status={order.trang_thai_thanh_toan} /></td>
+
+                                            {/* CỘT HÀNH ĐỘNG */}
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    {/* Nút Xem (Luôn hiện) */}
+                                                    <button
+                                                        onClick={() => handleViewDetail(order)}
+                                                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="Xem chi tiết">
+                                                        <LuEye size={18} />
+                                                    </button>
+
+                                                    {/* Nút Sửa (Chỉ hiện khi chưa khóa) */}
+                                                    {!isLocked && (
+                                                        <button
+                                                            onClick={() => handleEditClick(order)}
+                                                            className="p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded" title="Cập nhật trạng thái">
+                                                            <LuPencil size={18} />
+                                                        </button>
+                                                    )}
+
+                                                    {/* Nút Xóa (Chỉ hiện khi chưa khóa) */}
+                                                    {!isLocked && (
+                                                        <button className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded" title="Hủy đơn hàng">
+                                                            <LuTrash2 size={18} />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
                             )}
                         </tbody>
                     </table>
                 </div>
+
+                {selectedOrder && (
+                    <OrderDetailModal
+                        order={selectedOrder}
+                        onClose={handleCloseModal}
+                    />
+                )}
+                {selectedOrderForEdit && (
+                    <OrderStatusModal
+                        order={selectedOrderForEdit}
+                        onClose={() => setSelectedOrderForEdit(null)}
+                        onUpdate={handleUpdateStatus}
+                    />
+                )}
+
+                {/* FOOTER: PHÂN TRANG */}
                 {!loading && filteredOrders.length > 0 && (
-                    <div className="flex justify-between items-center mt-4 text-sm text-gray-500"><p>Hiển thị {filteredOrders.length} đơn hàng</p></div>
+                    <div className="flex flex-col sm:flex-row justify-between items-center mt-6 gap-4">
+                        <p className="text-sm text-gray-500">
+                            Hiển thị <span className="font-medium">{indexOfFirstItem + 1}</span> đến <span className="font-medium">{Math.min(indexOfLastItem, filteredOrders.length)}</span> của <span className="font-medium">{filteredOrders.length}</span> kết quả
+                        </p>
+                        <div className="flex items-center gap-1">
+                            <button onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1} className="w-8 h-8 border rounded hover:bg-gray-50 disabled:opacity-50">{'<'}</button>
+                            {renderPagination()}
+                            <button onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages} className="w-8 h-8 border rounded hover:bg-gray-50 disabled:opacity-50">{'>'}</button>
+                        </div>
+                    </div>
                 )}
             </div>
 
-            {/* --- PHẦN 3: PHÂN TÍCH --- */}
+            {/* --- PHẦN 3: PHÂN TÍCH (GIỮ NGUYÊN) --- */}
             <div>
                 <h3 className="text-xl font-bold text-gray-800 mb-4">Phân tích</h3>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Tỷ lệ nguồn đơn hàng */}
+                    {/* Tỷ lệ nguồn */}
                     <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                         <h4 className="font-bold mb-4">Tỷ lệ nguồn đơn hàng</h4>
                         <div className="space-y-4">
-                            {/* NPP */}
-                            <div>
-                                <div className="flex justify-between text-sm mb-1"><span className="font-medium text-gray-700">Nhà Phân Phối</span><span className="text-gray-600">{stats.via_npp || 0}</span></div>
-                                <div className="w-full bg-gray-100 rounded-full h-2.5"><div className="bg-purple-500 h-2.5 rounded-full transition-all duration-500" style={{width: `${((stats.via_npp || 0) / denominator) * 100}%`}}></div></div>
-                            </div>
-                            {/* CTV */}
-                            <div>
-                                <div className="flex justify-between text-sm mb-1"><span className="font-medium text-gray-700">Cộng tác viên</span><span className="text-gray-600">{stats.via_ctv || 0}</span></div>
-                                <div className="w-full bg-gray-100 rounded-full h-2.5"><div className="bg-yellow-400 h-2.5 rounded-full transition-all duration-500" style={{width: `${((stats.via_ctv || 0) / denominator) * 100}%`}}></div></div>
-                            </div>
-                            {/* Đại lý */}
-                            <div>
-                                <div className="flex justify-between text-sm mb-1"><span className="font-medium text-gray-700">Đại lý</span><span className="text-gray-600">{stats.via_agent || 0}</span></div>
-                                <div className="w-full bg-gray-100 rounded-full h-2.5"><div className="bg-blue-500 h-2.5 rounded-full transition-all duration-500" style={{width: `${((stats.via_agent || 0) / denominator) * 100}%`}}></div></div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    {/* ✅ TOP ĐỐI TÁC HIỆU QUẢ (CẬP NHẬT MỚI: TÊN - DOANH SỐ - SỐ ĐƠN) */}
-                     <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                        <h4 className="font-bold mb-4">Top Đối tác hiệu quả</h4>
-                        <div className="space-y-0">
-                            {stats.top_partners && stats.top_partners.length > 0 ? (
-                                stats.top_partners.map((partner, index) => (
-                                    <div key={index} className="grid grid-cols-12 items-center p-3 hover:bg-gray-50 rounded transition-colors border-b border-gray-50 last:border-0">
-                                        {/* Tên */}
-                                        <p className="col-span-5 font-medium text-gray-800 truncate pr-2" title={partner.name}>
-                                            {partner.name}
-                                        </p>
-                                        
-                                        {/* Doanh thu */}
-                                        <p className="col-span-4 text-green-600 font-semibold text-sm">
-                                            {formatCurrency(partner.total_revenue)}
-                                        </p>
-                                        
-                                        {/* Số đơn */}
-                                        <p className="col-span-3 text-gray-500 text-right text-sm">
-                                            {partner.total_orders} Đơn
-                                        </p>
-                                    </div>
-                                ))
-                            ) : (
-                                <p className="text-center text-gray-500 py-10">Chưa có dữ liệu đối tác</p>
-                            )}
+                            {(() => {
+                                const total = (stats.via_npp || 0) + (stats.via_ctv || 0) + (stats.via_agent || 0);
+                                const getPercent = (val) => total > 0 ? (val / total) * 100 : 0;
+                                return (
+                                    <>
+                                        <div><div className="flex justify-between text-sm mb-1"><span>Nhà Phân Phối</span><span>{stats.via_npp || 0}</span></div><div className="w-full bg-gray-100 rounded-full h-2.5"><div className="bg-purple-500 h-2.5 rounded-full" style={{ width: `${getPercent(stats.via_npp)}%` }}></div></div></div>
+                                        <div><div className="flex justify-between text-sm mb-1"><span>Cộng tác viên</span><span>{stats.via_ctv || 0}</span></div><div className="w-full bg-gray-100 rounded-full h-2.5"><div className="bg-yellow-400 h-2.5 rounded-full" style={{ width: `${getPercent(stats.via_ctv)}%` }}></div></div></div>
+                                        <div><div className="flex justify-between text-sm mb-1"><span>Đại lý</span><span>{stats.via_agent || 0}</span></div><div className="w-full bg-gray-100 rounded-full h-2.5"><div className="bg-blue-500 h-2.5 rounded-full" style={{ width: `${getPercent(stats.via_agent)}%` }}></div></div></div>
+                                    </>
+                                );
+                            })()}
                         </div>
                     </div>
 
-                    {/* Biểu đồ hoa hồng (Demo) */}
+                    {/* Top Đối Tác */}
+                    <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                        <h4 className="font-bold mb-4">Top Đối tác hiệu quả</h4>
+                        <div className="space-y-3">
+                            {stats.top_partners && stats.top_partners.length > 0 ? (
+                                stats.top_partners.map((partner, index) => (
+                                    <div key={index} className="flex items-center justify-between p-2 border-b border-gray-50 last:border-0">
+                                        <div className="flex items-center gap-3 min-w-0 flex-1 mr-4">
+                                            <span className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold text-white flex-shrink-0 ${index === 0 ? 'bg-yellow-400' : index === 1 ? 'bg-gray-400' : index === 2 ? 'bg-orange-400' : 'bg-blue-100 text-blue-600'}`}>{index + 1}</span>
+                                            <p className="font-medium text-gray-800 truncate" title={partner.name}>{partner.name}</p>
+                                        </div>
+                                        <div className="text-right flex-shrink-0">
+                                            <p className="text-green-600 font-bold text-sm whitespace-nowrap">{formatCurrency(partner.revenue)}</p>
+                                            <p className="text-xs text-gray-500 font-medium bg-gray-100 px-2 py-0.5 rounded-full inline-block mt-1">{partner.orders} Đơn</p>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : <p className="text-center text-gray-500 py-10">Chưa có dữ liệu.</p>}
+                        </div>
+                    </div>
+
+                    {/* Biểu đồ hoa hồng */}
                     <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                         <h4 className="font-bold mb-4">Hoa hồng ước tính (Tuần)</h4>
-                         <div style={{ width: '100%', height: 150 }}>
+                        <div style={{ width: '100%', height: 150 }}>
                             <ResponsiveContainer>
                                 <BarChart data={weeklyCommissionData} layout="vertical" margin={{ top: 0, right: 0, left: 10, bottom: 0 }}>
-                                    <XAxis type="number" hide />
-                                    <YAxis type="category" dataKey="name" tickLine={false} axisLine={false} interval={0} width={30} />
-                                    <Tooltip cursor={{fill: 'transparent'}} />
-                                    <Bar dataKey="value" barSize={12} radius={[0, 4, 4, 0]}>
-                                        {weeklyCommissionData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.color} />
-                                        ))}
-                                    </Bar>
+                                    <XAxis type="number" hide /><YAxis type="category" dataKey="name" tickLine={false} axisLine={false} interval={0} width={30} /><Tooltip cursor={{ fill: 'transparent' }} /><Bar dataKey="value" barSize={12} radius={[0, 4, 4, 0]}>{weeklyCommissionData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} />))}</Bar>
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
                     </div>
                 </div>
             </div>
+
         </div>
     );
 };

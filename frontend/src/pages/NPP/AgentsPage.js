@@ -7,7 +7,6 @@ import { useTranslation } from 'react-i18next';
 
 const ITEMS_PER_PAGE = 10;
 
-// ... (component StatusBadge giữ nguyên) ...
 const StatusBadge = ({ status }) => {
     const { t } = useTranslation();
     let style = {};
@@ -63,7 +62,6 @@ const AgentsPage = () => {
                 setLoading(false);
             }
         };
-
         fetchAgents();
     }, [setPageTitle, t, i18n.language]);
 
@@ -94,7 +92,6 @@ const AgentsPage = () => {
             return agents;
         }
         const searchLower = searchTerm.toLowerCase();
-
         return agents.filter(agent => {
             // Tìm kiếm bằng agent_code hoặc agent_name (từ bảng agent)
             const agentCode = agent.agent_code ? agent.agent_code.toLowerCase() : '';

@@ -114,7 +114,7 @@ const BalancePage = () => {
                     {/* Nút Yêu cầu rút tiền đã có màu */}
                     <Link 
                         to="/npp/withdrawal"
-                        className="flex items-center gap-2 bg-green-500 text-white font-bold px-4 py-2 rounded-lg hover:bg-green-600 transition-colors whitespace-nowrap"
+                        className="flex items-center gap-2 bg-blue-500 text-white font-bold px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors whitespace-nowrap"
                     >
                        <LuPlus size={20} />
                        {t('npp.balance.requestWithdrawal')}

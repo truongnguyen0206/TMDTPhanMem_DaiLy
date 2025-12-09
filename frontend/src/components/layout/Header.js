@@ -23,14 +23,6 @@ const Header = ({ toggleSidebar, pageTitle }) => {
             </div>
 
             <div className="flex items-center gap-6">
-                {/* <div className="relative w-64 hidden md:block">
-                    <input
-                        type="text"
-                        placeholder={t('header.searchPlaceholder')} // <-- 3. Dịch placeholder
-                        className="w-full bg-light-gray border border-border-color rounded-full py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    />
-                    <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
-                </div> */}
 
                 <div className="flex items-center gap-4">
                     {/* (Icons giữ nguyên) */}

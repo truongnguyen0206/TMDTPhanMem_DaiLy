@@ -3,10 +3,12 @@ import { useAuth } from '../../context/AuthContext';
 import { LuSearch, LuMessageCircle, LuBell, LuMenu } from 'react-icons/lu';
 import avatar from '../../assets/images/logo.png';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 // Nhận thêm prop pageTitle
 const Header = ({ toggleSidebar, pageTitle }) => {
     const { user } = useAuth();
+    const { t } = useTranslation();
 
     const getProfileLink = () => {
         if (!user) return '#';

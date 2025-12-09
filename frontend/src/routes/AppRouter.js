@@ -53,6 +53,8 @@ import OrdersPage from '../pages/Admin/OrdersPage';
 import AdminProfilePage from '../pages/Admin/ProfilePage';
 import UpdateAccountPage from '../pages/Admin/UpdateAccountPage';
 
+import SettingsPage from '../pages/Shared/SettingsPage';
+
 import ProtectedRoute from './ProtectedRoute';
 
 
@@ -122,9 +124,18 @@ const AppRouter = () => {
             </Route>
             
         </Route>
+        <Route element={<ProtectedRoute />}>
+            <Route element={<Layout />}>
+                <Route path="/settings" element={<SettingsPage />} />
+                {/* Bạn cũng có thể thêm các trang chung khác ở đây */}
+                {/* <Route path="/guide" element={<GuidePage />} /> */}
+                {/* <Route path="/messages" element={<MessagesPage />} /> */}
+            </Route>
+            
+        </Route>
         
-        <Route path="/" element={<Navigate to="/npp/dashboard" replace />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </Router>
   );

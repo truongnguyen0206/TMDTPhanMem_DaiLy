@@ -122,8 +122,7 @@ const ProductPage = () => {
 
     return (
         <div className="space-y-6">
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                {/* Thanh tìm kiếm */}
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
                 <div className="mb-6">
                      <div className="relative">
                         <input
@@ -131,15 +130,15 @@ const ProductPage = () => {
                             placeholder={t('dl.products.searchPlaceholder')}
                             value={searchTerm}
                             onChange={handleSearchChange}
-                            className="w-full bg-gray-50 border border-gray-200 rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-primary"
+                            className="w-full md:w-96 bg-gray-50 border border-gray-200 rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                         />
-                        <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
                     </div>
                 </div>
                 <h2 className="text-lg font-bold text-gray-800 mb-4 dark:text-white">{t('dl.products.listTitle')}</h2>
                 <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left text-gray-600">
-                        <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+                    <table className="w-full text-sm text-left text-gray-600 dark:text-gray-400">
+                        <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                             <tr>
                                 <th className="px-6 py-3">{t('dl.products.idHeader')}</th>
                                 <th className="px-6 py-3">{t('dl.products.nameHeader')}</th>

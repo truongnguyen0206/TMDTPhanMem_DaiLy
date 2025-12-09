@@ -4,7 +4,6 @@ import axiosClient from '../../api/axiosClient';
 import { LuSearch, LuPencil, LuTrash2, LuPlus, LuCalendarDays } from 'react-icons/lu';
 import { useOutletContext } from 'react-router-dom';
 
-// ... (component StatusBadge giữ nguyên) ...
 const StatusBadge = ({ status }) => {
     let style = {};
     switch (status.toLowerCase()) {
@@ -64,7 +63,6 @@ const AgentsPage = () => {
                 setLoading(false);
             }
         };
-
         fetchAgents();
     }, [setPageTitle]);
 
@@ -102,7 +100,6 @@ const AgentsPage = () => {
         }
 
         const searchLower = searchTerm.toLowerCase();
-
         return agents.filter(agent => {
             // Tạo mã đại lý (ví dụ: DL001) để tìm kiếm
             const agentCode = `DL${String(agent.user_id).padStart(3, '0')}`.toLowerCase();

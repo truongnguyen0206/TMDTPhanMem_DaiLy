@@ -110,7 +110,7 @@ async function getOrdersByCTVId(ctvId, opts = {}) {
     .from("ctv_view")
     .select("ctv_id, user_id")
     .eq("ctv_id", ctvId)
-    .single();
+    .maybeSingle();
 
   if (ctvErr) throw ctvErr;
   if (!ctv || !ctv.user_id) return [];

@@ -110,20 +110,20 @@ const LoginPage = () => {
               </button>
             </div>
           </form>
-          <div className="mt-6 flex items-center justify-center">
+          {/* <div className="mt-6 flex items-center justify-center">
             <div className="border-t border-gray-300 flex-grow"></div>
             <span className="px-4 text-gray-500 text-sm">Or</span>
             <div className="border-t border-gray-300 flex-grow"></div>
           </div>
-          {/* <div className="mt-6 space-y-4">
+          <div className="mt-6 space-y-4">
             <button className="w-full flex items-center justify-center gap-3 py-3 border border-gray-300 rounded-md hover:bg-gray-50">
               <FaGoogle className="text-red-500" />
               <span className="text-sm font-medium text-gray-700">Sign up with Google</span>
             </button>
-          </div> */}
+          </div>
           <p className="mt-8 text-center text-sm text-gray-600">
             Don't have an account? <Link to="/signup" className="text-blue-600 font-medium hover:underline">Sign up</Link>
-          </p>
+          </p> */}
         </div>
       </div>
     </div>

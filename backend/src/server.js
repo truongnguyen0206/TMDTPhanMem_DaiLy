@@ -15,7 +15,7 @@ const commissionRuleRoutes = require('./api/routes/commissionRule_route.js');
 const dashboardRoutes = require('./api/routes/dashboard_route.js'); // Thêm route dashboard
 const withdrawalRoutes = require('./api/routes/withdrawal_route.js'); // <--- IMPORT MỚI
 const DistributorRoutes = require("./api/routes/distributor_route");
-const medusaBSP = require("../medusa_BSP/medusaBSP_routes/BSP_product_route.js");
+const medusaBSP = require("../medusaBSP/medusaBSP_routes/BSP_product_route.js");
 
 const app = express();
 

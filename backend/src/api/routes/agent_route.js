@@ -6,17 +6,17 @@ const { authenticateToken } = require("../../middlewares/auth_middleware");
 const { authorizeRoles } = require('../../middlewares/authorize_middleware');
 
 
-router.get("/getAllAgents", agentController.getAllAgents);  
-router.get("/getAgent/:agentId", agentController.getAgent);
-router.get("/listAgents", agentController.listAgents);
-router.post("/createAgent", agentController.createAgent);
-router.put("/updateAgent/:agentId", agentController.updateAgent);
-router.delete("/deleteAgent/:agentId", agentController.deleteAgent);
-router.put("/updateManyAgents", agentController.updateManyAgents);
-router.get("/getctv/:agentId", agentController.getCTVListByAgent);
-router.get("/:id/orders", agentController.getOrdersByAgent);
-router.get("/:id/ctv-orders", agentController.getOrdersOfCTVByAgent);
-router.get("/:agent_id/products", agentController.getProductsOfAgent);
+router.get("/getAllAgents", authenticateToken, agentController.getAllAgents);  
+router.get("/getAgent/:agentId", authenticateToken, agentController.getAgent);
+router.get("/listAgents", authenticateToken, agentController.listAgents);
+router.post("/createAgent", authenticateToken, agentController.createAgent);
+router.put("/updateAgent/:agentId", authenticateToken, agentController.updateAgent);
+router.delete("/deleteAgent/:agentId", authenticateToken, agentController.deleteAgent);
+router.put("/updateManyAgents", authenticateToken, agentController.updateManyAgents);
+router.get("/getctv/:agentId", authenticateToken, agentController.getCTVListByAgent);
+router.get("/:id/orders", authenticateToken, agentController.getOrdersByAgent);
+router.get("/:id/ctv-orders", authenticateToken, agentController.getOrdersOfCTVByAgent);
+router.get("/:agent_id/products", authenticateToken, agentController.getProductsOfAgent);
 
 // // 🔐 Chỉ admin và nhà phân phối được truy cập danh sách đại lý
 // router.get('/', authenticateToken, authorizeRoles('admin', 'npp'), getAgents);

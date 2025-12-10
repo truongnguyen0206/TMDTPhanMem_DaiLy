@@ -25,16 +25,111 @@ const getFilteredOrders = async (from, to) => {
   return data;
 };
 
+// ===============================
+// BUILD QUERY CHO v_order_detail
+//  - Lọc theo ngày (from, to)
+//  - Lọc theo tài khoản (đại lý / CTV đang đăng nhập)
+// ===============================
+async function buildOrderDetailQuery(req) {
+  const { from, to } = req.query || {};
+  const user_id = req.params.user_id; // vì bạn dùng params
+
+  if (!user_id) {
+    throw new Error("Thiếu user_id trong params!");
+  }
+
+  // 1️⃣ Lấy role của user
+  const { data: userInfo, error: userError } = await supabase
+    .from("users")
+    .select("user_id, role_id")
+    .eq("user_id", user_id)
+    .single();
+
+  if (userError || !userInfo) {
+    throw new Error("Không tìm thấy user hoặc role.");
+  }
+
+  // Lấy tên role
+  const { data: roleInfo } = await supabase
+    .from("users_roles")
+    .select("role_name")
+    .eq("role_id", userInfo.role_id)
+    .single();
+
+  const roleName = roleInfo?.role_name || "Unknown";
+
+  //
+  // === QUY TẮC EXPORT ===
+  // Admin → lấy toàn bộ
+  // Agent → lấy user_id + tất cả CTV thuộc agent
+  // CTV → chỉ user_id
+  //
+
+  let allowedUserIds = [Number(user_id)];
+
+  // 2️⃣ Admin → lấy tất cả
+  if (roleName === "Admin") {
+    let q = supabase.from("v_order_detail").select("*");
+
+    if (from) q = q.gte("tao_vao_luc", from);
+    if (to) q = q.lte("tao_vao_luc", to);
+
+    return q.order("tao_vao_luc", { ascending: false });
+  }
+
+  // 3️⃣ Agent → lấy CTV trực thuộc
+  if (roleName === "Đại lý") {
+    // B1: Lấy agent_id thật của đại lý
+    const { data: agentInfo } = await supabase
+      .from("agent_view")
+      .select("agent_id")
+      .eq("user_id", user_id)
+      .single();
+  
+    const realAgentId = agentInfo.agent_id;
+  
+    // B2: Lấy danh sách CTV theo agent_id thật
+    const { data: ctvList, error: ctvError } = await supabase
+      .from("ctv_view")
+      .select("user_id")
+      .eq("agent_id", realAgentId);   // 👈 DÙNG agent_id thật
+  
+    console.log("realAgentId:", realAgentId);
+    console.log("CTV list:", ctvList);
+  
+    const ctvIds = (ctvList || []).map(c => c.user_id);
+    allowedUserIds = [...allowedUserIds, ...ctvIds];
+  }
+
+  // 4️⃣ CTV → allowedUserIds = [user_id] (giữ nguyên)
+
+  // ===========================
+  // Tạo query Supabase
+  // ===========================
+
+  let query = supabase
+    .from("v_order_detail")
+    .select("*")
+    .in("user_id", allowedUserIds);
+
+  if (from) query = query.gte("tao_vao_luc", from);
+  if (to) query = query.lte("tao_vao_luc", to);
+
+  return query.order("tao_vao_luc", { ascending: false });
+}
+
+
+
 
 // ================================
 // XUẤT EXCEL ĐƠN HÀNG
 // ================================
 const exportOrdersExcel = async (req, res) => {
   try {
-    const { data: orders, error } = await supabase
-      .from("v_order_detail")
-      .select("*")
-      .order("tao_vao_luc", { ascending: false });
+    const { data: orders, error } = await buildOrderDetailQuery(req)
+      // .from("v_order_detail")
+      // .select("*")
+      // .order("tao_vao_luc", { ascending: false });
 
     if (error) throw error;
     if (!orders || orders.length === 0)
@@ -215,10 +310,10 @@ const exportOrdersExcel = async (req, res) => {
 // =============================
 const exportOrdersPDF = async (req, res) => {
   try {
-    const { data: orders, error } = await supabase
-      .from("v_order_detail")
-      .select("*")
-      .order("tao_vao_luc", { ascending: false });
+    const { data: orders, error } = await buildOrderDetailQuery(req)
+      // .from("v_order_detail")
+      // .select("*")
+      // .order("tao_vao_luc", { ascending: false });
 
     if (error) throw error;
     if (!orders || orders.length === 0)
@@ -368,4 +463,4 @@ const exportOrdersPDF = async (req, res) => {
 
 
 
-module.exports = { getFilteredOrders, exportOrdersExcel, exportOrdersPDF };
+module.exports = { getFilteredOrders, buildOrderDetailQuery, exportOrdersExcel, exportOrdersPDF };

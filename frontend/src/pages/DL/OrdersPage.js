@@ -122,15 +122,20 @@ const OrdersPage = () => {
     }, [agentId, setPageTitle, t, i18n.language]);
     const handleExport = async (type) => {
         try {
-            const endpoint = type === 'excel' ? '/report/orders/excel' : '/report/orders/pdf';
+            // SỬA: Nối user.id vào URL để khớp với route /:user_id của backend
+            const endpoint = type === 'excel' 
+                ? `/report/orders/excel/${user.id}` 
+                : `/report/orders/pdf/${user.id}`;
+                
             const extension = type === 'excel' ? 'xlsx' : 'pdf';
             
             // Gọi API với responseType là 'blob'
             const response = await axiosClient.get(endpoint, {
-                params: { user_id: user.id }, 
+                // params: { user_id: user.id }, // <-- Bỏ dòng này
                 responseType: 'blob' 
             });
 
+            // Tạo URL từ Blob và tải xuống
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
@@ -143,7 +148,7 @@ const OrdersPage = () => {
 
         } catch (error) {
             console.error(`Lỗi xuất file ${type}:`, error);
-            alert(`Xuất file ${type} thất bại.`);
+            alert(`Xuất file ${type} thất bại. Lỗi: ${error.response?.status || error.message}`);
         }
     };
 

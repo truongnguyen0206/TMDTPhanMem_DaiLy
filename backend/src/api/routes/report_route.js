@@ -4,9 +4,9 @@ const reportController = require("../../controllers/report_controller");
 const { authenticateToken } = require('../../middlewares/auth_middleware');
 
 // Xuất Excel
-router.get("/orders/excel/:user_id", reportController.exportOrdersExcel);
+router.get("/orders/excel/:user_id", authenticateToken, reportController.exportOrdersExcel);
 
 // Xuất PDF
-router.get("/orders/pdf/:user_id", reportController.exportOrdersPDF);
+router.get("/orders/pdf/:user_id", authenticateToken, reportController.exportOrdersPDF);
 
 module.exports = router;

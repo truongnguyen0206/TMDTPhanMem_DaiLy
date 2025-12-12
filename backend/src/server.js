@@ -26,7 +26,8 @@ app.use(cors());
 // ⭐ CORS CHO FE DEPLOY
 // ======================
 const allowedOrigins = [
-  "http://localhost:3000",
+  "http://localhost:3000",     // FE local
+  "http://localhost:5001",     // BE local (test trực tiếp)
   "https://tmdt-phan-mem-dai-ly.vercel.app", // <-- thay domain FE vào đây
 ];
 
@@ -36,7 +37,8 @@ app.use(
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        callback(new Error("CORS blocked"));
+        console.log("❌ CORS blocked:", origin);
+        callback(new Error("Không được phép truy cập bởi CORS"));
       }
     },
     credentials: true,

@@ -3,6 +3,7 @@ const router = express.Router();
 const productController = require("../../controllers/product_controller");
 const { authenticateToken } = require('../../middlewares/auth_middleware');
 
+
 router.get("/getallproducts", productController.getAllOProducts);
 router.post("/addProduct", productController.addProduct);
 router.post("/create-link-product", productController.createLinkProduct); 

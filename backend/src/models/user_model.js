@@ -227,6 +227,16 @@ const getAllRoles = async () => {
   return data;
 };
 
+const countPendingUsers = async () => {
+  const { count, error } = await supabase
+    .from("users_view")
+    .select("*", { count: "exact", head: true })
+    .eq("status", "Đang chờ cấp tài khoản"); // Lọc theo trạng thái chờ
+
+  if (error) throw error;
+  return count || 0;
+};
+
 module.exports = {
   findByEmailOrUsername,
   createUser,
@@ -239,4 +249,5 @@ module.exports = {
   updateUsername,
   countUsersByDateRange,
   getAllRoles,
+  countPendingUsers,
 };

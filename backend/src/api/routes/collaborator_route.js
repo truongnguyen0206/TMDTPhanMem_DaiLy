@@ -34,4 +34,14 @@ router.get("/:ctv_id/orders", authenticateToken, collaboratorController.getOrder
 //   );
   
 
+router.get("/:id/orders", collaboratorController.getOrdersByCTV);
+
+// router.get(
+//     '/',
+//     authenticateToken,
+//     authorizeRoles('admin', 'npp', 'dl'),
+//     getCollaborators,
+//   );
+  
+
 module.exports = router;

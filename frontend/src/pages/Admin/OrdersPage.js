@@ -5,6 +5,7 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from 
 import axiosClient from '../../api/axiosClient';
 import OrderDetailModal from '../../components/Order/OrderDetailModal';
 import OrderStatusModal from '../../components/Order/OrderStatusModal';
+import { useAuth } from '../../context/AuthContext';
 
 // --- DỮ LIỆU MẪU BIỂU ĐỒ ---
 const weeklyCommissionData = [

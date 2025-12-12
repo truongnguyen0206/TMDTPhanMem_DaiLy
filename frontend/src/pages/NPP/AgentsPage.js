@@ -28,7 +28,8 @@ const StatusBadge = ({ status }) => {
 };
 
 const AgentsPage = () => {
-    const [agents, setAgents] = useState([]);
+    // ... (phần state, useEffect, renderPagination giữ nguyên) ...
+     const [agents, setAgents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
     const { setPageTitle } = useOutletContext();
@@ -52,6 +53,7 @@ const AgentsPage = () => {
                         created_at: agent.created_at || agent.ngaythamgia || new Date().toISOString(),
                     };
                 });
+
                 setAgents(agentsWithStatus);
             } catch (error) {
                 console.error("Lỗi khi tải danh sách đại lý:", error);
@@ -89,10 +91,12 @@ const AgentsPage = () => {
         setCurrentPage(1);
     };
 
+    // **Sử dụng useMemo để lọc danh sách Đại lý**
     const filteredAgents = useMemo(() => {
         if (!searchTerm) {
             return agents;
         }
+
         const searchLower = searchTerm.toLowerCase();
 
         return agents.filter(agent => {

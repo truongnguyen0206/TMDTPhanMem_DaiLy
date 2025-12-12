@@ -33,7 +33,7 @@ const LoginPage = () => {
       if (decodedUser.role === 'Admin') {
         navigate('/admin/dashboard'); 
       } else if (decodedUser.role === 'Nhà phân phối') {
-        navigate('/'); 
+        navigate('/npp/dashboard'); 
       } else if (decodedUser.role === 'Cộng tác viên') {
         navigate('/ctv/dashboard');
       }else if (decodedUser.role === 'Đại lý') {
@@ -110,7 +110,7 @@ const LoginPage = () => {
               </button>
             </div>
           </form>
-          <div className="mt-6 flex items-center justify-center">
+          {/* <div className="mt-6 flex items-center justify-center">
             <div className="border-t border-gray-300 flex-grow"></div>
             <span className="px-4 text-gray-500 text-sm">Or</span>
             <div className="border-t border-gray-300 flex-grow"></div>
@@ -123,7 +123,7 @@ const LoginPage = () => {
           </div>
           <p className="mt-8 text-center text-sm text-gray-600">
             Don't have an account? <Link to="/signup" className="text-blue-600 font-medium hover:underline">Sign up</Link>
-          </p>
+          </p> */}
         </div>
       </div>
     </div>

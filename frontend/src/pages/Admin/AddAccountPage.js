@@ -4,7 +4,6 @@ import axiosClient from '../../api/axiosClient';
 
 // Danh sách vai trò cố định (Khớp với DB)
 const STATIC_ROLES = [
-    { role_id: 1, role_name: 'Admin' },
     { role_id: 2, role_name: 'Nhà phân phối' },
     { role_id: 3, role_name: 'Đại lý' },
     { role_id: 4, role_name: 'Cộng tác viên' },
@@ -18,16 +17,13 @@ const AddAccountPage = () => {
     // Tab: 'manually' hoặc 'csv'
     const [activeTab, setActiveTab] = useState('manually');
 
-    // State Form
+    // State Form - Đã xóa cccd và tier cho khớp DB
     const [formData, setFormData] = useState({
         username: '',  // Map với BE: username
         email: '',
         password: '',
         phone: '',
         role_id: '',   // Map với BE: role_id
-        // Các trường hiển thị thêm (nhưng BE hiện tại chưa lưu, cứ gửi kèm nếu cần mở rộng sau này)
-        cccd: '',      
-        tier: ''
     });
 
     const [loading, setLoading] = useState(false);
@@ -56,7 +52,7 @@ const AddAccountPage = () => {
 
         // 2. Chuẩn bị dữ liệu gửi đi (Khớp với BE user_controller.createUser)
         const payload = {
-            username: formData.username, // BE dùng 'username'
+            username: formData.username,
             email: formData.email,
             password: formData.password,
             phone: formData.phone,
@@ -64,12 +60,12 @@ const AddAccountPage = () => {
         };
 
         try {
-            // 3. Gọi API
+            // 3. Gọi API (Lưu ý: API này cần Auth & Role Admin như đã sửa ở bước trước)
             await axiosClient.post('/users/createUser', payload);
             
             setMessage({ text: 'Tạo tài khoản thành công!', type: 'success' });
             
-            // Reset form hoặc chuyển trang
+            // Chuyển trang sau 1.5s
             setTimeout(() => navigate('/admin/accounts'), 1500);
 
         } catch (error) {
@@ -105,87 +101,68 @@ const AddAccountPage = () => {
             {activeTab === 'manually' && (
                 <form onSubmit={handleSubmit}>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                        {/* --- Cột Trái --- */}
-                        <div>
-                            <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">Tên tài khoản / Họ tên <span className="text-red-500">*</span></label>
-                            <input 
-                                type="text" name="username" id="username" 
-                                value={formData.username} onChange={handleChange} 
-                                placeholder="Ví dụ: nguyenvan_a"
-                                className="w-full bg-gray-50 border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-primary focus:border-transparent outline-none" 
-                                required 
-                            />
-                        </div>
-                        
-                        <div>
-                            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
-                            <input 
-                                type="email" name="email" id="email" 
-                                value={formData.email} onChange={handleChange} 
-                                className="w-full bg-gray-50 border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-primary focus:border-transparent outline-none" 
-                                required 
-                            />
+                        {/* --- Cột Trái: Thông tin đăng nhập cơ bản --- */}
+                        <div className="space-y-6">
+                            <div>
+                                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">Tên tài khoản / Họ tên <span className="text-red-500">*</span></label>
+                                <input 
+                                    type="text" name="username" id="username" 
+                                    value={formData.username} onChange={handleChange} 
+                                    placeholder="Ví dụ: nguyenvan_a"
+                                    className="w-full bg-gray-50 border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-primary focus:border-transparent outline-none" 
+                                    required 
+                                />
+                            </div>
+                            
+                            <div>
+                                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
+                                <input 
+                                    type="email" name="email" id="email" 
+                                    value={formData.email} onChange={handleChange} 
+                                    className="w-full bg-gray-50 border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-primary focus:border-transparent outline-none" 
+                                    required 
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu <span className="text-red-500">*</span></label>
+                                <input 
+                                    type="password" name="password" id="password" 
+                                    value={formData.password} onChange={handleChange} 
+                                    className="w-full bg-gray-50 border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-primary focus:border-transparent outline-none" 
+                                    required 
+                                />
+                            </div>
                         </div>
 
-                        <div>
-                            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu <span className="text-red-500">*</span></label>
-                            <input 
-                                type="password" name="password" id="password" 
-                                value={formData.password} onChange={handleChange} 
-                                className="w-full bg-gray-50 border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-primary focus:border-transparent outline-none" 
-                                required 
-                            />
-                        </div>
+                        {/* --- Cột Phải: Thông tin bổ sung & Vai trò --- */}
+                        <div className="space-y-6">
+                            <div>
+                                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">Số điện thoại</label>
+                                <input 
+                                    type="tel" name="phone" id="phone" 
+                                    value={formData.phone} onChange={handleChange} 
+                                    className="w-full bg-gray-50 border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-primary focus:border-transparent outline-none" 
+                                />
+                            </div>
 
-                        <div>
-                            <label htmlFor="role_id" className="block text-sm font-medium text-gray-700 mb-1">Vai trò <span className="text-red-500">*</span></label>
-                            <select 
-                                name="role_id" id="role_id" 
-                                value={formData.role_id} onChange={handleChange} 
-                                className="w-full bg-gray-50 border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-primary focus:border-transparent outline-none cursor-pointer"
-                                required
-                            >
-                                <option value="">-- Chọn vai trò --</option>
-                                {STATIC_ROLES.map(role => (
-                                    <option key={role.role_id} value={role.role_id}>
-                                        {role.role_name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {/* --- Cột Phải --- */}
-                        <div>
-                            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">Số điện thoại</label>
-                            <input 
-                                type="tel" name="phone" id="phone" 
-                                value={formData.phone} onChange={handleChange} 
-                                className="w-full bg-gray-50 border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-primary focus:border-transparent outline-none" 
-                            />
-                        </div>
-
-                        {/* Các trường phụ (Hiển thị cho đẹp UI, BE chưa lưu nhưng không lỗi) */}
-                        <div>
-                            <label htmlFor="cccd" className="block text-sm font-medium text-gray-700 mb-1">CCCD (Tùy chọn)</label>
-                            <input 
-                                type="text" name="cccd" id="cccd" 
-                                value={formData.cccd} onChange={handleChange} 
-                                className="w-full bg-gray-50 border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-primary focus:border-transparent outline-none" 
-                            />
-                        </div>
-
-                        <div>
-                            <label htmlFor="tier" className="block text-sm font-medium text-gray-700 mb-1">Hạng / Tier (Tùy chọn)</label>
-                             <select 
-                                name="tier" id="tier" 
-                                value={formData.tier} onChange={handleChange} 
-                                className="w-full bg-gray-50 border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-primary focus:border-transparent outline-none cursor-pointer"
-                            >
-                                <option value="">-- Mặc định --</option>
-                                <option value="Gold">Gold</option>
-                                <option value="Silver">Silver</option>
-                                <option value="Bronze">Bronze</option>
-                            </select>
+                            {/* Chuyển Role sang cột phải cho cân đối */}
+                            <div>
+                                <label htmlFor="role_id" className="block text-sm font-medium text-gray-700 mb-1">Vai trò <span className="text-red-500">*</span></label>
+                                <select 
+                                    name="role_id" id="role_id" 
+                                    value={formData.role_id} onChange={handleChange} 
+                                    className="w-full bg-gray-50 border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-primary focus:border-transparent outline-none cursor-pointer"
+                                    required
+                                >
+                                    <option value="">-- Chọn vai trò --</option>
+                                    {STATIC_ROLES.map(role => (
+                                        <option key={role.role_id} value={role.role_id}>
+                                            {role.role_name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
                     </div>
 
@@ -207,7 +184,7 @@ const AddAccountPage = () => {
                         <button 
                             type="submit" 
                             disabled={loading}
-                            className={`px-8 py-3 rounded-lg bg-primary text-white font-bold hover:bg-blue-700 transition-colors flex-1 md:flex-none ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                            className={`px-8 py-3 rounded-lg bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors flex-1 md:flex-none ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
                         >
                             {loading ? 'Đang xử lý...' : 'Tạo tài khoản'}
                         </button>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useOutletContext, useNavigate, useParams } from 'react-router-dom';
 import axiosClient from '../../api/axiosClient';
 
@@ -16,6 +16,7 @@ const UpdateAccountPage = () => {
     const navigate = useNavigate();
     const { id } = useParams(); 
 
+    // Dữ liệu form hiện tại
     const [formData, setFormData] = useState({
         username: '',
         email: '',
@@ -24,9 +25,12 @@ const UpdateAccountPage = () => {
         role_id: '',
         status: ''
     });
+
+    // 🆕 State lưu dữ liệu gốc để so sánh
+    const [initialData, setInitialData] = useState(null);
     
     // Sử dụng danh sách tĩnh
-    const [roles, setRoles] = useState(STATIC_ROLES); 
+    const [roles] = useState(STATIC_ROLES); 
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState({ text: '', type: '' });
 
@@ -35,21 +39,6 @@ const UpdateAccountPage = () => {
 
         const fetchData = async () => {
             try {
-                // ===============================================
-                // ĐÃ XÓA (COMMENT OUT) LỆNH GỌI API /roles
-                // ===============================================
-                // try {
-                //     console.log("ĐANG GỌI API: /roles");
-                //     const rolesResponse = await axiosClient.get('/roles');
-                //     console.log("THÀNH CÔNG API /roles (DATA):", rolesResponse.data);
-                //     setRoles(rolesResponse.data || []);
-                // } catch (roleError) {
-                //     console.error("LỖI API /roles:", roleError.response ? roleError.response.data : roleError.message);
-                //     setMessage({ text: `Lỗi khi tải danh sách Vai trò. (API /roles lỗi ${roleError.response?.status || ''})`, type: 'error' });
-                // }
-                // ===============================================
-
-
                 // Lấy thông tin tài khoản hiện tại
                 console.log(`ĐANG GỌI API: /users/${id}`);
                 const userResponse = await axiosClient.get(`/users/${id}`);
@@ -58,14 +47,16 @@ const UpdateAccountPage = () => {
                 const userData = userResponse.data;
                 
                 if (userData) {
-                    setFormData({
+                    const data = {
                         username: userData.username || '',
                         email: userData.email || '',
                         phone: userData.phone || '',
-                        password: '', 
+                        password: '', // Mật khẩu luôn rỗng ban đầu
                         role_id: userData.role_id || '',
                         status: userData.status || ''
-                    });
+                    };
+                    setFormData(data);
+                    setInitialData(data); // 🆕 Lưu dữ liệu gốc
                 } else {
                      setMessage({ text: 'Không tìm thấy dữ liệu tài khoản.', type: 'error' });
                 }
@@ -81,6 +72,23 @@ const UpdateAccountPage = () => {
         fetchData();
     }, [setPageTitle, id]);
 
+    // 🆕 Tính toán xem có thay đổi hay không
+    const isChanged = useMemo(() => {
+        if (!initialData) return false;
+        
+        return (
+            formData.username !== initialData.username ||
+            formData.email !== initialData.email ||
+            formData.phone !== initialData.phone ||
+            // Password có nhập là có thay đổi
+            formData.password !== '' || 
+            // So sánh lỏng (==) để xử lý trường hợp string vs number của select box
+            // eslint-disable-next-line eqeqeq
+            formData.role_id != initialData.role_id || 
+            formData.status !== initialData.status
+        );
+    }, [formData, initialData]);
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prevState => ({ ...prevState, [name]: value }));
@@ -88,6 +96,9 @@ const UpdateAccountPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        // Chặn submit nếu không có thay đổi
+        if (!isChanged) return;
+
         setMessage({ text: 'Đang xử lý...', type: 'info' });
 
         const payload = {
@@ -181,7 +192,17 @@ const UpdateAccountPage = () => {
                      <button type="button" onClick={() => navigate('/admin/accounts')} className="bg-gray-200 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-gray-300 transition-colors">
                         Hủy
                     </button>
-                    <button type="submit" className="bg-primary text-white font-bold py-2 px-8 rounded-lg hover:bg-blue-700 transition-colors" disabled={loading}>
+                    
+                    {/* 🆕 NÚT CẬP NHẬT: Thay đổi màu sắc dựa trên isChanged */}
+                    <button 
+                        type="submit" 
+                        className={`font-bold py-2 px-8 rounded-lg transition-colors ${
+                            isChanged 
+                            ? 'bg-blue-600 text-white hover:bg-blue-700'  // Sáng lên khi có thay đổi
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed' // Tối đi khi chưa đổi
+                        }`} 
+                        disabled={loading || !isChanged}
+                    >
                         {loading ? 'Đang lưu...' : 'Cập nhật'}
                     </button>
                 </div>

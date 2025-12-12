@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts';
-import { LuEllipsisVertical, LuTrendingUp, LuTrendingDown, LuPackage, LuChartBar, LuCopy, LuUserPlus } from 'react-icons/lu';
+import {LuTrendingUp, LuTrendingDown, LuPackage, LuChartBar, LuCopy, LuUserPlus } from 'react-icons/lu';
 import axiosClient from '../../api/axiosClient';
 
 // --- COMPONENT CON ---
@@ -17,7 +17,6 @@ const TopAgentCard = ({ name, sales, orders }) => {
                 {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(safeSales)}
             </p>
             <p className="col-span-2 text-gray-500 text-center bg-gray-100 rounded-md py-1 text-xs font-semibold">{safeOrders} Đơn</p>
-            <div className="col-span-1 flex justify-end"><button className="text-gray-400 hover:text-gray-600"><LuEllipsisVertical size={20} /></button></div>
         </div>
     );
 };

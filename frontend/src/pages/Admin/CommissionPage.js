@@ -3,13 +3,14 @@ import { useOutletContext, Link } from 'react-router-dom';
 import axiosClient from '../../api/axiosClient';
 import { LuPlus, LuPencil, LuTrash2, LuFilter } from 'react-icons/lu';
 
-// ✅ 1. DANH SÁCH ROLE CỐ ĐỊNH
+// 1. Cấu hình số lượng hiển thị mỗi trang
+const ITEMS_PER_PAGE = 10;
+
+// Danh sách Role cố định (Khớp với Form để lọc chuẩn)
 const STATIC_ROLES = [
-    { role_id: 1, role_name: 'Admin' },
     { role_id: 2, role_name: 'Nhà phân phối' },
     { role_id: 3, role_name: 'Đại lý' },
-    { role_id: 4, role_name: 'Cộng tác viên' },
-    { role_id: 5, role_name: 'Khách hàng' }
+    { role_id: 4, role_name: 'Cộng tác viên' }
 ];
 
 // --- HELPER FUNCTIONS ---
@@ -18,6 +19,7 @@ const formatCurrency = (value) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
 };
 
+// Hàm format ngày tháng (đã bỏ comment để hoạt động)
 const formatDate = (dateString) => {
     if (!dateString) return '-';
     try {
@@ -28,43 +30,28 @@ const formatDate = (dateString) => {
 };
 
 // --- COMPONENTS CON ---
-
-// 1. Badge cho Vai trò (Giữ nguyên)
 const RoleBadge = ({ roleId }) => {
     const role = STATIC_ROLES.find(r => r.role_id === roleId);
-    const roleName = role ? role.role_name : `Unknown ID: ${roleId}`;
+    const roleName = role ? role.role_name : `ID: ${roleId}`;
     let colorClasses = 'bg-gray-100 text-gray-800';
 
-    switch (roleId) {
-        case 1: colorClasses = 'bg-red-100 text-red-800'; break;
-        case 2: colorClasses = 'bg-purple-100 text-purple-800'; break;
-        case 3: colorClasses = 'bg-blue-100 text-blue-800'; break;
-        case 4: colorClasses = 'bg-yellow-100 text-yellow-800'; break;
-        case 5: colorClasses = 'bg-green-100 text-green-800'; break;
-        default: colorClasses = 'bg-gray-100 text-gray-600';
-    }
+    if (roleId === 2) colorClasses = 'bg-purple-100 text-purple-800';
+    else if (roleId === 3) colorClasses = 'bg-blue-100 text-blue-800';
+    else if (roleId === 4) colorClasses = 'bg-yellow-100 text-yellow-800';
 
     return (
-        <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full whitespace-nowrap ${colorClasses}`}>
+        <span className={`px-2.5 py-0.5 inline-flex text-xs font-semibold rounded-full whitespace-nowrap ${colorClasses}`}>
             {roleName}
         </span>
     );
 };
 
-// 🆕 2. Badge cho Trạng thái (Mới thêm)
 const CommissionStatusBadge = ({ status }) => {
+    const s = String(status || '').toLowerCase();
     let style = { text: status || '-', color: 'bg-gray-100 text-gray-600' };
-    
-    // Chuẩn hóa status về chữ thường để so sánh hoặc so sánh trực tiếp nếu DB lưu chuẩn
-    const s = status ? status : ''; 
 
-    if (s === 'Active' || s === 'active') {
-        style = { text: 'Hoạt động', color: 'bg-green-100 text-green-800' };
-    } else if (s === 'Inactive' || s === 'inactive') {
-        style = { text: 'Ngừng', color: 'bg-red-100 text-red-800' };
-    } else if (s === 'Draft' || s === 'draft') {
-        style = { text: 'Nháp', color: 'bg-gray-100 text-gray-800' };
-    }
+    if (s === 'active' || s === 'hoạt động') style = { text: 'Hoạt động', color: 'bg-green-100 text-green-800' };
+    else if (s === 'inactive' || s === 'ngừng') style = { text: 'Ngừng', color: 'bg-red-100 text-red-800' };
 
     return (
         <span className={`px-2 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${style.color}`}>
@@ -72,7 +59,6 @@ const CommissionStatusBadge = ({ status }) => {
         </span>
     );
 };
-
 
 // --- COMPONENT CHÍNH ---
 const CommissionPage = () => {
@@ -82,144 +68,176 @@ const CommissionPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [filterRoleId, setFilterRoleId] = useState('');
+    
+    // State phân trang
+    const [currentPage, setCurrentPage] = useState(1);
 
     useEffect(() => {
         setPageTitle('Quản lý Quy tắc Hoa hồng');
-
-        const fetchData = async () => {
-            setLoading(true);
-            setError('');
-            try {
-                const rulesResponse = await axiosClient.get('/api/commission-rules'); 
-                setRules(rulesResponse.data?.data || []);
-            } catch (err) {
-                console.error("Lỗi khi tải dữ liệu:", err);
-                setError('Không thể tải dữ liệu quy tắc hoa hồng. Vui lòng thử lại.');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchData();
+        fetchRules();
     }, [setPageTitle]);
 
-    const handleDeleteRule = async (ruleId) => {
-        if (window.confirm(`Bạn có chắc chắn muốn xóa quy tắc hoa hồng ID: ${ruleId} không?`)) {
-            try {
-                setError('');
-                await axiosClient.delete(`/api/commission-rules/${ruleId}`);
-                setRules(prevRules => prevRules.filter(rule => rule.rule_id !== ruleId));
-                alert(`Đã xóa thành công quy tắc ID: ${ruleId}.`);
-            } catch (err) {
-                console.error("Lỗi khi xóa quy tắc:", err);
-                const apiError = err.response?.data?.message || err.message || 'Xóa quy tắc thất bại.';
-                setError(`Lỗi: ${apiError}`);
-                alert(`Lỗi khi xóa quy tắc: ${apiError}`);
-            }
+    const fetchRules = async () => {
+        setLoading(true);
+        try {
+            const res = await axiosClient.get('/api/commission-rules');
+            // Xử lý linh hoạt data trả về (đề phòng BE trả về dạng mảng hoặc object chứa data)
+            setRules(Array.isArray(res.data) ? res.data : (res.data?.data || []));
+        } catch (err) {
+            console.error("Error fetching rules:", err);
+            setError('Không thể tải dữ liệu quy tắc.');
+        } finally {
+            setLoading(false);
         }
     };
 
+    const handleDeleteRule = async (ruleId) => {
+        if (!window.confirm('Bạn có chắc chắn muốn xóa quy tắc này không?')) return;
+
+        try {
+            await axiosClient.delete(`/api/commission-rules/${ruleId}`);
+            setRules(prev => prev.filter(r => r.rule_id !== ruleId));
+            alert('Đã xóa thành công!');
+        } catch (err) {
+            alert('Xóa thất bại: ' + (err.response?.data?.message || err.message));
+        }
+    };
+
+    // Reset trang về 1 khi thay đổi bộ lọc
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [filterRoleId]);
+
+    // --- LOGIC LỌC & PHÂN TRANG ---
     const filteredRules = useMemo(() => {
         if (!filterRoleId) return rules;
-        return rules.filter(rule => String(rule.role_id) === filterRoleId);
+        return rules.filter(r => String(r.role_id) === filterRoleId);
     }, [rules, filterRoleId]);
 
+    const totalPages = Math.ceil(filteredRules.length / ITEMS_PER_PAGE);
+    
+    const paginatedRules = useMemo(() => {
+        const start = (currentPage - 1) * ITEMS_PER_PAGE;
+        return filteredRules.slice(start, start + ITEMS_PER_PAGE);
+    }, [filteredRules, currentPage]);
+
+    // Render Pagination Controls
+    const renderPagination = () => {
+        if (totalPages <= 1) return null;
+        
+        let pages = [];
+        // Giới hạn hiển thị tối đa 5 nút trang để không bị vỡ layout nếu quá nhiều trang
+        const maxVisiblePages = 5;
+        const startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+        const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+        for (let i = startPage; i <= endPage; i++) {
+            pages.push(
+                <button
+                    key={i}
+                    onClick={() => setCurrentPage(i)}
+                    className={`w-8 h-8 rounded border text-sm font-medium transition-colors ${
+                        currentPage === i 
+                        ? 'bg-blue-600 text-white border-blue-600' 
+                        : 'bg-white text-gray-600 hover:bg-gray-50 border-gray-300'
+                    }`}
+                >
+                    {i}
+                </button>
+            );
+        }
+        return (
+            <div className="flex items-center gap-1">
+                <button 
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} 
+                    disabled={currentPage === 1}
+                    className="w-8 h-8 flex items-center justify-center rounded border bg-white disabled:opacity-50 hover:bg-gray-50"
+                >
+                    &lt;
+                </button>
+                {pages}
+                <button 
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} 
+                    disabled={currentPage === totalPages}
+                    className="w-8 h-8 flex items-center justify-center rounded border bg-white disabled:opacity-50 hover:bg-gray-50"
+                >
+                    &gt;
+                </button>
+            </div>
+        );
+    };
+
     return (
-        <div className="bg-white p-6 rounded-xl border border-gray-200">
+        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+            {/* Header & Filter */}
             <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-                <h2 className="text-xl font-bold text-gray-800">Danh sách Quy tắc Hoa hồng</h2>
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                         <LuFilter size={18} className="text-gray-500" />
-                        <select
-                            value={filterRoleId}
-                            onChange={(e) => setFilterRoleId(e.target.value)}
-                            className="bg-gray-50 border border-gray-200 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-primary w-full md:w-auto text-sm"
-                        >
-                            <option value="">Lọc theo vai trò</option>
-                            {STATIC_ROLES.map(role => (
-                                <option key={role.role_id} value={role.role_id}>
-                                    {role.role_name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                    <Link
-                        to="/admin/commission/new"
-                        className="flex items-center gap-2 bg-primary text-white font-bold px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
+                <div className="flex items-center gap-3">
+                    <LuFilter className="text-gray-500" />
+                    <select 
+                        className="bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5 focus:ring-blue-500 outline-none min-w-[200px]"
+                        value={filterRoleId}
+                        onChange={(e) => setFilterRoleId(e.target.value)}
                     >
-                        <LuPlus size={20} />
-                        Tạo quy tắc mới
-                    </Link>
+                        <option value="">Tất cả vai trò</option>
+                        {STATIC_ROLES.map(r => <option key={r.role_id} value={r.role_id}>{r.role_name}</option>)}
+                    </select>
                 </div>
+                <Link to="/admin/commission/new" className="flex items-center gap-2 bg-blue-600 text-white font-bold px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    <LuPlus size={20} /> Tạo quy tắc mới
+                </Link>
             </div>
 
-            {error && <p className="text-red-600 text-center mb-4">{error}</p>}
+            {error && <p className="text-red-500 text-center mb-4">{error}</p>}
 
-            <div className="overflow-x-auto">
+            {/* Table */}
+            <div className="overflow-x-auto rounded-lg border border-gray-200 mb-4">
                 <table className="w-full text-sm text-left text-gray-600">
-                    <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+                    <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b">
                         <tr>
                             <th className="px-6 py-3">ID</th>
                             <th className="px-6 py-3">Vai trò</th>
-                            <th className="px-6 py-3">Trạng thái</th> {/* 🆕 Cột Mới */}
-                            <th className="px-6 py-3">Doanh số (Min)</th>
-                            <th className="px-6 py-3">Doanh số (Max)</th>
-                            <th className="px-6 py-3">Tỷ lệ (%)</th>
-                            <th className="px-6 py-3">Danh mục SP</th>
-                            <th className="px-6 py-3">Thời gian</th> {/* Gộp Start/End cho gọn */}
-                            <th className="px-6 py-3">Mô tả</th>
-                            <th className="px-6 py-3 text-right">Hành động</th>
+                            <th className="px-6 py-3">Doanh số (Min - Max)</th>
+                            <th className="px-6 py-3">Hoa hồng</th>
+                            <th className="px-6 py-3">Danh mục</th>
+                            {/* --- ĐÃ THÊM LẠI CỘT THỜI GIAN --- */}
+                            <th className="px-6 py-3">Thời gian</th>
+                            <th className="px-6 py-3">Trạng thái</th>
+                            <th className="px-6 py-3 text-right"></th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-gray-100">
                         {loading ? (
-                            <tr><td colSpan="10" className="text-center py-10 text-gray-500">Đang tải dữ liệu...</td></tr>
-                        ) : filteredRules.length === 0 ? (
-                            <tr><td colSpan="10" className="text-center py-10 text-gray-500">Không tìm thấy quy tắc nào.</td></tr>
+                            <tr><td colSpan="8" className="text-center py-8">Đang tải...</td></tr>
+                        ) : paginatedRules.length === 0 ? (
+                            <tr><td colSpan="8" className="text-center py-8 text-gray-500">Chưa có quy tắc nào.</td></tr>
                         ) : (
-                            filteredRules.map((rule) => (
-                                <tr key={rule.rule_id} className="bg-white border-b hover:bg-gray-50">
-                                    <td className="px-6 py-4 font-medium text-gray-900">{rule.rule_id}</td>
-                                    
+                            paginatedRules.map((rule) => (
+                                <tr key={rule.rule_id} className="hover:bg-gray-50 transition-colors">
+                                    <td className="px-6 py-4 font-medium">{rule.rule_id}</td>
                                     <td className="px-6 py-4">
                                         <RoleBadge roleId={rule.role_id} />
                                     </td>
+                                    <td className="px-6 py-4">
+                                        {formatCurrency(rule.min_sales)} - {rule.max_sales ? formatCurrency(rule.max_sales) : '∞'}
+                                    </td>
+                                    <td className="px-6 py-4 font-bold text-blue-600">{rule.commission_rate}%</td>
+                                    <td className="px-6 py-4">{rule.product_category || 'Tất cả'}</td>
+                                    
+                                    {/* --- ĐÃ THÊM LẠI DỮ LIỆU THỜI GIAN --- */}
+                                    <td className="px-6 py-4 text-xs">
+                                        <div className="text-gray-900 font-medium">BĐ: {formatDate(rule.start_date)}</div>
+                                        <div className="text-gray-500">KT: {rule.end_date ? formatDate(rule.end_date) : 'Vô thời hạn'}</div>
+                                    </td>
 
-                                    {/* 🆕 Hiển thị Trạng thái */}
                                     <td className="px-6 py-4">
                                         <CommissionStatusBadge status={rule.status} />
                                     </td>
-
-                                    <td className="px-6 py-4">{formatCurrency(rule.min_sales)}</td>
-                                    <td className="px-6 py-4">{rule.max_sales ? formatCurrency(rule.max_sales) : 'Không giới hạn'}</td>
-                                    <td className="px-6 py-4 font-semibold text-blue-600">{rule.commission_rate}%</td>
-                                    <td className="px-6 py-4">{rule.product_category || 'Tất cả'}</td>
-                                    
-                                    {/* Hiển thị thời gian gộp cho gọn */}
-                                    <td className="px-6 py-4 text-xs">
-                                        <div className="text-gray-900">BĐ: {formatDate(rule.start_date)}</div>
-                                        <div className="text-gray-500">KT: {rule.end_date ? formatDate(rule.end_date) : 'Vô thời hạn'}</div>
-                                    </td>
-                                    
-                                    <td className="px-6 py-4 text-xs max-w-[150px] truncate" title={rule.description}>
-                                        {rule.description || '-'}
-                                    </td>
-                                    
                                     <td className="px-6 py-4 text-right">
-                                        <div className="flex items-center justify-end gap-3">
-                                            <Link
-                                                to={`/admin/commission/edit/${rule.rule_id}`}
-                                                className="text-gray-400 hover:text-blue-600"
-                                                title="Sửa quy tắc"
-                                            >
+                                        <div className="flex justify-end gap-3">
+                                            <Link to={`/admin/commission/edit/${rule.rule_id}`} className="text-gray-400 hover:text-blue-600" title="Sửa">
                                                 <LuPencil size={18} />
                                             </Link>
-                                            <button
-                                                onClick={() => handleDeleteRule(rule.rule_id)}
-                                                className="text-gray-400 hover:text-red-600"
-                                                title="Xóa quy tắc"
-                                            >
+                                            <button onClick={() => handleDeleteRule(rule.rule_id)} className="text-gray-400 hover:text-red-600" title="Xóa">
                                                 <LuTrash2 size={18} />
                                             </button>
                                         </div>
@@ -230,7 +248,16 @@ const CommissionPage = () => {
                     </tbody>
                 </table>
             </div>
-            {/* Có thể thêm phân trang nếu cần */}
+
+            {/* Pagination Footer */}
+            {!loading && filteredRules.length > 0 && (
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-2">
+                    <p className="text-sm text-gray-500">
+                        Hiển thị <span className="font-medium">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> đến <span className="font-medium">{Math.min(currentPage * ITEMS_PER_PAGE, filteredRules.length)}</span> trong tổng số <span className="font-medium">{filteredRules.length}</span> quy tắc
+                    </p>
+                    {renderPagination()}
+                </div>
+            )}
         </div>
     );
 };

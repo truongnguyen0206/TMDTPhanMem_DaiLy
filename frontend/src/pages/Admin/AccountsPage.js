@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useOutletContext, Link, useLocation } from 'react-router-dom';
 import axiosClient from '../../api/axiosClient';
-import { LuSearch, LuPencil, LuTrash2, LuPlus, LuPin, LuFilter, LuCheck } from 'react-icons/lu';
+import { LuSearch, LuPencil, LuPlus, LuPin, LuFilter, LuCheck } from 'react-icons/lu';
 
 // --- Component RoleBadge (Style compact) ---
 const RoleBadge = ({ roleName }) => {
@@ -92,17 +92,17 @@ const AccountsPage = () => {
     }, [setPageTitle]);
 
     // Xử lý xóa tài khoản
-    const handleDeleteAccount = async (userId, username) => {
-        if (window.confirm(`Bạn có chắc chắn muốn xóa tài khoản "${username}" (ID: ${userId}) không?`)) {
-            try {
-                await axiosClient.delete(`/users/deleteUser/${userId}`);
-                setAccounts(prev => prev.filter(acc => acc.user_id !== userId));
-                alert(`Đã xóa thành công tài khoản "${username}".`);
-            } catch (err) {
-                alert('Xóa tài khoản thất bại.');
-            }
-        }
-    };
+    // const handleDeleteAccount = async (userId, username) => {
+    //     if (window.confirm(`Bạn có chắc chắn muốn xóa tài khoản "${username}" (ID: ${userId}) không?`)) {
+    //         try {
+    //             await axiosClient.delete(`/users/deleteUser/${userId}`);
+    //             setAccounts(prev => prev.filter(acc => acc.user_id !== userId));
+    //             alert(`Đã xóa thành công tài khoản "${username}".`);
+    //         } catch (err) {
+    //             alert('Xóa tài khoản thất bại.');
+    //         }
+    //     }
+    // };
 
     // 🆕 HÀM DUYỆT NHANH (QUICK APPROVE)
     const handleQuickApprove = async (userId, username) => {
@@ -252,7 +252,7 @@ const AccountsPage = () => {
                     </div>
                 </div>
 
-                <Link to="/admin/accounts/new" className="flex items-center gap-2 bg-primary text-white font-bold px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm whitespace-nowrap">
+                <Link to="/admin/accounts/new" className="flex items-center gap-2 bg-blue-600 text-white font-bold px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm whitespace-nowrap">
                     <LuPlus size={18} /> Thêm tài khoản
                 </Link>
             </div>
@@ -264,14 +264,14 @@ const AccountsPage = () => {
                 <table className="w-full text-sm text-left text-gray-600">
                     <thead className="text-xs text-gray-500 uppercase bg-gray-50 border-b border-gray-100">
                         <tr>
-                            <th className="px-6 py-3 font-semibold">ID</th>
-                            <th className="px-6 py-3 font-semibold">Tên tài khoản</th>
-                            <th className="px-6 py-3 font-semibold">Email</th>
-                            <th className="px-6 py-3 font-semibold">SĐT</th>
-                            <th className="px-6 py-3 font-semibold">Vai trò</th>
-                            <th className="px-6 py-3 font-semibold">Trạng thái</th>
-                            <th className="px-6 py-3 font-semibold">Ngày tạo</th>
-                            <th className="px-6 py-3 font-semibold text-right">Hành động</th>
+                            <th className="px-6 py-3">ID</th>
+                            <th className="px-6 py-3">Tên tài khoản</th>
+                            <th className="px-6 py-3">Email</th>
+                            <th className="px-6 py-3 ">SĐT</th>
+                            <th className="px-6 py-3">Vai trò</th>
+                            <th className="px-6 py-3">Trạng thái</th>
+                            <th className="px-6 py-3">Ngày tạo</th>
+                            <th className="px-6 py-3 text-right"></th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -312,13 +312,6 @@ const AccountsPage = () => {
                                             >
                                                 <LuPencil size={18} />
                                             </Link>
-                                            <button
-                                                onClick={() => handleDeleteAccount(account.user_id, account.username)}
-                                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                                title="Xóa tài khoản"
-                                            >
-                                                <LuTrash2 size={18} />
-                                            </button>
                                         </div>
                                     </td>
                                 </tr>

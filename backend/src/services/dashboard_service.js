@@ -273,8 +273,7 @@ const getAdminOrderStats = async (groupBy = 'year') => {
       // 3. Dữ liệu cho DashboardPage (So sánh tăng trưởng)
       ordersThisMonth,
       ordersLastMonth,
-      newUsersThisMonth,
-      newUsersLastMonth
+      pendingAccountsCount  
     ] = await Promise.all([
       OrderModel.countOrders({ source: 'Đại lý' }), 
       OrderModel.countOrders({ payment_status: 'Chờ thanh toán' }), 
@@ -289,8 +288,7 @@ const getAdminOrderStats = async (groupBy = 'year') => {
       
       OrderModel.listOrders({ from: thisMonthRange.start, to: thisMonthRange.end, limit: 10000 }),
       OrderModel.listOrders({ from: lastMonthRange.start, to: lastMonthRange.end, limit: 10000 }),
-      UserModel.countUsersByDateRange(thisMonthRange.start, thisMonthRange.end),
-      UserModel.countUsersByDateRange(lastMonthRange.start, lastMonthRange.end)
+      UserModel.countPendingUsers(),  
     ]);
 
     // --- XỬ LÝ LOGIC CHO DASHBOARD PAGE ---
@@ -314,8 +312,8 @@ const getAdminOrderStats = async (groupBy = 'year') => {
             value: pendingOrdersCount 
         },
         new_customers: { 
-            value: newUsersThisMonth, 
-            growth: calculateGrowth(newUsersThisMonth, newUsersLastMonth) 
+            value: pendingAccountsCount,
+            growth: null
         }
     };
 

@@ -147,10 +147,39 @@ async function removeCTV(req, res) {
   }
 }
 
+/** Lấy danh sách đơn hàng của 1 CTV */
+async function getOrdersByCTV(req, res) {
+  try {
+    const ctvId = Number(req.params.id);
+    if (!ctvId) {
+      return res.status(400).json({ message: 'ctv_id không hợp lệ.' });
+    }
+
+    const opts = {
+      search: req.query.search || '',
+      status: req.query.status || null,
+    };
+
+    const orders = await Collaborator.getOrdersByCTVId(ctvId, opts);
+
+    return res.status(200).json({
+      data: orders
+    });
+
+  } catch (err) {
+    console.error('getOrdersByCTV error:', err);
+    return res.status(500).json({
+      message: 'Lỗi server khi lấy danh sách đơn hàng của CTV.',
+      error: err.message
+    });
+  }
+}
+
 module.exports = {
   getAllCTV,
   getCTVById,
   createCTV,
   updateCTV,
   removeCTV,
+  getOrdersByCTV
 };

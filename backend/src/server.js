@@ -14,11 +14,14 @@ const commissionRoutes = require('./api/routes/commissionRule_route.js');
 const commissionRuleRoutes = require('./api/routes/commissionRule_route.js');
 const dashboardRoutes = require('./api/routes/dashboard_route.js'); // Thêm route dashboard
 const withdrawalRoutes = require('./api/routes/withdrawal_route.js'); // <--- IMPORT MỚI
+const DistributorRoutes = require("./api/routes/distributor_route");
+
 const app = express();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }))
   
 // Routes
 app.use("/auth", authRoutes);
@@ -28,6 +31,7 @@ app.use("/report", reportRoutes);
 app.use("/agent", agentRoutes);
 app.use("/product", productRoutes);
 app.use("/CTV", collaboratorRoute);
+app.use("/npp",DistributorRoutes);
 app.use('/api/commissions', commissionRoutes);
 app.use('/api/commission-rules', commissionRuleRoutes);
 app.use('/api/dashboard', dashboardRoutes);
@@ -44,8 +48,32 @@ app.get("/", (req, res) => {
   res.send("Server chạy ngon lành 🚀");
 });
 
+app.get("/api/test/products", async (req, res) => {
+  try {
+    const response = await fetch("http://100.65.202.126:9000/store/products", {
+      headers: {
+        // "Authorization": `Bearer ${process.env.MEDUSA_API_KEY}`,
+        "Content-Type": "application/json",
+        "x-publishable-api-key": process.env.MEDUSA_API_KEY
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Medusa API trả lỗi: ${response.status}`);
+    }
+
+    const data = await response.json();
+    res.json(data);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 // Khởi động server 
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
-  console.log(`Backend server đang chạy tại http://localhost:${PORT}`);
+  console.log(`\n✅ Backend server đang chạy tại http://localhost:${PORT}\n`);
 });

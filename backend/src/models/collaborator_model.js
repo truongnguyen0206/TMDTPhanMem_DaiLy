@@ -99,6 +99,54 @@ async function softDeleteCTV(ctvId) {
   return true;
 }
 
+/** Lấy danh sách đơn hàng của một CTV (không phân trang) */
+async function getOrdersByCTVId(ctvId, opts = {}) {
+  if (!ctvId) throw new Error("ctvId is required");
+
+  const { search = '', status = null } = opts;
+
+  // Lấy user_id từ CTV
+  const { data: ctv, error: ctvErr } = await supabase
+    .from("ctv_view")
+    .select("ctv_id, user_id")
+    .eq("ctv_id", ctvId)
+    .single();
+
+  if (ctvErr) throw ctvErr;
+  if (!ctv || !ctv.user_id) return [];
+
+  let query = supabase
+    .from("orders_view")  // đổi theo đúng view của bạn
+    .select(`
+      order_id,
+      order_code,
+      order_date,
+      customer_id,
+      total_amount,
+      order_status,
+      payment_status,
+      user_id
+    `)
+    .eq("user_id", ctv.user_id)
+    .order("order_date", { ascending: false });
+
+  // Tìm kiếm theo order_code
+  if (search) {
+    query = query.ilike("order_code", `%${search}%`);
+  }
+
+  // Lọc trạng thái đơn
+  if (status) {
+    query = query.eq("order_status", status);
+  }
+
+  const { data, error } = await query;
+
+  if (error) throw error;
+
+  return data || [];
+}
+
 module.exports = {
   getAllCTV,
   getCTVById,
@@ -106,4 +154,5 @@ module.exports = {
   createCTV,
   updateCTV,
   softDeleteCTV,
+  getOrdersByCTVId
 };

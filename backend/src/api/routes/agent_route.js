@@ -14,6 +14,9 @@ router.put("/updateAgent/:agentId", agentController.updateAgent);
 router.delete("/deleteAgent/:agentId", agentController.deleteAgent);
 router.put("/updateManyAgents", agentController.updateManyAgents);
 router.get("/getctv/:agentId", agentController.getCTVListByAgent);
+router.get("/:id/orders", agentController.getOrdersByAgent);
+router.get("/:id/ctv-orders", agentController.getOrdersOfCTVByAgent);
+router.get("/:agent_id/products", agentController.getProductsOfAgent);
 
 // // 🔐 Chỉ admin và nhà phân phối được truy cập danh sách đại lý
 // router.get('/', authenticateToken, authorizeRoles('admin', 'npp'), getAgents);

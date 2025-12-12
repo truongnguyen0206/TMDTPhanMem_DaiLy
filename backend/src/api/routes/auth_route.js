@@ -8,6 +8,7 @@ const authController = require("../../controllers/auth_controller");
 
 router.post("/register", authController.register);
 router.post("/login", authController.login);
+router.post("/register/google", authController.registerWithGoogle);
 router.post("/google-login", authController.loginWithGoogle);
 
 // router.put("/users/:id", userController.updateUser);

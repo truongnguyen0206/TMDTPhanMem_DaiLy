@@ -21,7 +21,7 @@ const getCTVByAgent = async (agent_id) => {
   // Lấy danh sách CTV có agent_id trùng
   const { data: ctvList, error } = await supabase
     .from("ctv_view")
-    .select("*")
+    .select("*, users_view (status))")
     .eq("agent_id", agent_id);
 
   if (error) throw error;
@@ -137,6 +137,133 @@ const updateManyAgents = async (agents = []) => {
   return results;
 };
 
+/** Lấy tất cả đơn hàng của một đại lý (không phân trang) */
+const getOrdersByAgent = async (agent_id, opts = {}) => {
+  if (!agent_id) throw new Error("agent_id is required");
+
+  const { search = '', status = null } = opts;
+
+  // 1️⃣ Lấy user_id của agent
+  const { data: agent, error: agentErr } = await supabase
+    .from("agent_view")
+    .select("agent_id, user_id")
+    .eq("agent_id", agent_id)
+    .single();
+
+  if (agentErr) throw agentErr;
+  if (!agent || !agent.user_id) return [];
+
+  // 2️⃣ Lấy danh sách đơn hàng theo user_id của đại lý
+  let query = supabase
+    .from("orders_with_product")
+    .select(`
+        order_id,
+        order_code,
+        order_date,
+        customer_id,
+        product_id,
+        product_code,
+        product_name,
+        quantity,
+        total_amount,
+        order_source,
+        order_status,
+        payment_status,
+        user_id
+    `)
+    .eq("user_id", agent.user_id)
+    .order("order_date", { ascending: false });
+
+  // 3️⃣ Search theo order_code
+  if (search) {
+    query = query.ilike("order_code", `%${search}%`);
+  }
+
+  // 4️⃣ Filter theo trạng thái đơn
+  if (status) {
+    query = query.eq("order_status", status);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  return data || [];
+};
+
+const getOrdersOfCTVByAgent = async (agent_id, opts = {}) => {
+  if (!agent_id) throw new Error("agent_id is required");
+
+  const { search = '', status = null } = opts;
+
+  // 1️⃣ Lấy danh sách CTV thuộc đại lý
+  const { data: ctvList, error: ctvErr } = await supabase
+    .from("ctv_view")
+    .select("ctv_id, user_id")
+    .eq("agent_id", agent_id);
+
+  if (ctvErr) throw ctvErr;
+  if (!ctvList || ctvList.length === 0) return [];
+
+  // Lấy danh sách user_id của CTV
+  const ctvUserIds = ctvList
+    .filter(c => c.user_id)
+    .map(c => c.user_id);
+
+  if (ctvUserIds.length === 0) return [];
+
+  // 2️⃣ Query tất cả đơn hàng của những user_id này
+  let query = supabase
+    .from("orders_with_product")
+    .select(`
+      order_id,
+        order_code,
+        order_date,
+        customer_id,
+        product_id,
+        product_code,
+        product_name,
+        quantity,
+        total_amount,
+        order_source,
+        order_status,
+        payment_status,
+        user_id
+    `)
+    .in("user_id", ctvUserIds)     // 👈 lấy đơn hàng của CTV
+    .order("order_date", { ascending: false });
+
+  // 3️⃣ Search theo order_code
+  if (search) {
+    query = query.ilike("order_code", `%${search}%`);
+  }
+
+  // 4️⃣ Filter trạng thái đơn
+  if (status) {
+    query = query.eq("order_status", status);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  return data || [];
+};
+
+/**
+ * Lấy danh sách sản phẩm được phân phối cho 1 đại lý
+ */
+const getProductsByAgent = async (agent_id) => {
+  const { data, error } = await supabase
+    .from("agent_product_view")
+    .select("*")
+    .eq("agent_id", agent_id)
+    .order("ngay_phanphoi", { ascending: false });
+
+  if (error) throw error;
+  return data;
+};
+
+
+
 module.exports = {
   getAllAgents,
   getCTVByAgent,
@@ -146,4 +273,7 @@ module.exports = {
   updateAgent,
   deleteAgent,
   updateManyAgents,
+  getOrdersByAgent,
+  getOrdersOfCTVByAgent,
+  getProductsByAgent
 };

@@ -148,18 +148,45 @@ const updateUser = async (id, fields) => {
   return data;
 };
 
-// ❌ Xóa user
-const deleteUser = async (id) => {
+// // ❌ Xóa user
+// const deleteUser = async (id) => {
+//   const { data, error } = await supabase
+//     .from("users_view")
+//     .delete()
+//     .eq("user_id", id)
+//     .select()
+//     .single();
+
+//   if (error) throw error;
+//   return data;
+// };
+
+// // 🟢 Soft delete (deactivate) user
+// const deactivateUser = async (id) => {
+//   const { data, error } = await supabase
+//     .from("web_auth.users")   // bảng thật
+//     .update({ status: "Inactive" })
+//     .eq("user_id", id)
+//     .select()
+//     .single();
+
+//   if (error) throw error;
+//   return data;
+// };
+
+const updateUserStatus = async (user_id, newStatus) => {
   const { data, error } = await supabase
     .from("users_view")
-    .delete()
-    .eq("user_id", id)
+    .update({ status: newStatus })
+    .eq("user_id", user_id)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
   return data;
 };
+
+
 
 // ✏️ Cập nhật username
 const updateUsername = async (id, username) => {
@@ -190,6 +217,25 @@ const countUsersByDateRange = async (startDate, endDate) => {
   return count || 0;
 };
 
+const getAllRoles = async () => {
+  const { data, error } = await supabase
+    .from("users_roles") // bảng role
+    .select("*")
+    .order("role_id", { ascending: true });
+
+  if (error) throw error;
+  return data;
+};
+
+const countPendingUsers = async () => {
+  const { count, error } = await supabase
+    .from("users_view")
+    .select("*", { count: "exact", head: true })
+    .eq("status", "Đang chờ cấp tài khoản"); // Lọc theo trạng thái chờ
+
+  if (error) throw error;
+  return count || 0;
+};
 
 module.exports = {
   findByEmailOrUsername,
@@ -197,7 +243,11 @@ module.exports = {
   findByUsername,
   getUsers,
   updateUser,
-  deleteUser,
+  // deleteUser,
+  // deactivateUser,
+  updateUserStatus,
   updateUsername,
   countUsersByDateRange,
+  getAllRoles,
+  countPendingUsers,
 };

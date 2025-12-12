@@ -1,5 +1,7 @@
 const Agent = require('../models/agent_model');
 const { getCTVByAgent } = require("../models/agent_model");
+const AgentProductService = require("../services/agent_service");
+
 
 // 🟩 Tạo agent mới
 const createAgent = async (req, res) => {
@@ -136,6 +138,70 @@ const updateManyAgents = async (req, res) => {
   }
 };
 
+async function getOrdersByAgent(req, res) {
+  try {
+    const agentId = Number(req.params.id);
+    if (!agentId) {
+      return res.status(400).json({ message: 'agent_id không hợp lệ.' });
+    }
+
+    const opts = {
+      search: req.query.search || '',
+      status: req.query.status || null,
+    };
+
+    const orders = await Agent.getOrdersByAgent(agentId, opts);
+
+    return res.status(200).json({ data: orders });
+  } catch (err) {
+    console.error('getOrdersByAgent error:', err);
+    return res.status(500).json({
+      message: 'Lỗi server khi lấy đơn hàng đại lý.',
+      error: err.message
+    });
+  }
+}
+
+/** Lấy đơn hàng của tất cả CTV do đại lý quản lý */
+async function getOrdersOfCTVByAgent(req, res) {
+  try {
+    const agentId = Number(req.params.id);
+    if (!agentId) {
+      return res.status(400).json({ message: 'agent_id không hợp lệ.' });
+    }
+
+    const opts = {
+      search: req.query.search || '',
+      status: req.query.status || null
+    };
+
+    const orders = await Agent.getOrdersOfCTVByAgent(agentId, opts);
+
+    return res.status(200).json({ data: orders });
+
+  } catch (err) {
+    console.error('getOrdersOfCTVByAgent error:', err);
+    return res.status(500).json({
+      message: 'Lỗi server khi lấy đơn hàng CTV của đại lý.',
+      error: err.message
+    });
+  }
+}
+
+const getProductsOfAgent = async (req, res) => {
+  try {
+    const { agent_id } = req.params;
+    const result = await AgentProductService.getAgentProducts(agent_id);
+
+    return res.status(result.success ? 200 : 400).json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};
 
 module.exports = {
   createAgent,
@@ -146,4 +212,7 @@ module.exports = {
   listAgents,
   getAllAgents,
   updateManyAgents,
+  getOrdersByAgent,
+  getOrdersOfCTVByAgent,
+  getProductsOfAgent,
 };

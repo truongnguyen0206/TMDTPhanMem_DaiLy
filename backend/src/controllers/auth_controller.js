@@ -112,6 +112,23 @@ const login = async (req, res) => {
       });
     }
 
+    // ==============================
+    // 🚨 CHẶN USER BỊ KHÓA / NGỪNG HOẠT ĐỘNG
+    // ==============================
+    if (user.status === "Ngừng hoạt động") {
+      return res.status(403).json({
+        message: "Tài khoản của bạn đã bị ngừng hoạt động. Vui lòng liên hệ quản trị viên.",
+      });
+    }
+
+    if (user.status === "Đang chờ cấp tài khoản") {
+      return res.status(403).json({
+        message: "Tài khoản của bạn chưa được kích hoạt. Vui lòng đợi quản trị viên phê duyệt.",
+      });
+    }
+    // ==============================
+
+
     // ===== Kiểm tra mật khẩu =====
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
@@ -124,37 +141,38 @@ const login = async (req, res) => {
     let roleName = null;
     try {
       const { data: roleData, error } = await supabase
-        .from("users_roles") // bảng hoặc view bạn dùng
+        .from("users_roles")
         .select("role_name")
         .eq("role_id", user.role_id)
-        .single(); // lấy 1 dòng duy nhất
-    
+        .single();
+
       if (error) throw error;
-    
+
       roleName = roleData?.role_name || null;
     } catch (err) {
       console.warn("⚠️ Không thể truy vấn role:", err);
     }
 
-    // ===== Sinh JWT dùng chung với middleware verifyToken =====
+    // ===== Sinh JWT =====
     const payload = {
       id: user.user_id || user.id,
       username: user.username,
       email: user.email,
       role_id: user.role_id,
       role: roleName,
+      status: user.status, // thêm để middleware có thể đọc
     };
 
-    // Token format thống nhất với verifyToken
     const token = jwt.sign(payload, process.env.JWT_SECRET || "mysecret", {
       expiresIn: "1d",
     });
 
     return res.status(200).json({
       message: "Đăng nhập thành công!",
-      token, // sẽ dùng verifyToken để xác thực các request sau
+      token,
       user: payload,
     });
+
   } catch (error) {
     console.error("🔥 Lỗi đăng nhập:", error);
 
@@ -175,6 +193,64 @@ const login = async (req, res) => {
   }
 };
 
+/**
+ * Đăng ký tài khoản bằng Google (Google OAuth Sign-up)
+ */
+const registerWithGoogle = async (req, res) => {
+  try {
+    const { token } = req.body;
+
+    if (!token)
+      return res.status(400).json({ message: "Thiếu mã xác thực Google!" });
+
+    // 🔍 Xác minh token với Google
+    const ticket = await googleClient.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const { email, name, picture } = payload;
+
+    // 🔍 Kiểm tra email tồn tại chưa
+    const existing = await findByEmailOrUsername(email, email);
+    if (existing.length > 0) {
+      return res.status(400).json({
+        message: "Email này đã tồn tại trong hệ thống!",
+        suggestion: "Vui lòng dùng đăng nhập bằng Google.",
+      });
+    }
+
+    // 🟦 Tạo username không trùng
+    let baseUsername = name.replace(/\s+/g, "").toLowerCase();
+    let finalUsername = baseUsername;
+    let counter = 1;
+
+    while (await findByUsername(finalUsername)) {
+      finalUsername = `${baseUsername}${counter}`;
+      counter++;
+    }
+
+    // 🟢 Tạo tài khoản mới
+    const newUser = await createUser({
+      username: finalUsername,
+      email,
+      password: null,
+      role_id: 4,
+    });
+
+    res.status(201).json({
+      message: "Đăng ký Google thành công!",
+      user: newUser,
+    });
+  } catch (err) {
+    console.error("🔥 Lỗi đăng ký Google:", err);
+    res.status(500).json({
+      message: "Không thể đăng ký bằng Google!",
+      error: err.message,
+    });
+  }
+};
 
 /**
  * Đăng nhập bằng Google
@@ -250,5 +326,6 @@ module.exports = {
   updateUser,
   deleteUser,
   checkPasswordStrength,
+  registerWithGoogle,
   loginWithGoogle,
 };

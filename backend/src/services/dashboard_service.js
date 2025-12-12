@@ -274,6 +274,8 @@ const getAdminOrderStats = async (groupBy = 'year') => {
       ordersThisMonth,
       ordersLastMonth,
       pendingAccountsCount  
+      newUsersThisMonth,
+      newUsersLastMonth
     ] = await Promise.all([
       OrderModel.countOrders({ source: 'Đại lý' }), 
       OrderModel.countOrders({ payment_status: 'Chờ thanh toán' }), 
@@ -289,6 +291,8 @@ const getAdminOrderStats = async (groupBy = 'year') => {
       OrderModel.listOrders({ from: thisMonthRange.start, to: thisMonthRange.end, limit: 10000 }),
       OrderModel.listOrders({ from: lastMonthRange.start, to: lastMonthRange.end, limit: 10000 }),
       UserModel.countPendingUsers(),  
+      UserModel.countUsersByDateRange(thisMonthRange.start, thisMonthRange.end),
+      UserModel.countUsersByDateRange(lastMonthRange.start, lastMonthRange.end)
     ]);
 
     // --- XỬ LÝ LOGIC CHO DASHBOARD PAGE ---

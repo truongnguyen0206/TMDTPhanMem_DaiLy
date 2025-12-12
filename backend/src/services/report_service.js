@@ -2,6 +2,7 @@
 const ExcelJS = require("exceljs");
 const PDF = require("pdfmake");
 const path = require("path");
+const reportModel = require("../models/report_model");
 
 // ---- Helpers chung cho tên sheet / file / dòng ngày ----
 const buildExportRangeText = (from, to) => {

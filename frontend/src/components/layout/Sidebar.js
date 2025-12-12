@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { 
     LuLayoutDashboard, LuPackage, LuUsers, LuBadgeDollarSign, 
     LuLogOut, LuBook, LuMessageSquare, LuSettings, LuTrendingUp,
@@ -12,6 +13,7 @@ import { useAuth } from '../../context/AuthContext';
 const Sidebar = ({ isOpen }) => {
     const navigate = useNavigate();
     const { user, logout } = useAuth();
+    const { t } = useTranslation();
 
     const handleLogout = () => {
         logout();
@@ -19,43 +21,37 @@ const Sidebar = ({ isOpen }) => {
     };
 
     // --- MENU CHÍNH THEO VAI TRÒ ---
-    // 1. Menu cho Admin
     const adminMenuItems = [
-        { name: 'Dashboard', icon: <LuLayoutDashboard size={20} />, path: '/admin/dashboard' },
-        { name: 'Tài khoản', icon: <LuUsers size={20} />, path: '/admin/accounts' },
-        { name: 'Hoa hồng', icon: <LuTrendingUp size={20} />, path: '/admin/commission' },
-        { name: 'Đơn hàng', icon: <LuPackage size={20} />, path: '/admin/orders' },
+        { name: t('sidebar.dashboard'), icon: <LuLayoutDashboard size={20} />, path: '/admin/dashboard' },
+        { name: t('sidebar.accounts'), icon: <LuUsers size={20} />, path: '/admin/accounts' },
+        { name: t('sidebar.commission'), icon: <LuTrendingUp size={20} />, path: '/admin/commission' },
+        { name: t('sidebar.orders'), icon: <LuPackage size={20} />, path: '/admin/orders' },
     ];
-
-    // 2. Menu cho NPP
     const nppMenuItems = [
-        { name: 'Dashboard', icon: <LuLayoutDashboard size={20} />, path: '/npp/dashboard' }, 
-        { name: 'Đơn hàng', icon: <LuPackage size={20} />, path: '/npp/orders' },
-        { name: 'Hoa hồng', icon: <LuTrendingUp size={20} />, path: '/npp/commissions' }, 
-        { name: 'Đại lý', icon: <LuUsers size={20} />, path: '/npp/agents' },
-        { name: 'Số dư', icon: <LuBadgeDollarSign size={20} />, path: '/npp/balance' },
+        { name: t('sidebar.dashboard'), icon: <LuLayoutDashboard size={20} />, path: '/npp/dashboard' },
+        { name: t('sidebar.orders'), icon: <LuPackage size={20} />, path: '/npp/orders' },
+        { name: t('sidebar.commission'), icon: <LuTrendingUp size={20} />, path: '/npp/commissions' },
+        { name: t('sidebar.agents'), icon: <LuUsers size={20} />, path: '/npp/agents' },
+        { name: t('sidebar.balance'), icon: <LuBadgeDollarSign size={20} />, path: '/npp/balance' },
     ];
-    // 3. Menu cho đại lý
     const dlMenuItems = [
-        { name: 'Dashboard', icon: <LuLayoutDashboard size={20} />, path: '/dl/dashboard' }, 
-        { name: 'Đơn hàng', icon: <LuPackage size={20} />, path: '/dl/orders' },
-        { name: 'Hoa hồng', icon: <LuTrendingUp size={20} />, path: '/dl/commissions' }, 
-        { name: 'CTV', icon: <LuUsers size={20} />, path: '/dl/CTV' },
-        { name: 'Sản phẩm', icon: <HiServerStack size={20} />, path: '/dl/products' },
-        { name: 'Số dư', icon: <LuBadgeDollarSign size={20} />, path: '/dl/balance' },
+        { name: t('sidebar.dashboard'), icon: <LuLayoutDashboard size={20} />, path: '/dl/dashboard' },
+        { name: t('sidebar.orders'), icon: <LuPackage size={20} />, path: '/dl/orders' },
+        { name: t('sidebar.commission'), icon: <LuTrendingUp size={20} />, path: '/dl/commissions' },
+        { name: t('sidebar.ctv'), icon: <LuUsers size={20} />, path: '/dl/CTV' },
+        { name: t('sidebar.products'), icon: <HiServerStack size={20} />, path: '/dl/products' },
+        { name: t('sidebar.balance'), icon: <LuBadgeDollarSign size={20} />, path: '/dl/balance' },
     ];
-    // 3. Menu cho CTV
     const ctvMenuItems = [
-        { name: 'Tổng quan', icon: <LuLayoutDashboard size={20} />, path: '/ctv/dashboard' },
-        { name: 'Sản Phẩm', icon: <LuPackage size={20} />, path: '/ctv/products' },
-        { name: 'Hoa hồng', icon: <LuDollarSign size={20} />, path: '/ctv/commission' },
-        { name: 'Doanh số', icon: <LuTrendingUp size={20} />, path: '/ctv/sales' },
+        { name: t('sidebar.overview'), icon: <LuLayoutDashboard size={20} />, path: '/ctv/dashboard' },
+        { name: t('sidebar.products'), icon: <LuPackage size={20} />, path: '/ctv/products' },
+        { name: t('sidebar.commission'), icon: <LuDollarSign size={20} />, path: '/ctv/commission' },
+        { name: t('sidebar.sales'), icon: <LuTrendingUp size={20} />, path: '/ctv/sales' },
     ];
-
     const otherItems = [
-        { name: 'Hướng dẫn', icon: <LuBook size={20} />, path: '/guide' },
-        { name: 'Nhắn tin', icon: <LuMessageSquare size={20} />, path: '/messages' },
-        { name: 'Cài đặt', icon: <LuSettings size={20} />, path: '/settings' },
+        { name: t('sidebar.guide'), icon: <LuBook size={20} />, path: '/guide' },
+        { name: t('sidebar.messages'), icon: <LuMessageSquare size={20} />, path: '/messages' },
+        { name: t('sidebar.settings'), icon: <LuSettings size={20} />, path: '/settings' },
     ];
 
     // --- SỬA LẠI LOGIC CHỌN MENU ---
@@ -66,32 +62,39 @@ const Sidebar = ({ isOpen }) => {
         menuItems = nppMenuItems;
     } else if (user?.role === 'Cộng tác viên') {
         menuItems = ctvMenuItems;
-    } else if (user?.role === 'Đại lý') { // Thay 'CTV' bằng vai trò CTV của bạn
+    } else if (user?.role === 'Đại lý') {
         menuItems = dlMenuItems;
     }
 
     const baseLinkClass = "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors";
-    const inactiveLinkClass = "text-text-muted hover:bg-gray-200 hover:text-gray-900";
+    
+    // Thêm các class dark: vào đây
+    const inactiveLinkClass = "text-text-muted hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white";
+    
+    // Nút active không cần đổi nhiều vì nó đã có màu
     const activeLinkClass = "bg-primary text-text-primary font-semibold shadow-md";
 
     return (
         <aside className={`w-64 bg-light-gray border-r border-border-color flex flex-col p-4 fixed top-0 left-0 h-full z-20 
                            transform transition-transform duration-300 ease-in-out 
+                           dark:bg-gray-800 dark:border-gray-700
                            ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            
             <div className="flex items-center gap-3 p-4 mb-6">
                 <img src={logo} alt="Logo" className="h-10 w-10" />
-                <span className="text-xl font-bold text-gray-800">Hệ thống quản lý</span>
+                {/* Thêm class dark: cho tiêu đề */}
+                <span className="text-xl font-bold text-gray-800 dark:text-white">{t('sidebar.systemManagement')}</span>
             </div>
 
             <nav className="flex-1 flex flex-col gap-2">
                 <div>
-                    <h3 className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Menu</h3>
+                    {/* Thêm class dark: cho tiêu đề Menu */}
+                    <h3 className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider dark:text-gray-500">Menu</h3>
                     {menuItems.map((item) => (
                         <NavLink
                             key={item.name}
                             to={item.path}
                             className={({ isActive }) => `${baseLinkClass} ${isActive ? activeLinkClass : inactiveLinkClass}`}
-                            // Dùng `end` cho các path không phải là trang con
                             end={!item.path.includes('/', 1)}
                         >
                             {item.icon}
@@ -101,7 +104,8 @@ const Sidebar = ({ isOpen }) => {
                 </div>
                 
                 <div className="mt-4">
-                     <h3 className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Khác</h3>
+                     {/* Thêm class dark: cho tiêu đề Khác */}
+                     <h3 className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider dark:text-gray-500">{t('sidebar.others')}</h3>
                     {otherItems.map((item) => (
                          <NavLink
                             key={item.name}
@@ -116,12 +120,13 @@ const Sidebar = ({ isOpen }) => {
             </nav>
 
             <div className="mt-auto">
+                {/* (Nút logout không cần đổi vì đã có màu nổi) */}
                 <button
                     onClick={handleLogout}
                     className="w-full bg-custom-blue text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
                 >
                     <LuLogOut size={20} />
-                    <span>Đăng xuất</span>
+                    <span>{t('sidebar.logout')}</span>
                 </button>
             </div>
         </aside>

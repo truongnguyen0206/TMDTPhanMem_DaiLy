@@ -15,6 +15,7 @@ const commissionRuleRoutes = require('./api/routes/commissionRule_route.js');
 const dashboardRoutes = require('./api/routes/dashboard_route.js'); // Thêm route dashboard
 const withdrawalRoutes = require('./api/routes/withdrawal_route.js'); // <--- IMPORT MỚI
 const DistributorRoutes = require("./api/routes/distributor_route");
+const medusaBSP = require("../medusa_BSP/medusaBSP_routes/BSP_product_route.js");
 
 const app = express();
 
@@ -36,6 +37,7 @@ app.use('/api/commissions', commissionRoutes);
 app.use('/api/commission-rules', commissionRuleRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 
+app.use("/api/BSP/product", medusaBSP);
 
 
 // Test endpoint
@@ -48,28 +50,28 @@ app.get("/", (req, res) => {
   res.send("Server chạy ngon lành 🚀");
 });
 
-app.get("/api/test/products", async (req, res) => {
-  try {
-    const response = await fetch("http://100.65.202.126:9000/store/products", {
-      headers: {
-        // "Authorization": `Bearer ${process.env.MEDUSA_API_KEY}`,
-        "Content-Type": "application/json",
-        "x-publishable-api-key": process.env.MEDUSA_API_KEY
-      }
-    });
+// app.get("/api/test/products", async (req, res) => {
+//   try {
+//     const response = await fetch("http://100.65.202.126:9000/store/products", {
+//       headers: {
+//         // "Authorization": `Bearer ${process.env.MEDUSA_API_KEY}`,
+//         "Content-Type": "application/json",
+//         "x-publishable-api-key": process.env.MEDUSA_API_KEY
+//       }
+//     });
 
-    if (!response.ok) {
-      throw new Error(`Medusa API trả lỗi: ${response.status}`);
-    }
+//     if (!response.ok) {
+//       throw new Error(`Medusa API trả lỗi: ${response.status}`);
+//     }
 
-    const data = await response.json();
-    res.json(data);
+//     const data = await response.json();
+//     res.json(data);
 
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
-  }
-});
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ error: err.message });
+//   }
+// });
 
 
 // Khởi động server 

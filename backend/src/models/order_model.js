@@ -79,7 +79,7 @@ const create = async (order) => {
       order_date: order.order_date || new Date(),
       total_amount: order.total_amount || 0,
       created_by: order.created_by || null,
-      customer_id: order.customer_id || null,
+      customer_id: order.customer_id || null, 
       order_source: order.order_source || "system",
       order_status: order.order_status ?? 1,
       payment_status: order.payment_status ?? 1
@@ -148,6 +148,51 @@ const createOrderWithItems = async ({ order, items }) => {
   }
 
   return data;
+};
+
+const getOrderItems = async (order_id) => {
+    const { data, error } = await supabase
+        .from("orders_product") // Dùng tên bảng chi tiết đơn hàng của bạn
+        .select(`
+            product_id,
+            product_name,
+            quantity,
+            unit_price
+        `)
+        .eq("order_id", order_id);
+
+    if (error) throw error;
+    return data || [];
+};
+
+/**
+ * 🛒 Lấy đơn hàng kèm chi tiết mặt hàng (HEADER + ITEMS)
+ */
+const getOrderByIdWithItems = async (order_id) => {
+    const { data, error } = await supabase
+        .from("orders_view") 
+        .select(`
+            *,
+            order_product:orders_product (  /* Tên mối quan hệ trong Supabase */
+                product_id,
+                product_name,
+                quantity,
+                unit_price
+            )
+        `)
+        .eq("order_id", order_id)
+        .maybeSingle(); 
+
+    if (error) {
+        console.error("❌ Error fetching order:", error);
+        throw error;
+    }
+
+    // Tinh chỉnh kết quả trả về
+    return {
+        ...data,
+        items: data?.order_product || [],
+    };
 };
 
 // // Lấy order kèm items
@@ -242,6 +287,8 @@ const getOrderOriginLogs = async (order_id) => {
   return data || [];
 };
 
+
+
 module.exports = {
   getAll,
   getById,
@@ -252,8 +299,10 @@ module.exports = {
   update,
   remove,
   createOrderWithItems,
-  // getOrderById,
+  getById,
   listOrders,
   getOrderDetail,
-  getOrderOriginLogs
+  getOrderOriginLogs,
+  getOrderItems,
+  getOrderByIdWithItems,
 };

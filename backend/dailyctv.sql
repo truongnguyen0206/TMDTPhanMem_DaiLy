@@ -104,6 +104,127 @@ CREATE TABLE transactions.commission_rules (
     description TEXT
 );
 
+-- =====================================================================
+-- Bổ sung Cột cho Bảng COMMISSION_RULES
+-- =====================================================================
+
+ALTER TABLE transactions.commission_rules
+    -- 1. scope_type (Phạm vi áp dụng: PRODUCT, CATEGORY, GLOBAL)
+    ADD COLUMN IF NOT EXISTS scope_type VARCHAR(20) NOT NULL DEFAULT 'CATEGORY'
+        CHECK (scope_type IN ('PRODUCT', 'CATEGORY', 'GLOBAL')),
+
+    -- 2. max_commission_cap (Hoa hồng tối đa cho quy tắc này - Quy tắc B1 nâng cao)
+    -- Giúp kiểm soát không cho phép thiết lập vượt quá mức trần cục bộ
+    ADD COLUMN IF NOT EXISTS max_commission_cap NUMERIC(5,2), 
+
+    -- 3. status (Trạng thái quy tắc: Active, Inactive, Draft)
+    ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'Active'
+        CHECK (status IN ('Active', 'Inactive', 'Draft')),
+
+    -- 4. created_by (Người tạo/chỉnh sửa)
+    ADD COLUMN IF NOT EXISTS created_by INT REFERENCES web_auth.users(user_id) 
+        -- ON DELETE SET NULL nếu muốn giữ lại lịch sử quy tắc khi Admin bị xóa.
+
+        -- =====================================================================
+-- BƯỚC 1: DỌN DẸP (Xóa View và các ràng buộc cũ gây lỗi)
+-- =====================================================================
+DROP VIEW IF EXISTS public.commissionrule;
+
+-- Xóa các constraint cũ nếu có để tránh xung đột
+ALTER TABLE transactions.commission_rules DROP CONSTRAINT IF EXISTS chk_max_commission_cap;
+ALTER TABLE transactions.commission_rules DROP CONSTRAINT IF EXISTS chk_commission_rate_range;
+ALTER TABLE transactions.commission_rules DROP CONSTRAINT IF EXISTS commission_rules_created_by_fkey;
+ALTER TABLE transactions.commission_rules DROP CONSTRAINT IF EXISTS commission_rules_scope_type_check;
+ALTER TABLE transactions.commission_rules DROP CONSTRAINT IF EXISTS commission_rules_status_check;
+
+-- =====================================================================
+-- BƯỚC 2: SỬA CỘT created_by (FIX LỖI AUTH USER ID)
+-- =====================================================================
+-- Xóa cột cũ (đang là INT bị sai)
+ALTER TABLE transactions.commission_rules DROP COLUMN IF EXISTS created_by;
+
+-- Tạo lại cột mới là UUID (để khớp với auth.users.id của Supabase)
+ALTER TABLE transactions.commission_rules ADD COLUMN created_by UUID;
+
+-- Tạo khóa ngoại trỏ vào auth.users(id)
+ALTER TABLE transactions.commission_rules 
+    ADD CONSTRAINT commission_rules_created_by_fkey 
+    FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL;
+
+-- =====================================================================
+-- BƯỚC 3: NỚI RỘNG CỘT SỐ (FIX LỖI TRÀN SỐ - OVERFLOW)
+-- =====================================================================
+-- Ép kiểu các cột tiền tệ lên kích thước lớn (20 số, 2 số lẻ)
+ALTER TABLE transactions.commission_rules 
+    ALTER COLUMN min_sales TYPE NUMERIC(20, 2),
+    ALTER COLUMN max_sales TYPE NUMERIC(20, 2),
+    ALTER COLUMN max_commission_cap TYPE NUMERIC(20, 2),
+    ALTER COLUMN commission_rate TYPE NUMERIC(10, 2);
+
+-- =====================================================================
+-- BƯỚC 4: BỔ SUNG CÁC CỘT CÒN THIẾU & RÀNG BUỘC
+-- =====================================================================
+-- Cột scope_type
+ALTER TABLE transactions.commission_rules 
+    ADD COLUMN IF NOT EXISTS scope_type VARCHAR(20) NOT NULL DEFAULT 'CATEGORY';
+
+ALTER TABLE transactions.commission_rules 
+    ADD CONSTRAINT commission_rules_scope_type_check 
+    CHECK (scope_type IN ('PRODUCT', 'CATEGORY', 'GLOBAL'));
+
+-- Cột status
+ALTER TABLE transactions.commission_rules 
+    ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'Active';
+
+ALTER TABLE transactions.commission_rules 
+    ADD CONSTRAINT commission_rules_status_check 
+    CHECK (status IN ('Active', 'Inactive', 'Draft'));
+
+-- Ràng buộc logic tiền tệ
+-- 1. Mức trần tối đa 10 triệu (như bạn yêu cầu)
+ALTER TABLE transactions.commission_rules 
+    ADD CONSTRAINT chk_max_commission_cap 
+    CHECK (max_commission_cap <= 10000000); 
+
+-- 2. Tỷ lệ % từ 0 đến 100
+ALTER TABLE transactions.commission_rules 
+    ADD CONSTRAINT chk_commission_rate_range 
+    CHECK (commission_rate >= 0 AND commission_rate <= 100);
+
+-- =====================================================================
+-- BƯỚC 5: HOÀN TẤT (Tạo lại View & Comment)
+-- =====================================================================
+COMMENT ON COLUMN transactions.commission_rules.scope_type IS 'Phạm vi: PRODUCT, CATEGORY, GLOBAL';
+COMMENT ON COLUMN transactions.commission_rules.max_commission_cap IS 'Mức trần hoa hồng (VNĐ) - Tối đa 10 triệu';
+COMMENT ON COLUMN transactions.commission_rules.created_by IS 'Người tạo (UUID - Link tới auth.users)';
+
+-- Tạo lại View để API Backend sử dụng được cột mới
+CREATE OR REPLACE VIEW public.commissionrule AS
+SELECT * FROM transactions.commission_rules;
+
+-- Cấp quyền truy cập
+GRANT ALL ON public.commissionrule TO postgres, anon, authenticated, service_role;
+;
+
+-- Cập nhật COMMENT để làm rõ hơn
+COMMENT ON COLUMN transactions.commission_rules.scope_type 
+    IS 'Phạm vi: PRODUCT (sản phẩm cụ thể), CATEGORY (nhóm sản phẩm), GLOBAL (tất cả).';
+
+COMMENT ON COLUMN transactions.commission_rules.max_commission_cap 
+    IS 'Giới hạn tối đa cho tỷ lệ hoa hồng này (Business Rule B1).';
+    
+COMMENT ON COLUMN transactions.commission_rules.status 
+    IS 'Trạng thái hoạt động của quy tắc.';
+    
+COMMENT ON COLUMN transactions.commission_rules.created_by 
+    IS 'ID Admin/User đã thiết lập quy tắc này.';
+
+    -- Cấp quyền sử dụng Sequence cho các role của Supabase
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA transactions TO postgres, anon, authenticated, service_role;
+
+-- Đảm bảo quyền ghi vào bảng cũng được cấp đầy đủ (đề phòng)
+GRANT ALL ON TABLE transactions.commission_rules TO postgres, anon, authenticated, service_role;
+
 CREATE TABLE transactions.withdraw_requests (
     request_id SERIAL PRIMARY KEY,
     user_id INT REFERENCES auth.users(user_id),
@@ -112,6 +233,13 @@ CREATE TABLE transactions.withdraw_requests (
     status VARCHAR(20) DEFAULT 'Pending' -- Pending / Approved / Rejected / Paid
 );
 
+    -- Thêm cột created_by vào bảng commission_rules
+ALTER TABLE transactions.commission_rules
+    ADD COLUMN IF NOT EXISTS created_by INT REFERENCES auth.users(user_id);
+    
+-- Cập nhật COMMENT
+COMMENT ON COLUMN transactions.commission_rules.created_by 
+    IS 'ID Admin/User đã thiết lập quy tắc này.';
 
 -- ================
 -- ORDERS SCHEMA
@@ -1051,3 +1179,113 @@ WHERE conrelid = 'orders.orders'::regclass;
 
 
 
+-- BƯỚC 1: Xóa view cũ đi (để tránh lỗi xung đột cột)
+DROP VIEW IF EXISTS public.user_balance;
+
+-- BƯỚC 2: Tạo lại view mới với đầy đủ logic (đã fix lỗi bảo mật Pending)
+CREATE OR REPLACE VIEW public.user_balance AS
+SELECT 
+    u.user_id,
+    u.username,
+    u.email, -- Cột mới thêm vào đây
+    
+    -- Tổng kiếm được
+    COALESCE(SUM(h.tienhoahong), 0) AS tong_hoahong,
+    
+    -- Tổng tiền đã rút (Approved) + Đang chờ rút (Pending)
+    -- Trừ cả Pending để tránh lỗi rút tiền kép (Double Spending)
+    COALESCE(w.tong_tru_tien, 0) AS tong_da_tru,
+    
+    -- Số dư khả dụng thực tế
+    (COALESCE(SUM(h.tienhoahong), 0) - COALESCE(w.tong_tru_tien, 0)) AS sodu_khadung
+
+FROM 
+    web_auth.users u
+LEFT JOIN 
+    transactions.hoahong h ON u.user_id = h.user_id
+LEFT JOIN (
+    SELECT 
+        user_id, 
+        -- Cộng tổng tiền của cả trạng thái 'Approved' VÀ 'Pending'
+        SUM(amount) as tong_tru_tien 
+    FROM transactions.withdraw_requests
+    WHERE status IN ('Approved', 'Pending') 
+    GROUP BY user_id
+) w ON u.user_id = w.user_id
+GROUP BY 
+    u.user_id, u.username, u.email, w.tong_tru_tien;
+
+    INSERT INTO transactions.withdraw_requests (user_id, amount, status)
+VALUES (36, 5000000, 'Pending');
+
+INSERT INTO transactions.withdraw_requests (user_id, amount, status, bank_name, bank_account_number, bank_account_holder, bank_id)
+VALUES (43, 5000000, 'Pending', 'Ngân hàng TMCP Ngoại Thương Việt Nam', 1234567890, 'Chuyen', 1 );
+
+
+    ALTER TABLE transactions.withdraw_requests
+ADD COLUMN bank_name VARCHAR(100),           -- Tên ngân hàng (VD: Vietcombank)
+ADD COLUMN bank_account_number VARCHAR(50),  -- Số tài khoản
+ADD COLUMN bank_account_holder VARCHAR(100); -- Tên chủ tài khoản (VD: NGUYEN VAN A)
+
+-- 1. Kiểm tra xem đã có danh sách ngân hàng chưa
+SELECT * FROM transactions.banks;
+-- (Nhớ ID của 1 ngân hàng, ví dụ: Vietcombank có bank_id = 1)
+
+-- 2. Kiểm tra ví tiền của User (Ví dụ user_id = 36)
+-- Nếu chưa có tiền, hãy "hack" nhẹ 1 dòng hoa hồng để có tiền mà test:
+INSERT INTO transactions.hoahong (user_id, thang, nam, doanhso, tile)
+VALUES (37, 12, 2024, 100000000, 10); 
+-- (Cộng 10 triệu vào ví để test rút tiền)
+
+-- 1. Đảm bảo User 37 tồn tại (Nếu chưa có thì tạo, nếu có rồi thì thôi)
+INSERT INTO web_auth.users (user_id, username, email, password, role_id)
+VALUES (67, 'test_user_67', 'test37@example.com', 'hash_password_dummy', 1)
+ON CONFLICT (user_id) DO NOTHING;
+
+-- 2. Đảm bảo có danh sách Ngân hàng (Master Data)
+-- Lưu ý: ID 1 = Vietcombank
+INSERT INTO transactions.banks (bank_id, bank_code, short_name, bank_name)
+VALUES (1, 'VCB', 'Vietcombank', 'Ngân hàng TMCP Ngoại Thương Việt Nam')
+ON CONFLICT (bank_id) DO NOTHING;
+
+-- 3. "Nạp tiền" vào ví cho User 37 (Thông qua bảng hoa hồng)
+-- Doanh số 200tr, Tỉ lệ 10% => Hoa hồng 20 triệu
+-- Lưu ý: KHÔNG insert cột tienhoahong vì nó là cột tự động tính (Generated Column)
+INSERT INTO transactions.hoahong (user_id, thang, nam, doanhso, tile)
+VALUES (68, 12, 2024, 200000000, 10);
+
+SELECT * FROM transactions.withdraw_requests 
+WHERE user_id = 68 
+AND status IN ('Pending', 'Approved');
+
+DELETE FROM transactions.withdraw_requests WHERE user_id = 37;
+SELECT * FROM public.user_balance WHERE user_id = 37;
+
+DELETE FROM transactions.hoahong WHERE user_id = 37;
+INSERT INTO transactions.hoahong (user_id, thang, nam, doanhso, tile)
+VALUES (37, 12, 2024, 200000000, 10);
+
+
+SELECT * FROM public.user_balance WHERE user_id = 68;
+
+SELECT bank_id, short_name, bank_name FROM transactions.banks;
+
+CREATE TABLE transactions.banks (
+    bank_id SERIAL PRIMARY KEY,           -- Khóa chính tự động tăng (1, 2, 3...)
+    bank_code VARCHAR(20) NOT NULL UNIQUE,-- Mã ngân hàng (Vẫn phải là DUY NHẤT)
+    bank_name VARCHAR(150) NOT NULL,      -- Tên đầy đủ
+    short_name VARCHAR(50)                -- Tên viết tắt
+);
+
+-- 4. Thêm dữ liệu (Không cần nhập bank_id, hệ thống tự điền)
+INSERT INTO transactions.banks (bank_code, short_name, bank_name) VALUES
+('VCB', 'Vietcombank', 'Ngân hàng TMCP Ngoại Thương Việt Nam'),
+('TCB', 'Techcombank', 'Ngân hàng TMCP Kỹ Thương Việt Nam'),
+('MB', 'MBBank', 'Ngân hàng TMCP Quân Đội'),
+('ACB', 'ACB', 'Ngân hàng TMCP Á Châu'),
+('VPB', 'VPBank', 'Ngân hàng TMCP Việt Nam Thịnh Vượng'),
+('ICB', 'VietinBank', 'Ngân hàng TMCP Công Thương Việt Nam'),
+('BIDV', 'BIDV', 'Ngân hàng TMCP Đầu tư và Phát triển Việt Nam');
+
+ALTER TABLE transactions.withdraw_requests 
+ADD COLUMN bank_id INT REFERENCES transactions.banks(bank_id);

@@ -125,7 +125,7 @@ const create = async (req, res) => {
       order_source,
       order_status,
       payment_status,
-      product
+      product,
     } = req.body;
 
     // Validate cơ bản
@@ -140,11 +140,11 @@ const create = async (req, res) => {
     }
 
     let newOrder;
-    if (Array.isArray(product) && items.length > 0) {
+    if (Array.isArray(product) && product.length > 0) {
       // 🧾 Tạo order kèm items
       newOrder = await Order.createOrderWithItems({
         order: { order_date, total_amount, created_by, customer_id, order_source, order_status, payment_status },
-        items,
+        items: product,
       });
     } else {
       // 🧾 Tạo order đơn lẻ
@@ -157,7 +157,7 @@ const create = async (req, res) => {
         order_status, 
         payment_status
       });
-      newOrder = await Order.getOrderById(insertId);
+      newOrder = await Order.getById(insertId);
     }
 
     res.status(201).json(newOrder);

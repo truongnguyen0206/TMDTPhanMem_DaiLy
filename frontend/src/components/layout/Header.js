@@ -8,6 +8,21 @@ import { useTranslation } from 'react-i18next'; // <-- 1. Import
 const Header = ({ toggleSidebar, pageTitle }) => {
     const { user } = useAuth();
     const { t } = useTranslation(); // <-- 2. Lấy hàm t
+    const getProfileLink = () => {
+        if (!user) return '#';
+        switch (user.role) {
+            case 'Admin':
+                return '/admin/profile';
+            case 'Nhà phân phối':
+                return '/npp/profile'; // Bạn sẽ cần tạo trang /npp/profile
+            case 'Đại lý':
+                return '/dl/profile'; // Bạn sẽ cần tạo trang /dl/profile
+            case 'Cộng tác viên':
+                return '/ctv/profile'; // Bạn sẽ cần tạo trang /ctv/profile
+            default:
+                return '#';
+        }
+    }
 
     return (
         <header className="bg-white p-4 flex items-center justify-between border-b border-border-color z-10 sticky top-0 dark:bg-gray-800 dark:border-gray-700">

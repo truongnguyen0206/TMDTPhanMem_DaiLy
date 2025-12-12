@@ -9,4 +9,7 @@ router.get("/orders/excel/:user_id", authenticateToken, reportController.exportO
 // Xuất PDF
 router.get("/orders/pdf/:user_id", authenticateToken, reportController.exportOrdersPDF);
 
+// Xuất CSV
+router.get("/orders/csv/:user_id", authenticateToken, reportController.exportOrdersCSV);
+
 module.exports = router;

@@ -24,7 +24,7 @@ router.put('/updateCTV/:id', authenticateToken, collaboratorController.updateCTV
 // DELETE (soft)
 router.delete('/removeCTV/:id', authenticateToken, collaboratorController.removeCTV);
 
-router.get("/:id/orders", authenticateToken, collaboratorController.getOrdersByCTV);
+router.get("/:ctv_id/orders", authenticateToken, collaboratorController.getOrdersByCTV);
 
 // router.get(
 //     '/',

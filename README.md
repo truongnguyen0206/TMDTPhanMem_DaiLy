@@ -1,7 +1,7 @@
 <!-- Banner -->
-<p align="center">
+<!-- <p align="center">
   <img src="https://raw.githubusercontent.com/midudev/awesome-readme-templates/main/assets/banner-modern.png" width="100%" />
-</p>
+</p> -->
 
 <h1 align="center">✨ HỆ THỐNG QUẢN LÝ ĐẠI LÝ – CỘNG TÁC VIÊN ✨</h1>
 
@@ -75,17 +75,17 @@ Bao phủ toàn bộ nghiệp vụ:
 
 # 🖼 Screenshots minh họa UI
 
-<p align="center">
+<!-- <p align="center">
   <img src="https://raw.githubusercontent.com/midudev/awesome-readme-templates/main/assets/dashboard-placeholder.png" width="80%" />
   <br/>
   <em>Dashboard tổng quan hệ thống</em>
-</p>
+</p> -->
 
-<p align="center">
+<!-- <p align="center">
   <img src="https://raw.githubusercontent.com/midudev/awesome-readme-templates/main/assets/analytics.png" width="80%" />
   <br/>
   <em>Báo cáo hiệu suất & doanh số</em>
-</p>
+</p> -->
 
 ---
 

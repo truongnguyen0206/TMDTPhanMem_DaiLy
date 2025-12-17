@@ -1,5 +1,3 @@
-// Cập nhật tệp: src/components/layout/Layout.js
-
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
@@ -14,7 +12,6 @@ const Layout = () => {
   };
 
   return (
-    // Thêm class dark:bg-gray-900 cho nền tối
     <div className="min-h-screen bg-light-gray dark:bg-gray-900">
       <Sidebar isOpen={isSidebarOpen} />
       <div className={`transition-all duration-300 ease-in-out ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>

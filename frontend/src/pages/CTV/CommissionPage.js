@@ -1,118 +1,206 @@
 import React, { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
+import axiosClient from '../../api/axiosClient'; // Import client API
+import { useAuth } from '../../context/AuthContext';
 
-// Dữ liệu mẫu
-const mockHistory = [
-    { id: 'AN-12345', amount: 5000000, content: 'Rút tiền tháng 10', date: '01/08/2025', status: 'pending', commission: 500000 },
-    { id: 'AN-12346', amount: 2500000, content: 'Rút tiền tháng 9', date: '02/08/2025', status: 'approved', commission: 250000 },
-    { id: 'AN-12347', amount: 3000000, content: 'Rút tiền tháng 8', date: '03/08/2025', status: 'approved', commission: 300000 },
-    { id: 'AN-12348', amount: 1500000, content: 'Rút tiền tháng 7', date: '04/08/2025', status: 'rejected', commission: 150000 },
-];
-
-// Các component con để tái sử dụng
+// Các component con (Giữ nguyên style cũ)
 const StatCard = ({ title, value }) => (
-    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
-        <p className="text-sm text-gray-500 dark:text-gray-400">{title}</p>
-        <p className="text-2xl font-bold text-gray-800 mt-1 dark:text-white">{value}</p>
+    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+        <p className="text-sm text-gray-500">{title}</p>
+        <p className="text-2xl font-bold text-gray-800 mt-1">{value}</p>
     </div>
 );
 
 const StatusBadge = ({ status }) => {
     const styles = {
-        approved: { text: 'Khả dụng', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
-        rejected: { text: 'Không khả dụng', color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' },
-        pending: { text: 'Chờ xử lý', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' },
+        Approved: { text: 'Đã duyệt', color: 'bg-green-100 text-green-800' },
+        Rejected: { text: 'Từ chối', color: 'bg-red-100 text-red-800' },
+        Pending: { text: 'Chờ xử lý', color: 'bg-yellow-100 text-yellow-800' },
     };
-    const style = styles[status] || {};
+    const style = styles[status] || { text: status, color: 'bg-gray-100' };
     return <span className={`px-3 py-1 text-xs font-bold rounded-full ${style.color}`}>{style.text}</span>;
 };
 
 const CommissionPage = () => {
     const { setPageTitle } = useOutletContext();
-    const [history, setHistory] = useState(mockHistory);
+    const { user } = useAuth();
+
+    // State dữ liệu
+    const [balanceInfo, setBalanceInfo] = useState({
+        sodu_khadung: 0,
+        tong_hoahong: 0,
+        tong_ruttien: 0
+    });
+    
+    // State form rút tiền
+    const [formData, setFormData] = useState({
+        amount: '',
+        method: 'Chuyển khoản ngân hàng', // Default
+        accountInfo: '',
+        note: ''
+    });
+
+    const [loading, setLoading] = useState(false);
+    const [submitLoading, setSubmitLoading] = useState(false);
+
+    // Format tiền tệ
+    const formatCurrency = (value) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value || 0);
 
     useEffect(() => {
-        setPageTitle('Yêu cầu rút hoa hồng');
+        setPageTitle('Quản lý Hoa hồng & Rút tiền');
+        fetchData();
     }, [setPageTitle]);
 
-    const formatCurrency = (value) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+    // 1. Lấy thông tin số dư (Tái sử dụng API Dashboard Personal)
+    const fetchData = async () => {
+        try {
+            setLoading(true);
+            const res = await axiosClient.get('/api/dashboard/personal');
+            if (res.data.success) {
+                setBalanceInfo(res.data.data.financial || {});
+            }
+        } catch (error) {
+            console.error("Lỗi tải dữ liệu:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // 2. Xử lý nhập liệu form
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    // 3. Gửi yêu cầu rút tiền
+    const handleSubmit = async () => {
+        // Validate cơ bản
+        if (!formData.amount || Number(formData.amount) < 1000000) {
+            return alert("Số tiền rút tối thiểu là 1.000.000 VNĐ");
+        }
+        if (Number(formData.amount) > balanceInfo.sodu_khadung) {
+            return alert("Số dư không đủ!");
+        }
+        if (!formData.accountInfo) {
+            return alert("Vui lòng nhập thông tin tài khoản nhận tiền.");
+        }
+
+        try {
+            setSubmitLoading(true);
+            
+            // Gọi API Backend
+            const res = await axiosClient.post('/api/withdrawal', {
+                amount: Number(formData.amount),
+                // Các trường note/method hiện tại BE chưa lưu, nhưng cứ gửi để mở rộng sau
+                note: `${formData.method} - ${formData.accountInfo} - ${formData.note}` 
+            });
+
+            if (res.status === 201 || res.data.success) {
+                alert("✅ Gửi yêu cầu thành công! Vui lòng chờ Admin duyệt.");
+                // Reset form và load lại số dư
+                setFormData({ amount: '', method: 'Chuyển khoản ngân hàng', accountInfo: '', note: '' });
+                fetchData(); 
+            }
+        } catch (error) {
+            console.error("Lỗi rút tiền:", error);
+            const msg = error.response?.data?.details || error.response?.data?.error || "Gửi yêu cầu thất bại.";
+            alert(`❌ Lỗi: ${msg}`);
+        } finally {
+            setSubmitLoading(false);
+        }
+    };
 
     return (
         <div className="space-y-6">
-            {/* Các thẻ thông số ở trên */}
+            {/* Hàng 1: Thẻ thông số (Dữ liệu thật) */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard title="Số dư khả dụng" value={formatCurrency(10000000)} />
-                <StatCard title="Số tiền đang chờ xử lý" value={formatCurrency(100000)} />
-                <StatCard title="Tổng tiền đã rút" value={formatCurrency(10000000)} />
-                <StatCard title="Hạn mức còn lại tối thiểu" value={formatCurrency(5000000)} />
+                <StatCard title="Số dư khả dụng" value={formatCurrency(balanceInfo.sodu_khadung)} />
+                {/* Các thẻ dưới đây tạm thời lấy từ balanceInfo hoặc mock nếu chưa có API riêng */}
+                <StatCard title="Tổng hoa hồng kiếm được" value={formatCurrency(balanceInfo.tong_hoahong)} />
+                <StatCard title="Tổng tiền đã rút" value={formatCurrency(balanceInfo.tong_ruttien)} />
+                <StatCard title="Hạn mức rút tối thiểu" value={formatCurrency(1000000)} />
             </div>
 
-            {/* Biểu mẫu yêu cầu rút tiền */}
-            <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
-                <h3 className="text-lg font-bold text-gray-800 dark:text-white">Biểu mẫu yêu cầu rút tiền</h3>
-                <p className="text-sm text-gray-500 mt-1 dark:text-gray-400 ">Yêu cầu rút tiền hoa hồng của bạn sẽ được kiểm duyệt. Yêu cầu thường được xử lý trong vòng 3-5 ngày làm việc.</p>
+            {/* Hàng 2: Form rút tiền */}
+            <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-200">
+                <h3 className="text-lg font-bold text-gray-800">Tạo yêu cầu rút tiền</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                    Số dư khả dụng: <span className="font-bold text-green-600">{formatCurrency(balanceInfo.sodu_khadung)}</span>. 
+                    Thời gian xử lý: 3-5 ngày làm việc.
+                </p>
 
                 <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                    {/* Cột 1 */}
+                    {/* Số tiền */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Số tiền rút (VND)</label>
-                        <input type="text" placeholder="Nhập số tiền" className="w-full bg-gray-100 border-transparent rounded-md p-3 focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white dark:border-gray-600" />
-                        <p className="text-xs text-gray-400 mt-1 dark:text-gray-500">Khả dụng: 10,000,000VND | Tối thiểu: 5,000,000VND</p>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Số tiền muốn rút (VNĐ)</label>
+                        <input 
+                            type="number" 
+                            name="amount"
+                            value={formData.amount}
+                            onChange={handleChange}
+                            placeholder="Nhập số tiền (VD: 1000000)" 
+                            className="w-full bg-gray-50 border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-blue-500 outline-none" 
+                        />
+                        <p className="text-xs text-gray-400 mt-1">Tối thiểu: 1.000.000 ₫</p>
                     </div>
-                    {/* Cột 2 */}
+
+                    {/* Phương thức */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Phương thức thanh toán</label>
-                        <select className="w-full bg-gray-100 border-transparent rounded-md p-3 focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white dark:border-gray-600">
-                            <option>Chọn phương thức thanh toán</option>
-                            <option>Chuyển khoản ngân hàng</option>
-                            <option>Paypal</option>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Phương thức nhận tiền</label>
+                        <select 
+                            name="method"
+                            value={formData.method}
+                            onChange={handleChange}
+                            className="w-full bg-gray-50 border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-blue-500 outline-none"
+                        >
+                            <option value="Chuyển khoản ngân hàng">Chuyển khoản ngân hàng</option>
                         </select>
                     </div>
-                    {/* Hàng ngang */}
+
+                    {/* Thông tin TK */}
                     <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Nhập thông tin tài khoản</label>
-                        <input type="text" placeholder="Số tài khoản, email Paypal" className="w-full bg-gray-100 border-transparent rounded-md p-3 focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white dark:border-gray-600" />
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Thông tin tài khoản nhận</label>
+                        <input 
+                            type="text" 
+                            name="accountInfo"
+                            value={formData.accountInfo}
+                            onChange={handleChange}
+                            placeholder="VD: Vietcombank - 0123456789 - NGUYEN VAN A" 
+                            className="w-full bg-gray-50 border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-blue-500 outline-none" 
+                        />
                     </div>
+
+                    {/* Ghi chú */}
                     <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Ghi chú bổ sung (tùy chọn)</label>
-                        <textarea rows="3" placeholder="Thêm bất kỳ thông tin bổ sung nào" className="w-full bg-gray-100 border-transparent rounded-md p-3 focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white dark:border-gray-600"></textarea>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Ghi chú thêm</label>
+                        <textarea 
+                            rows="3" 
+                            name="note"
+                            value={formData.note}
+                            onChange={handleChange}
+                            placeholder="Nội dung chuyển khoản mong muốn..." 
+                            className="w-full bg-gray-50 border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-blue-500 outline-none"
+                        ></textarea>
                     </div>
                 </div>
+
                 <div className="flex justify-end mt-6">
-                    <button className="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors">
-                        Gửi yêu cầu rút tiền
+                    <button 
+                        onClick={handleSubmit}
+                        disabled={submitLoading}
+                        className={`font-bold py-2 px-6 rounded-lg transition-colors text-white 
+                            ${submitLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+                    >
+                        {submitLoading ? 'Đang gửi...' : 'Gửi yêu cầu rút tiền'}
                     </button>
                 </div>
             </div>
 
-            {/* Bảng lịch sử rút tiền */}
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
-                <h3 className="text-lg font-bold text-gray-800 mb-4 dark:text-white">Lịch sử yêu cầu rút tiền</h3>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left text-gray-600 dark:text-gray-400">
-                        <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-                            <tr>
-                                <th className="px-6 py-3">Mã yêu cầu</th>
-                                <th className="px-6 py-3">Số tiền</th>
-                                <th className="px-6 py-3">Nội dung</th>
-                                <th className="px-6 py-3">Ngày tạo</th>
-                                <th className="px-6 py-3">Trạng thái</th>
-                                <th className="px-6 py-3">Hoa hồng</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {history.map(item => (
-                                <tr key={item.id} className="bg-white border-b hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700">
-                                    <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{item.id}</td>
-                                    <td className="px-6 py-4">{formatCurrency(item.amount)}</td>
-                                    <td className="px-6 py-4">{item.content}</td>
-                                    <td className="px-6 py-4">{item.date}</td>
-                                    <td className="px-6 py-4"><StatusBadge status={item.status} /></td>
-                                    <td className="px-6 py-4 font-semibold">{formatCurrency(item.commission)}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+            {/* Hàng 3: Lịch sử rút tiền (Tạm thời Mock vì BE chưa có API getHistory riêng cho user) */}
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                <h3 className="text-lg font-bold text-gray-800 mb-4">Lịch sử rút tiền gần đây</h3>
+                <div className="text-center py-8 text-gray-500 italic border-t border-gray-100">
+                    (Tính năng hiển thị lịch sử chi tiết đang được cập nhật...)
                 </div>
             </div>
         </div>

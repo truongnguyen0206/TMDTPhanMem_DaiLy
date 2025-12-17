@@ -110,7 +110,7 @@ const LoginPage = () => {
               </button>
             </div>
           </form>
-          <div className="mt-6 flex items-center justify-center">
+          {/* <div className="mt-6 flex items-center justify-center">
             <div className="border-t border-gray-300 flex-grow"></div>
             <span className="px-4 text-gray-500 text-sm">Or</span>
             <div className="border-t border-gray-300 flex-grow"></div>
@@ -121,7 +121,7 @@ const LoginPage = () => {
               <span className="text-sm font-medium text-gray-700">Sign up with Google</span>
             </button>
           </div>
-          {/* <p className="mt-8 text-center text-sm text-gray-600">
+          <p className="mt-8 text-center text-sm text-gray-600">
             Don't have an account? <Link to="/signup" className="text-blue-600 font-medium hover:underline">Sign up</Link>
           </p> */}
         </div>

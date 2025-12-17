@@ -24,6 +24,7 @@
     "pdfkit-table": "^0.1.99",
     "pdfmake": "^0.2.20",
     "pg": "^8.16.3",
+    "socket.io": "^4.8.1",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

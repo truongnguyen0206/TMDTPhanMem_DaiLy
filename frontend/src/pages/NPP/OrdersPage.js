@@ -5,20 +5,6 @@ import { useTranslation } from 'react-i18next';
 import axiosClient from '../../api/axiosClient';
 import { useAuth } from '../../context/AuthContext';
 
-// Dữ liệu mẫu (giữ nguyên)
-const mockOrders = [
-    { id: 58217, partnerId: '789012342', billId: 1, customer: 'Zody Phish', date: '07/05/2020', time: '2:50PM', status: 'standard' },
-    { id: 58213, partnerId: '789012343', billId: 2, customer: 'Krisop Pocus', date: '07/05/2020', time: '2:50PM', status: 'priority' },
-    { id: 58123, partnerId: '789012344', billId: 12, customer: 'Darian Howard', date: '07/05/2020', time: '2:50PM', status: 'priority' },
-    { id: 58120, partnerId: '789012345', billId: 22, customer: 'Jenny Wilson', date: '07/05/2020', time: '2:50PM', status: 'priority' },
-    { id: 58122, partnerId: '789012346', billId: 32, customer: 'John Bezin', date: '07/05/2020', time: '2:50PM', status: 'priority' },
-    { id: 58292, partnerId: '789012348', billId: 40, customer: 'Camyron Williamson', date: '07/05/2020', time: '2:50PM', status: 'priority' },
-    { id: 181337, partnerId: '789012349', billId: 41, customer: 'Camyron Williamson', date: '07/05/2020', time: '2:50PM', status: 'priority' },
-    { id: 58293, partnerId: '789012347', billId: 45, customer: 'Dody Phish', date: '07/05/2020', time: '2:50PM', status: 'priority' },
-    { id: 789787, partnerId: '789012347', billId: 49, customer: 'John Bezin', date: '07/05/2020', time: '2:50PM', status: 'standard' },
-    { id: 58294, partnerId: '789012327', billId: 68, customer: 'Camyron Williamson', date: '07/05/2020', time: '2:50PM', status: 'priority' },
-];
-
 const StatusBadge = ({ status }) => {
     const { t } = useTranslation();
     const getStatusStyle = (s) => {
@@ -75,27 +61,58 @@ const OrdersPage = () => {
         setPageTitle(t('npp.orders.title'));
 
         const fetchDistributorOrders = async () => {
-            if (!user || !user.id) return;
+            if (!user || !user.id) {
+                setLoading(false);
+                return;
+            }
             setLoading(true);
             
             try {
                 let nppId = null;
-                const response = await axiosClient.get('/npp'); 
-                const currentUserInfo = response.data.find(u => u.user_id === user.id);
 
-                if (currentUserInfo && currentUserInfo.npp_id) {
-                    nppId = currentUserInfo.npp_id;
-                    console.log("Tìm thấy NPP ID:", nppId);
+                // BƯỚC 1: Lấy tất cả NPP và tìm NPP ID của user hiện tại
+                // API: GET /npp -> trả về danh sách các NPP
+                const allNppResponse = await axiosClient.get('/npp'); 
+                
+                // Kiểm tra cấu trúc dữ liệu trả về của Backend
+                const nppList = allNppResponse.data && allNppResponse.data.data 
+                              ? allNppResponse.data.data 
+                              : allNppResponse.data; // Phòng trường hợp BE trả về trực tiếp mảng
+                
+                if (Array.isArray(nppList)) {
+                    // Tìm đối tượng NPP có user_id khớp với user đang đăng nhập
+                    const currentUserInfo = nppList.find(npp => npp.user_id === user.id);
+
+                    if (currentUserInfo && currentUserInfo.npp_id) {
+                        nppId = currentUserInfo.npp_id;
+                    }
                 }
+
                 if (nppId) {
+                     // BƯỚC 2: Lấy đơn hàng theo NPP ID
+                     // API: GET /npp/tong_orders/:npp_id -> trả về đơn hàng
                      const ordersRes = await axiosClient.get(`/npp/tong_orders/${nppId}`);
-                     setOrders(ordersRes.data.data || []);
+                     
+                     // Kiểm tra cấu trúc dữ liệu đơn hàng trả về
+                     const ordersData = ordersRes.data && ordersRes.data.data 
+                                      ? ordersRes.data.data 
+                                      : ordersRes.data; // Phòng trường hợp BE trả về trực tiếp mảng
+                     
+                     if (Array.isArray(ordersData)) {
+                        setOrders(ordersData);
+                     } else {
+                        console.error("Dữ liệu đơn hàng không phải là mảng:", ordersRes.data);
+                        setOrders([]); 
+                     }
                 } else {
-                    console.warn("Không tìm thấy npp_id trong danh sách User.");
+                    setOrders([]); 
+                    console.warn(`Không tìm thấy npp_id cho user_id: ${user.id}`);
                 }
 
             } catch (error) {
                 console.error("Lỗi quy trình lấy đơn hàng NPP:", error);
+                // Hiển thị lỗi hoặc đặt orders là mảng rỗng
+                setOrders([]);
             } finally {
                 setLoading(false);
             }

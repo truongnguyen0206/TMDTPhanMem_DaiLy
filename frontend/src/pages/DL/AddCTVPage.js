@@ -1,20 +1,44 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next'; 
+import axiosClient from '../../api/axiosClient';
+import { useAuth } from '../../context/AuthContext';
 
-const AddAgentPage = () => {
+const AddCTVPage = () => {
     const navigate = useNavigate();
     const { t } = useTranslation();
+    const { user } = useAuth();
+    const [agentId, setAgentId] = useState(null);
     const [formData, setFormData] = useState({
         name: '',
         address: '',
         phone: '',
-        paymentMethod: '',
+        paymentMethod: 'bank',
         email: '',
         accountInfo: '',
         notes: ''
     });
     const [message, setMessage] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        const fetchAgentId = async () => {
+            if (user && user.id) {
+                try {
+                    // Gọi API lấy danh sách agent để tìm agent_id của user hiện tại
+                    // (Lưu ý: Cách này hơi chậm nếu DB lớn, nhưng tuân thủ không sửa BE)
+                    const response = await axiosClient.get('/agent/getAllAgents');
+                    const currentAgent = response.data.find(a => a.user_id === user.id);
+                    if (currentAgent) {
+                        setAgentId(currentAgent.agent_id);
+                    }
+                } catch (error) {
+                    console.error("Lỗi lấy thông tin đại lý:", error);
+                }
+            }
+        };
+        fetchAgentId();
+    }, [user]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -27,9 +51,55 @@ const AddAgentPage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setMessage('');
+        setLoading(true);
 
-        console.log('Dữ liệu form:', formData);
-        alert(t('npp.addAgent.submitSuccess'));
+        if (!agentId) {
+            alert("Không tìm thấy thông tin Đại lý quản lý. Vui lòng thử lại.");
+            setLoading(false);
+            return;
+        }
+
+        try {
+            // --- BƯỚC 1: Tạo tài khoản User (để đăng nhập) ---
+            const userPayload = {
+                username: formData.name, // Dùng tên làm username tạm
+                email: formData.email,
+                password: '123456', // Mật khẩu mặc định (vì form không có ô nhập pass)
+                phone: formData.phone,
+                role_id: 4 // Role ID cho Cộng tác viên (dựa theo user_controller)
+            };
+
+            const userRes = await axiosClient.post('/users/createUser', userPayload);
+            
+            // Backend trả về: { message: "...", user: { user_id: ... } }
+            // Cần kiểm tra kỹ response user_controller trả về data nằm ở đâu
+            const newUserId = userRes.data.user?.user_id || userRes.data.user?.id;
+
+            if (!newUserId) {
+                throw new Error("Tạo User thành công nhưng không lấy được ID.");
+            }
+
+            // --- BƯỚC 2: Tạo hồ sơ CTV ---
+            const ctvPayload = {
+                user_id: newUserId,
+                ctv_name: formData.name,
+                diachi: formData.address,
+                agent_id: agentId, // ID của đại lý đang đăng nhập
+                ngaythamgia: new Date().toISOString()
+            };
+
+            await axiosClient.post('/CTV/createCTV', ctvPayload);
+
+            alert("Thêm cộng tác viên thành công!");
+            navigate('/dl/CTV');
+
+        } catch (error) {
+            console.error("Lỗi khi thêm CTV:", error);
+            const errorMsg = error.response?.data?.message || error.message || "Có lỗi xảy ra.";
+            setMessage(errorMsg);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -85,21 +155,23 @@ const AddAgentPage = () => {
                         </div>
                     </div>
 
-                    {message && <p className={`text-center mt-4 ${message.includes(t('dl.addCtv.submitSuccessReal')) ? 'text-green-600' : 'text-red-600'}`}>{message}</p>}
+                    {message && <p className={`text-center mt-4 ${message.includes('thành công') ? 'text-green-600' : 'text-red-600'}`}>{message}</p>}
 
                     <div className="flex justify-end gap-4 mt-8">
                         <button
                             type="button"
                             onClick={() => navigate('/dl/CTV')}
                             className="bg-red-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-red-600 transition-colors"
+                            disabled={loading}
                         >
                             {t('general.cancel')}
                         </button>
                         <button
                             type="submit"
-                            className="bg-green-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-600 transition-colors"
+                            className="bg-green-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-600 transition-colors flex items-center"
+                            disabled={loading}
                         >
-                            {t('dl.addCtv.submitButton')}
+                            {loading ? 'Đang xử lý...' : t('dl.addCtv.submitButton')}
                         </button>
                     </div>
                 </form>
@@ -107,4 +179,4 @@ const AddAgentPage = () => {
         </div>
     );
 };
-export default AddAgentPage
+export default AddCTVPage

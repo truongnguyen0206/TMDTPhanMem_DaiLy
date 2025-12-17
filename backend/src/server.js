@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const http = require("http");
 require("dotenv").config();
 
 // const db = require("./config/database_config");
@@ -19,32 +20,38 @@ const medusaBSP = require("../medusa_BSP/medusaBSP_routes/BSP_product_route.js")
 
 const app = express();
 
+// HTTP server (needed for Socket.IO)
+const server = http.createServer(app);
+
+// Socket.IO realtime
+const { initSocket } = require("./realtime/socket");
+initSocket(server);
+
 // Middleware
 app.use(cors());
 
-// ======================
-// ⭐ CORS CHO FE DEPLOY
-// ======================
-const allowedOrigins = [
-  "http://localhost:3000",     // FE local
-  "http://localhost:5001",     // BE local (test trực tiếp)
-  "https://tmdt-phan-mem-dai-ly.vercel.app", // <-- thay domain FE vào đây
-];
+// // ======================
+// // ⭐ CORS CHO FE DEPLOY
+// // ======================
+// const allowedOrigins = [
+//   "http://localhost:3000/",     // FE local
+//   "http://localhost:5001/",     // BE local (test trực tiếp)
+//   "https://tmdt-phan-mem-dai-ly.vercel.app/", // <-- thay domain FE vào đây
+// ];
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        console.log("❌ CORS blocked:", origin);
-        callback(new Error("Không được phép truy cập bởi CORS"));
-      }
-    },
-    credentials: true,
-  })
-);
-
+// app.use(
+//   cors({
+//     origin: function (origin, callback) {
+//       if (!origin || allowedOrigins.includes(origin)) {
+//         callback(null, true);
+//       } else {
+//         console.log("❌ CORS blocked:", origin);
+//         callback(new Error("Không được phép truy cập bởi CORS"));
+//       }
+//     },
+//     credentials: true,
+//   })
+// );
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }))
@@ -101,6 +108,6 @@ app.get("/", (req, res) => {
 
 // Khởi động server 
 const PORT = process.env.PORT || 5001;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`\n✅ Backend server đang chạy tại http://localhost:${PORT}\n`);
 });

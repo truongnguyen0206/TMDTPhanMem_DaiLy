@@ -8,6 +8,7 @@ const CommissionRuleController = require('../../controllers/commissionRule_contr
 
 // Các route API
 router.get('/', CommissionRuleController.getAllRules);
+router.get('/:id', CommissionRuleController.getRuleById);
 router.post('/', CommissionRuleController.createRule);
 router.put('/:id', CommissionRuleController.updateRule);
 router.delete('/:id', CommissionRuleController.deleteRule);

@@ -8,7 +8,8 @@ class CommissionRuleController {
   }
 
   static async getRuleById(req, res) {
-    const result = await CommissionRuleService.getRuleById(req.params.ruleId);
+    // Sửa 'ruleId' thành 'id' để khớp với route /:id
+    const result = await CommissionRuleService.getRuleById(req.params.id);
     return res.status(result.success ? 200 : 404).json(result);
   }
 

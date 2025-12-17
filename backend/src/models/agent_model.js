@@ -97,7 +97,7 @@ const updateAgent = async (agent_id, fields) => {
 };
 
 /**
- * ❌ Xóa đại lý theo user_id
+ *  Xóa đại lý theo user_id
  */
 const deleteAgent = async (user_id) => {
   const { data, error } = await supabase
@@ -112,7 +112,7 @@ const deleteAgent = async (user_id) => {
 };
 
 /**
- * 🧩 Cập nhật nhiều đại lý
+ *  Cập nhật nhiều đại lý
  */
 const updateManyAgents = async (agents = []) => {
   if (!Array.isArray(agents) || agents.length === 0)

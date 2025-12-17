@@ -1,6 +1,7 @@
 const supabase = require("../config/supabaseClient");
 const UserService = require("../services/user_service");
 const bcrypt = require("bcrypt");
+const { safeEmit } = require("../realtime/socket");
 
 // 🟢 Lấy toàn bộ users (join roles)
 const getAllUsers = async (req, res) => {
@@ -39,6 +40,19 @@ const getUserById = async (req, res) => {
 
 // 🟢 Tạo user mới
 const createUser = async (req, res) => {
+
+  // validate trước DB
+  if (req.body.hasOwnProperty('phone')) {
+    const phone = req.body.phone;
+
+    if (phone !== null && !/^[0-9]{10}$/.test(phone)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Số điện thoại phải gồm đúng 10 chữ số'
+      });
+    }
+  }
+
   try {
     const { username, email, password, phone, role_id } = req.body;
 
@@ -64,6 +78,8 @@ const createUser = async (req, res) => {
 
     if (error) throw error;
 
+    // 🔥 Realtime: admin dashboard (tài khoản chờ duyệt)
+    safeEmit('dashboard:invalidate', { entity: 'user', action: 'create', at: Date.now() });
     res.status(201).json({ message: "User created successfully", user: data });
   } catch (err) {
     console.error("Error creating user:", err);
@@ -96,6 +112,9 @@ const updateUser = async (req, res) => {
     if (!data) {
       return res.status(404).json({ message: "Không tìm thấy user" });
     }
+
+    // 🔥 Realtime: admin dashboard (tài khoản, phân quyền, trạng thái)
+    safeEmit('dashboard:invalidate', { entity: 'user', action: 'update', id, at: Date.now() });
 
     res.status(200).json({
       message: "Cập nhật user thành công",
@@ -147,6 +166,11 @@ const updateUserStatus = async (req, res) => {
     const { status } = req.body; // client gửi status vào body
 
     const result = await UserService.updateUserStatus(id, status);
+
+    if (result?.success) {
+      // 🔥 Realtime: admin dashboard (tài khoản chờ duyệt)
+      safeEmit('dashboard:invalidate', { entity: 'user', action: 'status_update', id, status, at: Date.now() });
+    }
 
     return res.status(result.success ? 200 : 400).json(result);
 

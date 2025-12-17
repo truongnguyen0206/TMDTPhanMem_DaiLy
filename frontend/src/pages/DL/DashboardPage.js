@@ -6,6 +6,7 @@ import { LuArrowUpRight, LuArrowDownRight, LuDownload } from 'react-icons/lu';
 import { useTranslation } from 'react-i18next'; // Import useTranslation
 import axiosClient from '../../api/axiosClient'; // 1. Import axiosClient
 import { useAuth } from '../../context/AuthContext';
+import { connectSocket } from '../../realtime/socketClient';
 
 // Dữ liệu giả lập (giữ nguyên)
 const lineChartData = [
@@ -58,39 +59,68 @@ const DashboardPage = () => {
         fetchAgentId();
     }, [user]);
 
+    // Hàm load dữ liệu dashboard (dùng cho both: load lần đầu + realtime refresh)
+    const fetchDashboardData = async () => {
+        if (!agentId) return;
+        try {
+            const ctvRes = await axiosClient.get(`/agent/getctv/${agentId}`);
+            setCtvCount(ctvRes.data.ctvList?.length || 0);
+
+            const [ownOrdersRes, ctvOrdersRes] = await Promise.all([
+                axiosClient.get(`/agent/${agentId}/orders`),
+                axiosClient.get(`/agent/${agentId}/ctv-orders`)
+            ]);
+
+            const mergedOrders = [...(ownOrdersRes.data.data || []), ...(ctvOrdersRes.data.data || [])];
+            setAllOrders(mergedOrders);
+
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+            const successKeywords = ['paid', 'completed', 'thành công', 'đã hoàn thành', 'đã thanh toán', 'success'];
+
+            const filteredOrders = mergedOrders.filter(order => {
+                const status = String(order.order_status || order.payment_status || '').toLowerCase();
+                const isCompleted = successKeywords.some(k => status.includes(k));
+                const dateStr = order.tao_vao_luc || order.order_date;
+                if (!dateStr) return false;
+                const orderDate = new Date(dateStr);
+                const isThisMonth = orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear;
+                return isCompleted && isThisMonth;
+            });
+
+            setOrderCount(filteredOrders.length);
+            const total = filteredOrders.reduce((sum, order) => sum + (Number(order.total_amount) || Number(order.tong_tien) || 0), 0);
+            setTotalRevenue(total);
+        } catch (error) {
+            console.error("Lỗi lấy dữ liệu Dashboard:", error);
+        }
+    };
+
     useEffect(() => {
-        const fetchDashboardData = async () => {
-            if (!agentId) return;
-            try {
-                const ctvRes = await axiosClient.get(`/agent/getctv/${agentId}`);
-                setCtvCount(ctvRes.data.ctvList?.length || 0);
-                const [ownOrdersRes, ctvOrdersRes] = await Promise.all([
-                    axiosClient.get(`/agent/${agentId}/orders`),
-                    axiosClient.get(`/agent/${agentId}/ctv-orders`)
-                ]);
-                const mergedOrders = [...(ownOrdersRes.data.data || []), ...(ctvOrdersRes.data.data || [])];
-                setAllOrders(mergedOrders);
-                const now = new Date();
-                const currentMonth = now.getMonth();
-                const currentYear = now.getFullYear();
-                const successKeywords = ['paid', 'completed', 'thành công', 'đã hoàn thành', 'đã thanh toán', 'success'];
-                const filteredOrders = mergedOrders.filter(order => {
-                    const status = String(order.order_status || order.payment_status || '').toLowerCase();
-                    const isCompleted = successKeywords.some(k => status.includes(k));
-                    const dateStr = order.tao_vao_luc || order.order_date;
-                    if (!dateStr) return false;
-                    const orderDate = new Date(dateStr);
-                    const isThisMonth = orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear;
-                    return isCompleted && isThisMonth;
-                });
-                setOrderCount(filteredOrders.length);
-                const total = filteredOrders.reduce((sum, order) => sum + (Number(order.total_amount) || Number(order.tong_tien) || 0), 0);
-                setTotalRevenue(total);
-            } catch (error) {
-                console.error("Lỗi lấy dữ liệu Dashboard:", error);
+        fetchDashboardData();
+    }, [agentId]);
+
+    // 🔥 Realtime: backend báo có thay đổi -> tự reload dashboard
+    useEffect(() => {
+        if (!agentId) return;
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const socket = connectSocket();
+
+        const onInvalidate = (payload) => {
+            // Chỉ cần có signal là refresh lại
+            if (!payload || payload.entity === 'order' || payload.entity === 'user') {
+                fetchDashboardData();
             }
         };
-        fetchDashboardData();
+
+        socket.on('dashboard:invalidate', onInvalidate);
+
+        return () => {
+            socket.off('dashboard:invalidate', onInvalidate);
+        };
     }, [agentId]);
 
     useEffect(() => {

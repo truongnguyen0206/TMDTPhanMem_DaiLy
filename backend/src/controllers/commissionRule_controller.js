@@ -1,4 +1,5 @@
 const CommissionRuleService = require('../services/commissionRule_service');
+const { safeEmit } = require('../realtime/socket');
 
 class CommissionRuleController {
   static async getAllRules(req, res) {
@@ -48,6 +49,7 @@ class CommissionRuleController {
       const result = await CommissionRuleService.createRule(ruleData);
       
       if (result.success) {
+        safeEmit('dashboard:invalidate', { entity: 'commission_rule', action: 'create', at: Date.now() });
         return res.status(201).json(result);
       } else {
         return res.status(400).json(result);
@@ -81,6 +83,7 @@ class CommissionRuleController {
       const result = await CommissionRuleService.updateRule(ruleId, ruleData);
       
       if (result.success) {
+        safeEmit('dashboard:invalidate', { entity: 'commission_rule', action: 'update', id: ruleId, at: Date.now() });
         return res.status(200).json(result);
       } else {
         return res.status(400).json(result);
@@ -110,6 +113,7 @@ class CommissionRuleController {
       
       // Trả về kết quả
       if (result.success) {
+        safeEmit('dashboard:invalidate', { entity: 'commission_rule', action: 'delete', id: ruleId, at: Date.now() });
         return res.status(200).json(result);
       } else {
         return res.status(400).json(result);

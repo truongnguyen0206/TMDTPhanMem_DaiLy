@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts';
-import {LuTrendingUp, LuTrendingDown, LuPackage, LuChartBar, LuCopy, LuUserPlus } from 'react-icons/lu';
+import { LuEllipsisVertical, LuTrendingUp, LuTrendingDown, LuPackage, LuChartBar, LuCopy, LuUserPlus } from 'react-icons/lu';
 import axiosClient from '../../api/axiosClient';
+import { connectSocket } from '../../realtime/socketClient';
 
 // --- COMPONENT CON ---
 
@@ -17,6 +18,7 @@ const TopAgentCard = ({ name, sales, orders }) => {
                 {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(safeSales)}
             </p>
             <p className="col-span-2 text-gray-500 text-center bg-gray-100 rounded-md py-1 text-xs font-semibold">{safeOrders} Đơn</p>
+            <div className="col-span-1 flex justify-end"><button className="text-gray-400 hover:text-gray-600"><LuEllipsisVertical size={20} /></button></div>
         </div>
     );
 };
@@ -71,6 +73,7 @@ const DashboardPage = () => {
         monthly_stats: []
     });
     const [loading, setLoading] = useState(true);
+    const refreshTimerRef = useRef(null);
 
     // 🆕 State chọn chế độ xem: 'year' (Năm nay) hoặc 'week' (Tuần này)
     const [groupBy, setGroupBy] = useState('year');
@@ -97,6 +100,29 @@ const DashboardPage = () => {
         setPageTitle('Dashboard');
         fetchData(groupBy);
     }, [setPageTitle, groupBy]);
+
+    // 🔥 Realtime: có thay đổi (đơn hàng / user / commission...) thì tự reload dashboard
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const socket = connectSocket();
+
+        const onInvalidate = () => {
+            // Debounce tránh spam gọi API nếu nhiều event liên tục
+            if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+            refreshTimerRef.current = setTimeout(() => {
+                fetchData(groupBy);
+            }, 250);
+        };
+
+        socket.on('dashboard:invalidate', onInvalidate);
+
+        return () => {
+            socket.off('dashboard:invalidate', onInvalidate);
+            if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+        };
+    }, [groupBy]);
 
     const formatNumber = (num) => new Intl.NumberFormat('vi-VN').format(num || 0);
     const formatMoney = (num) => new Intl.NumberFormat('vi-VN', { notation: "compact", compactDisplay: "short" }).format(num || 0) + 'đ';

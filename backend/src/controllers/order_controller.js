@@ -2,6 +2,7 @@ const Order = require("../models/order_model");
 const referralService = require("../services/order_service");
 const ExcelJS = require("exceljs");
 const PDFDocument = require("pdfkit");
+const { safeEmit } = require("../realtime/socket");
 
 // ========================
 // 🟩 LẤY TOÀN BỘ ĐƠN HÀNG
@@ -161,6 +162,10 @@ const create = async (req, res) => {
       newOrder = await Order.getOrderById(insertId);
     }
 
+    // 🔥 Realtime: yêu cầu dashboard/đơn hàng refresh
+    safeEmit('dashboard:invalidate', { entity: 'order', action: 'create', at: Date.now() });
+    safeEmit('orders:changed', { action: 'create', at: Date.now() });
+
     res.status(201).json(newOrder);
   } catch (err) {
     console.error("❌ Error in create order:", err);
@@ -175,6 +180,11 @@ const update = async (req, res) => {
   try {
     const updated = await Order.update(req.params.id, req.body);
     if (!updated) return res.status(404).json({ message: "Order not found" });
+
+    // 🔥 Realtime
+    safeEmit('dashboard:invalidate', { entity: 'order', action: 'update', id: req.params.id, at: Date.now() });
+    safeEmit('orders:changed', { action: 'update', id: req.params.id, at: Date.now() });
+
     res.json(updated);
   } catch (err) {
     console.error("❌ Error in update order:", err);
@@ -188,6 +198,11 @@ const update = async (req, res) => {
 const remove = async (req, res) => {
   try {
     await Order.remove(req.params.id);
+
+    // 🔥 Realtime
+    safeEmit('dashboard:invalidate', { entity: 'order', action: 'delete', id: req.params.id, at: Date.now() });
+    safeEmit('orders:changed', { action: 'delete', id: req.params.id, at: Date.now() });
+
     res.json({ message: "Deleted successfully" });
   } catch (err) {
     console.error("❌ Error in remove order:", err);

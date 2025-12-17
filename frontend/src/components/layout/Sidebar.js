@@ -1,10 +1,9 @@
-import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { 
     LuLayoutDashboard, LuPackage, LuUsers, LuBadgeDollarSign, 
     LuLogOut, LuBook, LuMessageSquare, LuSettings, LuTrendingUp,
-    LuShoppingBag, LuDollarSign, LuUser
+    LuDollarSign
 } from 'react-icons/lu';
 import { HiServerStack } from "react-icons/hi2";
 import logo from '../../assets/images/logo.png';

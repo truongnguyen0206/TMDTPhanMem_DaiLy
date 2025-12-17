@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import { createContext, useState, useContext, useEffect } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import axiosClient from '../api/axiosClient';
 import { disconnectSocket } from '../realtime/socketClient';

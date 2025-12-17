@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { LuCircleCheck, LuX, LuCircleAlert, LuSave } from 'react-icons/lu';
 
 const OrderStatusModal = ({ order, onClose, onUpdate }) => {

@@ -1,4 +1,3 @@
-import React from 'react';
 import { LuPackage, LuUser, LuMapPin, LuCreditCard, LuX, LuDownload } from 'react-icons/lu';
 
 // Helper format tiền

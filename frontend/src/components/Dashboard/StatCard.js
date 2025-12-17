@@ -1,5 +1,3 @@
-import React from 'react';
-
 const StatCard = ({ title, value, change, changeType, children, bgColorClass }) => {
     const isPositive = changeType === 'positive';
 

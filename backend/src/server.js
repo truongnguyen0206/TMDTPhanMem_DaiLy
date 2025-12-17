@@ -68,6 +68,7 @@ app.use("/npp",DistributorRoutes);
 app.use('/api/commissions', commissionRoutes);
 app.use('/api/commission-rules', commissionRuleRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use("/api/withdrawal", withdrawalRoutes);
 
 app.use("/api/BSP/product", medusaBSP);
 

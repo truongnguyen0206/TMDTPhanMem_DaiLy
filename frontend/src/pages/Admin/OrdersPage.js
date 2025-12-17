@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useOutletContext, useLocation } from 'react-router-dom';
-import { LuPencil, LuSearch, LuEye, LuCalendar, LuX, LuFileSpreadsheet, LuFileText, LuTrash2 } from 'react-icons/lu'; // Thêm icon mới
+import { LuPencil, LuSearch, LuEye, LuCalendar, LuX, LuFileSpreadsheet, LuFileText, LuTrash2 } from 'react-icons/lu';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from 'recharts';
 import axiosClient from '../../api/axiosClient';
 import OrderDetailModal from '../../components/Order/OrderDetailModal';
@@ -16,11 +16,24 @@ const weeklyCommissionData = [
 ];
 
 // --- CÁC COMPONENT CON (HELPER) ---
-// --- COMPONENT CON ---
+
+// 🔥 UPDATE FIX: StatCard (Xử lý text dài)
 const StatCard = ({ title, value }) => (
-    <div className="bg-white p-4 rounded-lg border border-gray-200 text-center shadow-sm hover:shadow-md transition-shadow flex flex-col justify-center h-32">
-        <p className="text-gray-500 text-sm mb-2">{title}</p>
-        <p className="text-3xl font-bold text-gray-800">{value}</p>
+    <div className="bg-white p-3 rounded-lg border border-gray-200 text-center shadow-sm hover:shadow-md transition-shadow flex flex-col justify-center h-32 overflow-hidden">
+        <p className="text-gray-500 text-xs uppercase tracking-wide mb-2 truncate px-2" title={title}>
+            {title}
+        </p>
+        {/* - text-xl: Font mặc định nhỏ hơn chút để an toàn
+           - md:text-2xl: Màn hình vừa thì to hơn
+           - truncate: Tự động thêm '...' nếu vẫn quá dài
+           - title={value}: Rê chuột vào sẽ thấy số đầy đủ
+        */}
+        <p 
+            className="text-xl md:text-2xl font-bold text-gray-800 truncate px-1 w-full" 
+            title={String(value)} 
+        >
+            {value}
+        </p>
     </div>
 );
 
@@ -63,8 +76,9 @@ const OrdersPage = () => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const { user } = useAuth();
 
-    // --- BỘ LỌC NÂNG CAO (Đáp ứng UC-27 & NF3) ---
+    // --- BỘ LỌC NÂNG CAO ---
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('');
     const [filterSource, setFilterSource] = useState('');
@@ -89,7 +103,6 @@ const OrdersPage = () => {
             setLoading(true);
             setError('');
             try {
-                // Lấy limit lớn để lọc client-side mượt mà
                 const ordersRes = await axiosClient.get('/order/with-origin?limit=10000');
                 setOrders(ordersRes.data || []);
 
@@ -109,41 +122,33 @@ const OrdersPage = () => {
 
     useEffect(() => {
         if (location.state?.autoFilterStatus) {
-            // Set giá trị cho bộ lọc ('pending')
             setFilterStatus(location.state.autoFilterStatus);
-
-            // Xóa state để tránh bị kẹt bộ lọc khi reload
             window.history.replaceState({}, document.title);
         }
     }, [location]);
 
-    // Reset trang khi filter đổi
     useEffect(() => { setCurrentPage(1); }, [searchTerm, filterStatus, filterSource, startDate, endDate]);
 
     // --- LOGIC LỌC ĐA ĐIỀU KIỆN ---
     const filteredOrders = useMemo(() => {
         return orders.filter(order => {
             const sLower = searchTerm.toLowerCase();
-            // 1. Tìm kiếm
             const matchSearch = !searchTerm ||
                 (order.ma_don_hang?.toLowerCase().includes(sLower)) ||
                 (order.nguoi_gioi_thieu?.toLowerCase().includes(sLower));
 
-            // 2. Trạng thái
             const stLower = (order.trang_thai_don_hang || '').toLowerCase();
             const matchStatus = !filterStatus ||
                 (filterStatus === 'pending' && stLower.includes('chờ')) ||
                 (filterStatus === 'completed' && (stLower.includes('hoàn thành') || stLower.includes('thành công'))) ||
                 (filterStatus === 'cancelled' && stLower.includes('hủy'));
 
-            // 3. Nguồn đơn
             const srcLower = (order.nguon_tao_don || '').toLowerCase();
             const matchSource = !filterSource ||
                 (filterSource === 'agent' && srcLower.includes('đại lý')) ||
                 (filterSource === 'ctv' && srcLower.includes('cộng tác viên')) ||
                 (filterSource === 'npp' && srcLower.includes('nhà phân phối'));
 
-            // 4. Ngày tháng
             let matchDate = true;
             if (order.tao_vao_luc) {
                 const d = new Date(order.tao_vao_luc).setHours(0, 0, 0, 0);
@@ -161,7 +166,7 @@ const OrdersPage = () => {
     const currentItems = filteredOrders.slice(indexOfFirstItem, indexOfLastItem);
     const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
 
-    const renderPagination = () => { /* Logic pagination như cũ */
+    const renderPagination = () => {
         let pages = [];
         for (let i = 1; i <= Math.min(totalPages, 5); i++) pages.push(
             <button key={i} onClick={() => setCurrentPage(i)} className={`w-8 h-8 rounded border ${currentPage === i ? 'bg-blue-600 text-white' : 'bg-white'}`}>{i}</button>
@@ -190,26 +195,13 @@ const OrdersPage = () => {
         }
     };
 
+    const handleViewDetail = (order) => setSelectedOrder(order);
+    const handleCloseModal = () => setSelectedOrder(null);
+    const handleEditClick = (order) => setSelectedOrderForEdit(order);
 
-    const handleViewDetail = async (order) => {
-        setSelectedOrder(order);
-    };
-
-    const handleCloseModal = () => {
-        setSelectedOrder(null);
-    };
-
-    const handleEditClick = (order) => {
-        setSelectedOrderForEdit(order);
-    };
-
-    // Hàm xử lý Update gọi API
     const handleUpdateStatus = async (orderId, updateData) => {
         try {
-            // Gọi API lên Backend (Backend sẽ dùng model để xử lý DB)
             await axiosClient.put(`/order/updateOrder/${orderId}`, updateData);
-
-            // Cập nhật giao diện
             setOrders(prevOrders => prevOrders.map(o =>
                 o.order_id === orderId ? {
                     ...o,
@@ -217,7 +209,6 @@ const OrdersPage = () => {
                     trang_thai_thanh_toan: updateData.payment_status
                 } : o
             ));
-
             alert(`Cập nhật thành công!`);
             setSelectedOrderForEdit(null);
         } catch (err) {
@@ -229,7 +220,8 @@ const OrdersPage = () => {
     return (
         <div className="space-y-6">
             {/* THỐNG KÊ */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {/* 🔥 UPDATE GRID: Chỉnh grid cho responsive tốt hơn để tránh vỡ layout */}
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
                 <StatCard title="Đơn chờ xử lý" value={stats.pending_orders} />
                 <StatCard title="Chờ thanh toán" value={stats.pending_payment} />
                 <StatCard title="Qua CTV" value={stats.via_ctv} />
@@ -239,7 +231,7 @@ const OrdersPage = () => {
             </div>
 
             {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative text-sm" role="alert">
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative text-sm">
                     <strong className="font-bold">Đã có lỗi xảy ra: </strong>
                     <span className="block sm:inline">{error}</span>
                 </div>
@@ -247,17 +239,15 @@ const OrdersPage = () => {
 
             {/* MAIN CONTENT */}
             <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-
-                {/* --- TOOLBAR NÂNG CAO  --- */}
+                {/* TOOLBAR */}
                 <div className="flex flex-col gap-4 mb-6">
                     <div className="flex justify-between items-center">
                         <h3 className="text-lg font-bold text-gray-800">Danh sách đơn hàng</h3>
-                        {/* Nút Xuất Excel */}
                         <div className="flex gap-2">
-                            <button onClick={handleExport} className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm font-medium">
+                            <button onClick={() => handleExport('excel')} className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm font-medium">
                                 <LuFileSpreadsheet /> Xuất Excel
                             </button>
-                            <button onClick={handleExport} className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm font-medium">
+                            <button onClick={() => handleExport('pdf')} className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm font-medium">
                                 <LuFileText /> Xuất PDF
                             </button>
                         </div>
@@ -270,8 +260,6 @@ const OrdersPage = () => {
                             <input type="text" placeholder="Mã đơn, Người GT..." className="pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:border-blue-500 w-60"
                                 value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                         </div>
-
-                        {/* Dropdown Status */}
                         <select className="py-2 px-3 border border-gray-300 rounded-md text-sm bg-white cursor-pointer"
                             value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
                             <option value="">Tất cả trạng thái</option>
@@ -279,8 +267,6 @@ const OrdersPage = () => {
                             <option value="completed">Hoàn thành</option>
                             <option value="cancelled">Đã hủy</option>
                         </select>
-
-                        {/* Dropdown Source */}
                         <select className="py-2 px-3 border border-gray-300 rounded-md text-sm bg-white cursor-pointer"
                             value={filterSource} onChange={e => setFilterSource(e.target.value)}>
                             <option value="">Tất cả nguồn</option>
@@ -288,15 +274,12 @@ const OrdersPage = () => {
                             <option value="agent">Đại lý</option>
                             <option value="ctv">Cộng tác viên</option>
                         </select>
-
-                        {/* Date Range */}
                         <div className="flex items-center gap-2 bg-white border border-gray-300 rounded-md px-2 py-1">
                             <LuCalendar className="text-gray-400" />
                             <input type="date" className="text-sm outline-none text-gray-600" value={startDate} onChange={e => setStartDate(e.target.value)} />
                             <span className="text-gray-400">-</span>
                             <input type="date" className="text-sm outline-none text-gray-600" value={endDate} onChange={e => setEndDate(e.target.value)} />
                         </div>
-
                         {(searchTerm || filterStatus || filterSource || startDate) && (
                             <button onClick={() => { setSearchTerm(''); setFilterStatus(''); setFilterSource(''); setStartDate(''); setEndDate('') }} className="text-red-500 hover:text-red-700 text-sm flex items-center gap-1">
                                 <LuX /> Xóa lọc
@@ -312,14 +295,14 @@ const OrdersPage = () => {
                             <tr>
                                 <th className="px-6 py-3">Mã Đơn</th>
                                 <th className="px-6 py-3">Sản phẩm</th>
-                                <th className="px-6 py-3 text-center">SL</th>
+                                <th className="px-6 py-3 text-center">Số lượng</th>
                                 <th className="px-6 py-3">Tổng tiền</th>
                                 <th className="px-6 py-3">Nguồn</th>
                                 <th className="px-6 py-3">Người tạo đơn</th>
                                 <th className="px-6 py-3">Ngày tạo</th>
                                 <th className="px-6 py-3 text-center">Trạng thái</th>
                                 <th className="px-6 py-3 text-center">Thanh toán</th>
-                                <th className="px-6 py-3 text-right">Hành động</th>
+                                <th className="px-6 py-3 text-right"></th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
@@ -329,64 +312,34 @@ const OrdersPage = () => {
                                 <tr><td colSpan="10" className="text-center py-10">Không tìm thấy đơn hàng.</td></tr>
                             ) : (
                                 currentItems.map((order) => {
-                                    // ✅ LOGIC QUAN TRỌNG (UC-15 B2): Kiểm tra trạng thái để khóa sửa xóa
                                     const statusLower = (order.trang_thai_don_hang || '').toLowerCase();
-                                    const isCompleted = statusLower.includes('hoàn thành') || statusLower.includes('thành công');
-                                    const isCancelled = statusLower.includes('hủy');
-                                    const isLocked = isCompleted || isCancelled; // Đơn đã xong hoặc hủy thì khóa
+                                    const isLocked = statusLower.includes('hoàn thành') || statusLower.includes('thành công') || statusLower.includes('hủy');
 
                                     return (
                                         <tr key={order.ma_don_hang} className="bg-white hover:bg-gray-50">
                                             <td className="px-6 py-4 font-medium text-blue-600 cursor-pointer" onClick={() => handleViewDetail(order)}>
                                                 {order.ma_don_hang}
                                             </td>
-
-                                            {/* 🛡️ 1. SẢN PHẨM: Nếu null thì hiện text xám */}
                                             <td className="px-6 py-4 truncate max-w-[150px]" title={order.san_pham}>
                                                 {order.san_pham || <span className="text-gray-400 italic">Chưa cập nhật</span>}
                                             </td>
-
-                                            {/* 🛡️ 2. SỐ LƯỢNG: Nếu null thì hiện 0 */}
-                                            <td className="px-6 py-4 text-center">
-                                                {order.so_luong || 0}
-                                            </td>
-
+                                            <td className="px-6 py-4 text-center">{order.so_luong || 0}</td>
                                             <td className="px-6 py-4 font-bold text-gray-900">{formatCurrency(order.tong_tien)}</td>
                                             <td className="px-6 py-4"><SourceBadge source={order.nguon_tao_don} /></td>
-
-                                            {/* 🛡️ 3. NGƯỜI TẠO ĐƠN: Nếu null thì hiện 'Khách lẻ / System' */}
                                             <td className="px-6 py-4">
                                                 {order.nguoi_tao_don || <span className="text-gray-400">Khách lẻ / System</span>}
                                             </td>
-
                                             <td className="px-6 py-4">{order.tao_vao_luc ? new Date(order.tao_vao_luc).toLocaleDateString('vi-VN') : '-'}</td>
                                             <td className="px-6 py-4 text-center"><OrderStatusBadge status={order.trang_thai_don_hang} /></td>
                                             <td className="px-6 py-4 text-center"><PaymentStatusBadge status={order.trang_thai_thanh_toan} /></td>
-
-                                            {/* CỘT HÀNH ĐỘNG */}
                                             <td className="px-6 py-4 text-right">
                                                 <div className="flex items-center justify-end gap-2">
-                                                    {/* Nút Xem (Luôn hiện) */}
-                                                    <button
-                                                        onClick={() => handleViewDetail(order)}
-                                                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="Xem chi tiết">
-                                                        <LuEye size={18} />
-                                                    </button>
-
-                                                    {/* Nút Sửa (Chỉ hiện khi chưa khóa) */}
+                                                    <button onClick={() => handleViewDetail(order)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="Xem chi tiết"><LuEye size={18} /></button>
                                                     {!isLocked && (
-                                                        <button
-                                                            onClick={() => handleEditClick(order)}
-                                                            className="p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded" title="Cập nhật trạng thái">
-                                                            <LuPencil size={18} />
-                                                        </button>
+                                                        <button onClick={() => handleEditClick(order)} className="p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded" title="Cập nhật trạng thái"><LuPencil size={18} /></button>
                                                     )}
-
-                                                    {/* Nút Xóa (Chỉ hiện khi chưa khóa) */}
                                                     {!isLocked && (
-                                                        <button className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded" title="Hủy đơn hàng">
-                                                            <LuTrash2 size={18} />
-                                                        </button>
+                                                        <button className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded" title="Hủy đơn hàng"><LuTrash2 size={18} /></button>
                                                     )}
                                                 </div>
                                             </td>
@@ -398,21 +351,10 @@ const OrdersPage = () => {
                     </table>
                 </div>
 
-                {selectedOrder && (
-                    <OrderDetailModal
-                        order={selectedOrder}
-                        onClose={handleCloseModal}
-                    />
-                )}
-                {selectedOrderForEdit && (
-                    <OrderStatusModal
-                        order={selectedOrderForEdit}
-                        onClose={() => setSelectedOrderForEdit(null)}
-                        onUpdate={handleUpdateStatus}
-                    />
-                )}
+                {selectedOrder && <OrderDetailModal order={selectedOrder} onClose={handleCloseModal} />}
+                {selectedOrderForEdit && <OrderStatusModal order={selectedOrderForEdit} onClose={() => setSelectedOrderForEdit(null)} onUpdate={handleUpdateStatus} />}
 
-                {/* FOOTER: PHÂN TRANG */}
+                {/* FOOTER */}
                 {!loading && filteredOrders.length > 0 && (
                     <div className="flex flex-col sm:flex-row justify-between items-center mt-6 gap-4">
                         <p className="text-sm text-gray-500">
@@ -427,11 +369,10 @@ const OrdersPage = () => {
                 )}
             </div>
 
-            {/* --- PHẦN 3: PHÂN TÍCH (GIỮ NGUYÊN) --- */}
+            {/* PHÂN TÍCH */}
             <div>
                 <h3 className="text-xl font-bold text-gray-800 mb-4">Phân tích</h3>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Tỷ lệ nguồn */}
                     <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                         <h4 className="font-bold mb-4">Tỷ lệ nguồn đơn hàng</h4>
                         <div className="space-y-4">
@@ -448,8 +389,6 @@ const OrdersPage = () => {
                             })()}
                         </div>
                     </div>
-
-                    {/* Top Đối Tác */}
                     <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                         <h4 className="font-bold mb-4">Top Đối tác hiệu quả</h4>
                         <div className="space-y-3">
@@ -469,8 +408,6 @@ const OrdersPage = () => {
                             ) : <p className="text-center text-gray-500 py-10">Chưa có dữ liệu.</p>}
                         </div>
                     </div>
-
-                    {/* Biểu đồ hoa hồng */}
                     <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                         <h4 className="font-bold mb-4">Hoa hồng ước tính (Tuần)</h4>
                         <div style={{ width: '100%', height: 150 }}>
@@ -483,7 +420,6 @@ const OrdersPage = () => {
                     </div>
                 </div>
             </div>
-
         </div>
     );
 };

@@ -1,152 +1,174 @@
 const supabase = require("../config/supabaseClient");
 
 class CommissionRuleModel {
+  // 🟢 CẤU HÌNH SCHEMA VÀ TÊN BẢNG
+  static SCHEMA_NAME = "transactions"; // Schema chứa bảng thật
+  static TABLE_NAME = "commission_rules"; // Tên bảng thật
+  static VIEW_NAME = "commissionrule"; // Tên View (nằm ở public)
 
-  // 🟩 Lấy tất cả quy tắc hoa hồng (Có thể dùng view hoặc bảng thật)
+  // ==========================================================
+  // PHẦN ĐỌC DỮ LIỆU (Dùng View ở public - Giữ nguyên)
+  // ==========================================================
+  
+  // 1. Lấy danh sách
   static async getAll() {
     const { data, error } = await supabase
-      .from("commissionrule") 
-      .select(`
-        *, 
-        "scope_type", 
-        "max_commission_cap", 
-        "status", 
-        "created_by"
-      `)
+      .from(this.VIEW_NAME) // View mặc định ở public nên không cần .schema()
+      .select('*')
       .order("role_id", { ascending: true })
       .order("min_sales", { ascending: true });
 
-    if (error) throw new Error(`Lỗi khi lấy danh sách quy tắc hoa hồng: ${error.message}`);
+    if (error) throw new Error(`Lỗi lấy danh sách quy tắc: ${error.message}`);
     return data || [];
   }
 
-  // 🟨 Lấy quy tắc theo ID
+  // 2. Lấy chi tiết
   static async getById(ruleId) {
     const { data, error } = await supabase
-      .from("commissionrule")
+      .from(this.VIEW_NAME)
       .select("*")
       .eq("rule_id", ruleId)
       .single();
 
-    if (error) throw new Error(`Lỗi khi lấy quy tắc hoa hồng: ${error.message}`);
+    if (error) throw new Error(`Lỗi lấy quy tắc ${ruleId}: ${error.message}`);
     return data;
   }
 
-  // 🟦 Lấy quy tắc theo Role
+  // 3. Lấy theo Role
   static async getByRole(roleId) {
     const { data, error } = await supabase
-      .from("commissionrule")
+      .from(this.VIEW_NAME)
       .select("*")
       .eq("role_id", roleId)
       .order("min_sales", { ascending: true });
 
-    if (error) throw new Error(`Lỗi khi lấy quy tắc theo vai trò: ${error.message}`);
+    if (error) throw new Error(`Lỗi lấy quy tắc theo role: ${error.message}`);
     return data || [];
   }
 
-  // 🟧 TẠO MỚI (SỬA LỖI: Ghi vào bảng thật FULL_TABLE)
+  // ==========================================================
+  // PHẦN GHI DỮ LIỆU (Dùng Bảng thật ở schema 'transactions')
+  // 👉 PHẢI DÙNG .schema() ĐỂ TRÁNH LỖI "Could not find table"
+  // ==========================================================
+
+  // 4. TẠO MỚI
   static async create(ruleData) {
-    const {
-      role_id, min_sales = 0, max_sales, commission_rate, product_category,
-      start_date = new Date().toISOString().split("T")[0], end_date, description,
-      scope_type = 'CATEGORY', max_commission_cap, status = 'Active', created_by,
-    } = ruleData;
+    const validData = this._cleanData(ruleData);
 
     const { data, error } = await supabase
-      .from("commissionrule") // 💡 Đã thay đổi từ "commissionrule" thành this.FULL_TABLE
-      .insert([{
-          role_id, min_sales, max_sales, commission_rate, product_category,
-          start_date, end_date, description,
-          scope_type, max_commission_cap, status, created_by,
-      }])
+      .schema(this.SCHEMA_NAME) // 👈 QUAN TRỌNG: Chỉ định schema 'transactions'
+      .from(this.TABLE_NAME)    // Tên bảng 'commission_rules'
+      .insert([validData])
       .select()
       .single();
 
-    if (error) throw new Error(`Lỗi khi tạo quy tắc hoa hồng: ${error.message}`);
+    if (error) throw new Error(`Lỗi tạo quy tắc: ${error.message}`);
     return data;
   }
 
-  // 🟪 CẬP NHẬT (SỬA LỖI: Ghi vào bảng thật FULL_TABLE)
+  // 5. CẬP NHẬT
   static async update(ruleId, ruleData) {
-    const {
-      role_id, min_sales, max_sales, commission_rate, product_category,
-      start_date, end_date, description,
-      scope_type, max_commission_cap, status, created_by,
-    } = ruleData;
-
-    // Lọc bỏ undefined
-    const updatePayload = {
-        role_id, min_sales, max_sales, commission_rate, product_category, 
-        start_date, end_date, description,
-        scope_type, max_commission_cap, status, created_by
-    };
-    Object.keys(updatePayload).forEach(key => updatePayload[key] === undefined && delete updatePayload[key]);
+    const validData = this._cleanData(ruleData);
 
     const { data, error } = await supabase
-      .from("commissionrule") // 💡 Đã thay đổi từ "commissionrule" thành this.FULL_TABLE
-      .update(updatePayload)
+      .schema(this.SCHEMA_NAME) // 👈 QUAN TRỌNG
+      .from(this.TABLE_NAME)
+      .update(validData)
       .eq("rule_id", ruleId)
       .select()
       .single();
 
-    if (error) throw new Error(`Lỗi khi cập nhật quy tắc hoa hồng: ${error.message}`);
+    if (error) throw new Error(`Lỗi cập nhật quy tắc: ${error.message}`);
     return data;
   }
 
-  // 🟥 XÓA (SỬA LỖI: Xóa từ bảng thật FULL_TABLE)
+  // 6. XÓA
   static async delete(ruleId) {
     const { data, error } = await supabase
-      .from("commissionrule") 
+      .schema(this.SCHEMA_NAME) // 👈 QUAN TRỌNG
+      .from(this.TABLE_NAME)
       .delete()
       .eq("rule_id", ruleId)
       .select()
       .single();
 
-    if (error) throw new Error(`Lỗi khi xóa quy tắc hoa hồng: ${error.message}`);
+    if (error) throw new Error(`Lỗi xóa quy tắc: ${error.message}`);
     return data;
   }
 
-  // 🟨 Lấy danh sách Roles (Sửa schema)
+  // 7. Lấy danh sách Roles (Schema auth hoặc public tùy cấu hình, thường auth là hệ thống)
+  // Lưu ý: Nếu bảng roles của bạn nằm ở schema 'auth', hãy dùng .schema('auth')
   static async getRoles() {
     const { data, error } = await supabase
-      .from("auth.roles") 
+      .from("auth.roles") // Supabase thường tự hiểu cú pháp này cho các bảng hệ thống
+      // Hoặc nếu lỗi, thử: .schema('auth').from('roles')
       .select("*")
       .order("role_name", { ascending: true });
 
-    if (error) throw new Error(`Lỗi khi lấy danh sách vai trò: ${error.message}`);
+    if (error) throw new Error(`Lỗi lấy roles: ${error.message}`);
     return data || [];
   }
 
-  // ⚠️ Kiểm tra xung đột
+  // 8. KIỂM TRA XUNG ĐỘT
   static async checkConflict(ruleData, excludeRuleId = null) {
-    const { role_id, min_sales, max_sales, product_category, start_date, end_date } = ruleData;
+    const { 
+        role_id, scope_type, 
+        product_category, product_id, 
+        start_date, end_date, 
+        min_sales, max_sales 
+    } = ruleData;
 
-    let query = supabase.from("commissionrule").select("*").eq("role_id", role_id);
-
-    if (product_category) query = query.eq("product_category", product_category);
-    else query = query.is("product_category", null);
+    let query = supabase.from(this.VIEW_NAME).select("*").eq("role_id", role_id);
 
     if (excludeRuleId) query = query.neq("rule_id", excludeRuleId);
 
     const { data, error } = await query;
-    if (error) throw new Error(`Lỗi khi kiểm tra xung đột: ${error.message}`);
+    if (error) throw new Error(`Lỗi check conflict: ${error.message}`);
+    if (!data || data.length === 0) return false;
 
-    const filtered = (data || []).filter((rule) => {
-      const currentStart = new Date(start_date);
-      const currentEnd = end_date ? new Date(end_date) : null;
-      const ruleStart = new Date(rule.start_date);
-      const ruleEnd = rule.end_date ? new Date(rule.end_date) : null;
+    // Logic kiểm tra chồng chéo
+    const hasConflict = data.some((existingRule) => {
+        if (existingRule.scope_type !== scope_type) return false;
+        if (scope_type === 'CATEGORY' && existingRule.product_category !== product_category) return false;
+        if (scope_type === 'PRODUCT' && existingRule.product_id !== product_id) return false;
 
-      const overlapDate = (!ruleEnd || ruleEnd >= currentStart) && (!currentEnd || currentEnd >= ruleStart);
-      
-      const rMin = parseFloat(rule.min_sales||0), rMax = rule.max_sales ? parseFloat(rule.max_sales) : null;
-      const cMin = parseFloat(min_sales||0), cMax = max_sales ? parseFloat(max_sales) : null;
-      const overlapSales = (rMax === null || rMax >= cMin) && (cMax === null || cMax >= rMin);
+        const newStart = new Date(start_date);
+        const newEnd = end_date ? new Date(end_date) : null;
+        const existStart = new Date(existingRule.start_date);
+        const existEnd = existingRule.end_date ? new Date(existingRule.end_date) : null;
+        const isTimeOverlap = (!newEnd || newEnd >= existStart) && (!existEnd || existEnd >= newStart);
+        
+        const nMin = parseFloat(min_sales || 0);
+        const nMax = max_sales ? parseFloat(max_sales) : Infinity;
+        const eMin = parseFloat(existingRule.min_sales || 0);
+        const eMax = existingRule.max_sales ? parseFloat(existingRule.max_sales) : Infinity;
+        const isSalesOverlap = (nMin < eMax) && (nMax > eMin);
 
-      return overlapDate && overlapSales;
+        return isTimeOverlap && isSalesOverlap;
     });
 
-    return filtered.length > 0;
+    return hasConflict;
+  }
+
+  // 🛠️ Hàm Helper
+  static _cleanData(data) {
+    const allowedFields = [
+      'role_id', 'min_sales', 'max_sales', 'commission_rate', 'product_category', 
+      'product_id', 'start_date', 'end_date', 'description', 'scope_type', 
+      'max_commission_cap', 'status', 'created_by'
+    ];
+
+    const clean = {};
+    Object.keys(data).forEach(key => {
+        if (allowedFields.includes(key) && data[key] !== undefined) {
+            if ((key === 'product_id' || key === 'max_sales' || key === 'min_sales') && data[key] === '') {
+                clean[key] = null;
+            } else {
+                clean[key] = data[key];
+            }
+        }
+    });
+    return clean;
   }
 }
 

@@ -1,21 +1,47 @@
 // File: withdrawal.controller.js
 const dashboardService = require('../services/dashboard_service'); 
+const db = require('../config/supabaseClient');
 
 /**
- * Xử lý yêu cầu rút tiền từ người dùng.
- * Gọi submitWithdrawalRequest trong service.
+ * API: Lấy danh sách ngân hàng (Để hiển thị Dropdown)
+ */
+const getBanks = async (req, res) => {
+    try {
+        const banks = await dashboardService.getBankList();
+        res.status(200).json({ success: true, data: banks });
+    } catch (err) {
+        res.status(500).json({ error: 'Không lấy được danh sách ngân hàng' });
+    }
+};
+
+/**
+ * API: Xử lý yêu cầu rút tiền
  */
 const requestWithdrawal = async (req, res) => {
+    console.log("===================================================================")
     try {
-        // Lấy userId từ req.user do authenticateToken middleware cung cấp
         const userId = req.user.id; 
-        const { amount } = req.body; 
+        
+        // --- CẬP NHẬT: Nhận thêm thông tin ngân hàng từ req.body ---
+        const { amount, bankId, accountNumber, accountHolder } = req.body; 
 
         if (!userId) {
              return res.status(401).json({ error: 'Unauthorized: User ID not found' });
         }
+        
+        // Kiểm tra dữ liệu đầu vào cơ bản
+        if (!bankId || !accountNumber || !accountHolder) {
+            return res.status(400).json({ error: 'Vui lòng nhập đầy đủ thông tin ngân hàng' });
+        }
 
-        const data = await dashboardService.submitWithdrawalRequest(userId, amount);
+        // --- CẬP NHẬT: Truyền đủ tham số sang Service ---
+        const data = await dashboardService.submitWithdrawalRequest(
+            userId, 
+            amount, 
+            Number(bankId), 
+            accountNumber, 
+            accountHolder
+        );
         
         res.status(201).json({ 
             success: true, 
@@ -25,8 +51,7 @@ const requestWithdrawal = async (req, res) => {
     } catch (err) {
         console.error('Error in requestWithdrawal:', err.message);
         
-        // Xử lý lỗi số dư không đủ hoặc tối thiểu từ Service
-        if (err.message.includes('Số dư khả dụng không đủ') || err.message.includes('tối thiểu')) {
+        if (err.message.includes('Số dư khả dụng không đủ') || err.message.includes('tối thiểu') || err.message.includes('Ngân hàng')|| err.message.includes('Failed to process withdrawal request')) {
             return res.status(400).json({ error: 'Invalid Request', details: err.message });
         }
         
@@ -36,4 +61,5 @@ const requestWithdrawal = async (req, res) => {
 
 module.exports = {
     requestWithdrawal,
+    getBanks // Xuất thêm hàm này để Route gọi
 };

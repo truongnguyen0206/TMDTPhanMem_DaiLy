@@ -9,7 +9,7 @@ const { validateWithdrawalRequest } = require('../../middlewares/validator_middl
 
 // POST /api/withdrawals - Gửi yêu cầu rút tiền
 router.post(
-    '/', 
+    '/request', 
     authenticateToken, 
     validateWithdrawalRequest, 
     requestWithdrawal // Sử dụng trực tiếp tên hàm đã được Destructure

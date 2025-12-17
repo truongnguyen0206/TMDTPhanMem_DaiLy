@@ -3,6 +3,7 @@ const xlsx = require('xlsx');
 const fs = require('fs');
 const UserModel = require('../models/user_model'); // Nếu dùng model, nếu không thì dùng trực tiếp supabase
 const OrderModel = require('../models/order_model');// Mới thêm để lấy thống kê Admin (An làm)
+const { countAgentsByDistributor } = require('../models/dashboard_model'); // Đảm bảo import đúng
 
 /**
  * Lấy dữ liệu tổng hợp cho Dashboard cá nhân.
@@ -61,6 +62,24 @@ const getPersonalData = async (userId) => {
         };
     } catch (error) {
         throw new Error(`Failed to get personal dashboard data: ${error.message}`);
+    }
+};
+
+/**
+ * 2. Lấy danh sách ngân hàng (Hàm MỚI thêm)
+ */
+const getBankList = async () => {
+    try {
+        // Query vào bảng transactions.banks (Schema mới bạn tạo)
+        const { data, error } = await supabase
+            .from('banks') // Lưu ý: Supabase tự nhận schema nếu config đúng, hoặc ghi rõ 'transactions.banks' nếu cần
+            .select('bank_id, bank_code, short_name, bank_name')
+            .order('short_name', { ascending: true });
+
+        if (error) throw error;
+        return data;
+    } catch (error) {
+        throw new Error(`Failed to get bank list: ${error.message}`);
     }
 };
 
@@ -134,54 +153,137 @@ const getProductsSummary = async (userId) => {
     }
 };
 
+// /**
+//  * Gửi yêu cầu rút tiền. <--- BỔ SUNG HÀM NÀY
+//  * @param {string} userId - ID của người dùng.
+//  * @param {number} amount - Số tiền muốn rút.
+//  */
+// const submitWithdrawalRequest = async (userId, amount) => {
+//     try {
+//         // 1. Kiểm tra số dư khả dụng từ View user_balance
+//         const { data: balance, error: balanceError } = await supabase
+//             .from('user_balance')
+//             .select('sodu_khadung') 
+//             .eq('user_id', userId)
+//             .maybeSingle(); 
+        
+//         if (balanceError) throw balanceError;
+
+//         const availableBalance = balance?.sodu_khadung || 0;
+
+//         // Kiểm tra số dư khả dụng
+//         if (amount > availableBalance) {
+//             throw new Error(`Số dư khả dụng (${availableBalance} VND) không đủ để rút ${amount} VND.`);
+//         }
+        
+//         // Kiểm tra mức tối thiểu (đã có ở middleware nhưng thêm ở đây để đảm bảo)
+//         if (amount < 1000000) {
+//              throw new Error('Số tiền rút tối thiểu phải là 1,000,000 VND.');
+//         }
+
+//         // 2. Tạo yêu cầu rút tiền mới
+//         const { data, error } = await supabase
+//             .from('withdraw_requests') // Tên bảng theo schema
+//             .insert([
+//                 {
+//                     user_id: userId,
+//                     amount: amount,
+//                     status: 'Pending', // Trạng thái mặc định
+//                 },
+//             ])
+//             .select()
+//             .single();
+
+//         if (error) throw error;
+//         return data;
+//     } catch (error) {
+//         // Ném lỗi với thông báo chi tiết hơn để controller xử lý 400
+//         throw new Error(`File processing error: ${error.message}`);
+//     }
+// };
+
 /**
- * Gửi yêu cầu rút tiền. <--- BỔ SUNG HÀM NÀY
- * @param {string} userId - ID của người dùng.
- * @param {number} amount - Số tiền muốn rút.
+ * 3. Gửi yêu cầu rút tiền (CẬP NHẬT LOGIC MỚI)
  */
-const submitWithdrawalRequest = async (userId, amount) => {
+const submitWithdrawalRequest = async (userId, amount, bankId, accountNumber, accountHolder) => {
     try {
-        // 1. Kiểm tra số dư khả dụng từ View user_balance
+        // 1. LOG DỮ LIỆU BẠN GỬI LÊN (POST)
+        console.log("--- [DEBUG] Dữ liệu rút tiền nhận được ---");
+        console.log("User ID:", userId);
+        console.log("Số tiền (amount):", amount);
+        console.log("ID Ngân hàng (bankId):", bankId, "| Kiểu dữ liệu:", typeof bankId);
+        console.log("Số tài khoản:", accountNumber);
+        console.log("Chủ tài khoản:", accountHolder);
+        console.log("------------------------------------------");
+
         const { data: balance, error: balanceError } = await supabase
             .from('user_balance')
-            .select('sodu_khadung') 
+            .select('sodu_khadung')
             .eq('user_id', userId)
-            .maybeSingle(); 
-        
-        if (balanceError) throw balanceError;
+            .maybeSingle();
 
+        if (balanceError) throw balanceError;
         const availableBalance = balance?.sodu_khadung || 0;
 
-        // Kiểm tra số dư khả dụng
         if (amount > availableBalance) {
-            throw new Error(`Số dư khả dụng (${availableBalance} VND) không đủ để rút ${amount} VND.`);
+            throw new Error(`Số dư khả dụng (${availableBalance.toLocaleString()} VND) không đủ để rút ${amount.toLocaleString()} VND.`);
         }
-        
-        // Kiểm tra mức tối thiểu (đã có ở middleware nhưng thêm ở đây để đảm bảo)
         if (amount < 1000000) {
-             throw new Error('Số tiền rút tối thiểu phải là 1,000,000 VND.');
+            throw new Error('Số tiền rút tối thiểu phải là 1,000,000 VND.');
         }
 
-        // 2. Tạo yêu cầu rút tiền mới
+        // Bước B: Lấy thông tin Ngân hàng
+        const { data: bankInfo, error: bankError } = await supabase
+            // .schema('transactions')
+            .from('banks')
+            .select('bank_code, bank_name')
+            .eq('bank_id', bankId)
+            .maybeSingle();
+
+        // 2. LOG KẾT QUẢ TRUY VẤN NGÂN HÀNG
+        if (bankError) {
+            console.error("❌ Lỗi truy vấn Database:", bankError.message);
+        }
+        console.log("🔍 Kết quả tìm kiếm Ngân hàng trong DB:", bankInfo);
+
+        if (bankError || !bankInfo) {
+            // Log chi tiết lý do thất bại trước khi throw error
+            console.warn(`⚠️ Thất bại: Không tìm thấy bank_id = ${bankId} trong schema 'transactions' bảng 'banks'`);
+            throw new Error('Ngân hàng được chọn không hợp lệ.');
+        }
+
+        // Bước C: Insert yêu cầu rút tiền...
+        // (Giữ nguyên đoạn code insert phía dưới)
+
+        // Bước C: Insert yêu cầu rút tiền (Thêm cột mới)
         const { data, error } = await supabase
-            .from('withdraw_requests') // Tên bảng theo schema
+            .schema('transactions')
+            .from('withdraw_requests')
             .insert([
                 {
                     user_id: userId,
                     amount: amount,
-                    status: 'Pending', // Trạng thái mặc định
+                    status: 'Pending',
+                    bank_id: bankId,                // Cột mới
+                    // bank_code: bankInfo.bank_code,  // Snapshot code
+                    bank_name: bankInfo.bank_name,  // Snapshot tên
+                    bank_account_number: accountNumber,
+                    bank_account_holder: accountHolder.toUpperCase() // Viết hoa tên
                 },
             ])
             .select()
             .single();
 
+        console.log("data", data)
+        console.log("error", error)
         if (error) throw error;
         return data;
+
     } catch (error) {
-        // Ném lỗi với thông báo chi tiết hơn để controller xử lý 400
-        throw new Error(`File processing error: ${error.message}`);
+        throw new Error(error.message); // Giữ nguyên message lỗi để Controller bắt
     }
 };
+
 
 //========================================
 //Làm thêm phần lấy thông kê tổng quan cho Admin Dashboard ( an almf)

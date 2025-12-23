@@ -1,4 +1,5 @@
-const supabase = require('../config/database_config');
+const supabase = require("../config/supabaseClient");
+// const supabase = require('../config/database_config');
 const xlsx = require('xlsx');
 const fs = require('fs');
 const UserModel = require('../models/user_model'); // Nếu dùng model, nếu không thì dùng trực tiếp supabase
@@ -202,6 +203,9 @@ const getProductsSummary = async (userId) => {
 //     }
 // };
 
+
+
+
 /**
  * 3. Gửi yêu cầu rút tiền (CẬP NHẬT LOGIC MỚI)
  */
@@ -375,7 +379,9 @@ const getAdminOrderStats = async (groupBy = 'year') => {
       // 3. Dữ liệu cho DashboardPage (So sánh tăng trưởng)
       ordersThisMonth,
       ordersLastMonth,
-      pendingAccountsCount, 
+      pendingAccountsCount,
+      newUsersThisMonth,
+      newUsersLastMonth
     ] = await Promise.all([
       OrderModel.countOrders({ source: 'Đại lý' }), 
       OrderModel.countOrders({ payment_status: 'Chờ thanh toán' }), 
@@ -478,5 +484,6 @@ module.exports = {
     getStatistics, 
     getProductsSummary,
     submitWithdrawalRequest,
-    getAdminOrderStats 
+    getAdminOrderStats,
+    getBankList, 
 };

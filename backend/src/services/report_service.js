@@ -110,21 +110,41 @@ const generateExcelReport = async ({ orders, from, to }) => {
   const sheetName = buildSheetName(from, to);
   const worksheet = workbook.addWorksheet(sheetName);
 
-  // HEADER CÔNG TY
+  // // HEADER CÔNG TY
+  // worksheet.mergeCells("A1:H1");
+  // worksheet.getCell("A1").value = "CÔNG TY CỔ PHẦN AMIT GROUP";
+  // worksheet.getCell("A1").font = { bold: true, size: 14 };
+  // worksheet.getCell("A1").alignment = { horizontal: "center" };
+
+  // worksheet.mergeCells("A2:H2");
+  // worksheet.getCell("A2").value =
+  //   "Địa chỉ: Số 7, đường 7C, Khu đô thị An Phú An Khánh, P. An Phú, TP Thủ Đức, TP.HCM.";
+  // worksheet.getCell("A2").font = { size: 10 };
+  // worksheet.getCell("A2").alignment = { horizontal: "center" };
+
+  // worksheet.mergeCells("A3:H3");
+  // worksheet.getCell("A3").value =
+  //   "SĐT: 0123 456 789 | Website: www.abc.com | Email: contact@abc.com";
+  // worksheet.getCell("A3").font = { size: 10 };
+  // worksheet.getCell("A3").alignment = { horizontal: "center" };
+
+  // worksheet.addRow([]);
+
+  // HEADER TRƯỜNG ĐẠI HỌC HOA SEN
   worksheet.mergeCells("A1:H1");
-  worksheet.getCell("A1").value = "CÔNG TY CỔ PHẦN AMIT GROUP";
+  worksheet.getCell("A1").value = "TRƯỜNG ĐẠI HỌC HOA SEN";
   worksheet.getCell("A1").font = { bold: true, size: 14 };
   worksheet.getCell("A1").alignment = { horizontal: "center" };
 
   worksheet.mergeCells("A2:H2");
   worksheet.getCell("A2").value =
-    "Địa chỉ: Số 7, đường 7C, Khu đô thị An Phú An Khánh, P. An Phú, TP Thủ Đức, TP.HCM.";
+    "Trụ sở chính: 08 Nguyễn Văn Tráng, Phường Bến Thành, TP.Hồ Chí Minh";
   worksheet.getCell("A2").font = { size: 10 };
   worksheet.getCell("A2").alignment = { horizontal: "center" };
 
   worksheet.mergeCells("A3:H3");
   worksheet.getCell("A3").value =
-    "SĐT: 0123 456 789 | Website: www.abc.com | Email: contact@abc.com";
+    "Khoa Công Nghệ | Ngành: Công Nghệ Thông Tin | Website: https://www.hoasen.edu.vn/";
   worksheet.getCell("A3").font = { size: 10 };
   worksheet.getCell("A3").alignment = { horizontal: "center" };
 
@@ -179,6 +199,12 @@ const generateExcelReport = async ({ orders, from, to }) => {
   });
 
   // DATA
+  const totalOrders = Array.isArray(orders) ? orders.length : 0;
+  const totalAmount = (orders || []).reduce((sum, order) => {
+    const value = Number(order?.tong_tien);
+    return sum + (Number.isFinite(value) ? value : 0);
+  }, 0);
+
   orders.forEach((order) => {
     worksheet.addRow([
       order.ma_don_hang,
@@ -198,9 +224,49 @@ const generateExcelReport = async ({ orders, from, to }) => {
   worksheet.getColumn(2).alignment = { horizontal: "center" };
   worksheet.getColumn(8).alignment = { horizontal: "center" };
 
+  // ===== SUMMARY =====
+  worksheet.addRow([]);
+  const styleSummaryRow = (row) => {
+    row.height = 20;
+
+    const cell = row.getCell(1);
+    cell.font = { bold: true };
+    cell.alignment = {
+      horizontal: "left",
+      vertical: "middle",
+      wrapText: false,
+    };
+
+    // border rất nhẹ (có thể bỏ nếu muốn)
+    cell.border = {
+      bottom: { style: "hair" },
+    };
+  };
+
+  // Tổng số đơn
+  const totalOrderRow = worksheet.addRow([
+    `Tổng số đơn hàng: ${totalOrders}`,
+  ]);
+  worksheet.mergeCells(
+    `A${totalOrderRow.number}:B${totalOrderRow.number}`
+  );
+  styleSummaryRow(totalOrderRow);
+
+  // Tổng doanh thu
+  const totalAmountFormatted = totalAmount.toLocaleString("vi-VN") + " đ";
+  const totalAmountRow = worksheet.addRow([
+    `Tổng doanh thu: ${totalAmountFormatted}`,
+  ]);
+  worksheet.mergeCells(
+    `A${totalAmountRow.number}:B${totalAmountRow.number}`
+  );
+  styleSummaryRow(totalAmountRow);
+
+
   // FOOTER
   worksheet.addRow([]);
-  const footerRow = worksheet.addRow(["AMIT GROUP - THỰC TẬP SINH"]);
+  // const footerRow = worksheet.addRow(["AMIT GROUP - THỰC TẬP SINH"]);
+  const footerRow = worksheet.addRow(["HSU - TÔN TRỌNG SỰ KHÁC BIỆT"]);
   worksheet.mergeCells(`A${footerRow.number}:H${footerRow.number}`);
   footerRow.getCell(1).alignment = { horizontal: "right" };
   footerRow.getCell(1).font = { size: 10, italic: true };
@@ -217,6 +283,11 @@ const generateExcelReport = async ({ orders, from, to }) => {
 // ---- Tạo PDF: GIỮ NGUYÊN FORM như file gốc ----
 const generatePdfReport = ({ orders, from, to }) => {
   const enriched = orders;
+  const totalOrders = Array.isArray(enriched) ? enriched.length : 0;
+  const totalAmount = (enriched || []).reduce((sum, order) => {
+    const value = Number(order?.tong_tien);
+    return sum + (Number.isFinite(value) ? value : 0);
+  }, 0);
   const chunkSize = 10;
   const chunks = [];
 
@@ -236,19 +307,56 @@ const generatePdfReport = ({ orders, from, to }) => {
   const printer = new PDF(fonts);
   const content = [];
 
-  // HEADER
+  // // HEADER CÔNG TY
+  // content.push({
+  //   columns: [
+  //     { image: path.join(__dirname, "../../public/logo.png"), width: 80 },
+  //     [
+  //       { text: "CÔNG TY CỔ PHẦN AMIT GROUP", style: "headerRight" },
+  //       {
+  //         text: "Địa chỉ: Số 7, đường 7C, Khu đô thị An Phú An Khánh, P. An Phú, TP Thủ Đức, TP.HCM.",
+  //         style: "subTextRight",
+  //       },
+  //       { text: "SĐT: 0123 456 789", style: "subTextRight" },
+  //       { text: "Website: www.abc.com", style: "subTextRight" },
+  //       { text: "Email: contact@abc.com", style: "subTextRight" },
+  //     ],
+  //   ],
+  // });
+
+  // HEADER TRƯỜNG ĐẠI HỌC HOA SEN
   content.push({
     columns: [
-      { image: path.join(__dirname, "../../public/logo.png"), width: 80 },
+      {
+        image: path.join(__dirname, "../../public/logo2.png"),
+        width: 150,
+      },
       [
-        { text: "CÔNG TY CỔ PHẦN AMIT GROUP", style: "headerRight" },
         {
-          text: "Địa chỉ: Số 7, đường 7C, Khu đô thị An Phú An Khánh, P. An Phú, TP Thủ Đức, TP.HCM.",
-          style: "subTextRight",
+          text: "TRƯỜNG ĐẠI HỌC HOA SEN",
+          style: "headerRight",
+          margin: [0, 0, 0, 6],
         },
-        { text: "SĐT: 0123 456 789", style: "subTextRight" },
-        { text: "Website: www.abc.com", style: "subTextRight" },
-        { text: "Email: contact@abc.com", style: "subTextRight" },
+        {
+          text: "Trụ sở chính: 08 Nguyễn Văn Tráng, Phường Bến Thành, TP.Hồ Chí Minh",
+          style: "subTextRight",
+          margin: [0, 0, 0, 6],
+        },
+        {
+          text: "Khoa Công Nghệ",
+          style: "subTextRight",
+          margin: [0, 0, 0, 6],
+        },
+        {
+          text: "Ngành: Công Nghệ Thông Tin",
+          style: "subTextRight",
+          margin: [0, 0, 0, 6],
+        },
+        {
+          text: "Website: https://www.hoasen.edu.vn/",
+          style: "subTextRight",
+          margin: [0, 0, 0, 6],
+        },
       ],
     ],
   });
@@ -301,11 +409,30 @@ const generatePdfReport = ({ orders, from, to }) => {
     });
   });
 
+  // ===== SUMMARY =====
+  content.push({
+    stack: [
+      {
+        text: `Tổng số đơn hàng: ${totalOrders}`,
+        bold: true,
+        fontSize: 11,
+        margin: [0, 2, 0, 2],
+      },
+      {
+        text: `Tổng doanh thu: ${totalAmount.toLocaleString("vi-VN")} ₫`,
+        bold: true,
+        fontSize: 11,
+        margin: [0, 2, 0, 6],
+      },
+    ],
+  });
+
   // FOOTER
   content.push({
-    text: "AMIT GROUP - THỰC TẬP SINH",
+    text: "HSU - TÔN TRỌNG SỰ KHÁC BIỆT",
     alignment: "right",
     fontSize: 9,
+    italics: true,
   });
 
   const docDefinition = {

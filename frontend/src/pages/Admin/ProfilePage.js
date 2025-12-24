@@ -2,7 +2,8 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { LuCamera } from 'react-icons/lu';
-import avatar from '../../assets/images/logo.png';
+// import avatar from '../../assets/images/logo.png';
+import avatar from '../../assets/images/logo3.jpg';
 
 // Component con để hiển thị thông tin tĩnh (Read-only)
 const InfoFieldReadOnly = ({ label, value }) => (

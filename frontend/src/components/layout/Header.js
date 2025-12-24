@@ -1,6 +1,7 @@
 import { useAuth } from '../../context/AuthContext';
 import { LuMessageCircle, LuMenu } from 'react-icons/lu';
-import avatar from '../../assets/images/logo.png';
+// import avatar from '../../assets/images/logo.png';
+import avatar from '../../assets/images/logo3.jpg';
 import { Link } from 'react-router-dom';
 
 const Header = ({ toggleSidebar, pageTitle }) => {

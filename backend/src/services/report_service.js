@@ -144,7 +144,7 @@ const generateExcelReport = async ({ orders, from, to }) => {
 
   worksheet.mergeCells("A3:H3");
   worksheet.getCell("A3").value =
-    "Khoa Công Nghệ | Ngành: Công Nghệ Thông Tin | Website: https://www.hoasen.edu.vn/";
+    "Khoa Công Nghệ | Ngành: Công Nghệ Thông Tin | Website: https://www.hoasen.edu.vn";
   worksheet.getCell("A3").font = { size: 10 };
   worksheet.getCell("A3").alignment = { horizontal: "center" };
 
@@ -353,7 +353,7 @@ const generatePdfReport = ({ orders, from, to }) => {
           margin: [0, 0, 0, 6],
         },
         {
-          text: "Website: https://www.hoasen.edu.vn/",
+          text: "Website: https://www.hoasen.edu.vn",
           style: "subTextRight",
           margin: [0, 0, 0, 6],
         },

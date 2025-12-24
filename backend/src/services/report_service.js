@@ -481,12 +481,15 @@ const generateCsvReport = ({ orders, from, to }) => {
     order.trang_thai_thanh_toan || "",
   ]);
 
-  const csvContent = [
+  const csvBody = [
     header.join(","),
     ...rows.map((r) =>
       r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")
     ),
   ].join("\n");
+
+  // ✅ BOM để Excel đọc đúng UTF-8 tiếng Việt
+  const csvContent = "\ufeff" + csvBody;
 
   const filenameBase = buildFileNameBase(from, to);
 

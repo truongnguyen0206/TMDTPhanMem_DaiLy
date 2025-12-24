@@ -100,7 +100,7 @@ class CommissionRuleModel {
   // Lưu ý: Nếu bảng roles của bạn nằm ở schema 'auth', hãy dùng .schema('auth')
   static async getRoles() {
     const { data, error } = await supabase
-      .from("auth.roles") // Supabase thường tự hiểu cú pháp này cho các bảng hệ thống
+      .from("users_roles") // Supabase thường tự hiểu cú pháp này cho các bảng hệ thống
       // Hoặc nếu lỗi, thử: .schema('auth').from('roles')
       .select("*")
       .order("role_name", { ascending: true });

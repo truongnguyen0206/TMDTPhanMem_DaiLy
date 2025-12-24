@@ -276,17 +276,54 @@ const OrdersPage = () => {
             {/* THỐNG KÊ */}
             {/* 🔥 UPDATE GRID: Chỉnh grid cho responsive tốt hơn để tránh vỡ layout */}
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
-                <StatCard title={tr('admin.orders.stats.pendingOrders', 'Đơn chờ xử lý')} value={stats.pending_orders} />
-                <StatCard title={tr('admin.orders.stats.pendingPayment', 'Chờ thanh toán')} value={stats.pending_payment} />
-                <StatCard title={tr('admin.orders.stats.viaCtv', 'Qua CỘNG TÁC VIÊN')} value={stats.via_ctv} />
-                <StatCard title={tr('admin.orders.stats.viaNpp', 'Qua NHÀ PHÂN PHỐI')} value={stats.via_npp} />
-                <StatCard title={tr('admin.orders.stats.cancelled', 'Đã hủy')} value={stats.returned} />
-                <StatCard title={tr('admin.orders.stats.totalRevenue', 'Tổng doanh thu')} value={formatCurrency(stats.total_revenue, locale)} />
+                <div className="dark:[&_div]:bg-gray-800 dark:[&_div]:border-gray-700 dark:[&_p]:text-gray-100">
+                    <StatCard
+                        title={tr('admin.orders.stats.pendingOrders', 'Đơn chờ xử lý')}
+                        value={stats.pending_orders}
+                    />
+                </div>
+
+                <div className="dark:[&_div]:bg-gray-800 dark:[&_div]:border-gray-700 dark:[&_p]:text-gray-100">
+                    <StatCard
+                        title={tr('admin.orders.stats.pendingPayment', 'Chờ thanh toán')}
+                        value={stats.pending_payment}
+                    />
+                </div>
+
+                <div className="dark:[&_div]:bg-gray-800 dark:[&_div]:border-gray-700 dark:[&_p]:text-gray-100">
+                    <StatCard
+                        title={tr('admin.orders.stats.viaCtv', 'Qua CỘNG TÁC VIÊN')}
+                        value={stats.via_ctv}
+                    />
+                </div>
+
+                <div className="dark:[&_div]:bg-gray-800 dark:[&_div]:border-gray-700 dark:[&_p]:text-gray-100">
+                    <StatCard
+                        title={tr('admin.orders.stats.viaNpp', 'Qua NHÀ PHÂN PHỐI')}
+                        value={stats.via_npp}
+                    />
+                </div>
+
+                <div className="dark:[&_div]:bg-gray-800 dark:[&_div]:border-gray-700 dark:[&_p]:text-gray-100">
+                    <StatCard
+                        title={tr('admin.orders.stats.cancelled', 'Đã hủy')}
+                        value={stats.returned}
+                    />
+                </div>
+
+                <div className="dark:[&_div]:bg-gray-800 dark:[&_div]:border-gray-700 dark:[&_p]:text-gray-100">
+                    <StatCard
+                        title={tr('admin.orders.stats.totalRevenue', 'Tổng doanh thu')}
+                        value={formatCurrency(stats.total_revenue, locale)}
+                    />
+                </div>
             </div>
 
             {error && (
                 <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200 px-4 py-3 rounded relative text-sm">
-                    <strong className="font-bold">{tr('admin.common.errorPrefix', 'Đã có lỗi xảy ra:')} </strong>
+                    <strong className="font-bold">
+                        {tr('admin.common.errorPrefix', 'Đã có lỗi xảy ra:')}
+                    </strong>{' '}
                     <span className="block sm:inline">{error}</span>
                 </div>
             )}
@@ -441,23 +478,23 @@ const OrdersPage = () => {
                 <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">{tr('admin.orders.analysis.title', 'Phân tích')}</h3>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                        <h4 className="font-bold mb-4">{tr('admin.orders.analysis.sourceShare', 'Tỷ lệ nguồn đơn hàng')}</h4>
+                        <h4 className="font-bold mb-4 text-gray-800 dark:text-gray-100">{tr('admin.orders.analysis.sourceShare', 'Tỷ lệ nguồn đơn hàng')}</h4>
                         <div className="space-y-4">
                             {(() => {
                                 const total = (stats.via_npp || 0) + (stats.via_ctv || 0) + (stats.via_agent || 0);
                                 const getPercent = (val) => total > 0 ? (val / total) * 100 : 0;
                                 return (
                                     <>
-                                        <div><div className="flex justify-between text-sm mb-1"><span>{tr('admin.orders.source.npp', 'Nhà Phân Phối')}</span><span>{stats.via_npp || 0}</span></div><div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2.5"><div className="bg-purple-500 h-2.5 rounded-full" style={{ width: `${getPercent(stats.via_npp)}%` }}></div></div></div>
-                                        <div><div className="flex justify-between text-sm mb-1"><span>{tr('admin.orders.source.ctv', 'Cộng tác viên')}</span><span>{stats.via_ctv || 0}</span></div><div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2.5"><div className="bg-yellow-400 h-2.5 rounded-full" style={{ width: `${getPercent(stats.via_ctv)}%` }}></div></div></div>
-                                        <div><div className="flex justify-between text-sm mb-1"><span>{tr('admin.orders.source.agent', 'Đại lý')}</span><span>{stats.via_agent || 0}</span></div><div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2.5"><div className="bg-blue-500 h-2.5 rounded-full" style={{ width: `${getPercent(stats.via_agent)}%` }}></div></div></div>
+                                        <div><div className="flex justify-between text-sm mb-1 text-gray-700 dark:text-gray-300"><span>{tr('admin.orders.source.npp', 'Nhà Phân Phối')}</span><span>{stats.via_npp || 0}</span></div><div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2.5"><div className="bg-purple-500 h-2.5 rounded-full" style={{ width: `${getPercent(stats.via_npp)}%` }}></div></div></div>
+                                        <div><div className="flex justify-between text-sm mb-1 text-gray-700 dark:text-gray-300"><span>{tr('admin.orders.source.ctv', 'Cộng tác viên')}</span><span>{stats.via_ctv || 0}</span></div><div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2.5"><div className="bg-yellow-400 h-2.5 rounded-full" style={{ width: `${getPercent(stats.via_ctv)}%` }}></div></div></div>
+                                        <div><div className="flex justify-between text-sm mb-1 text-gray-700 dark:text-gray-300"><span>{tr('admin.orders.source.agent', 'Đại lý')}</span><span>{stats.via_agent || 0}</span></div><div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2.5"><div className="bg-blue-500 h-2.5 rounded-full" style={{ width: `${getPercent(stats.via_agent)}%` }}></div></div></div>
                                     </>
                                 );
                             })()}
                         </div>
                     </div>
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                        <h4 className="font-bold mb-4">{tr('admin.orders.analysis.topPartners', 'Top Đối tác hiệu quả')}</h4>
+                        <h4 className="font-bold mb-4 text-gray-800 dark:text-gray-100">{tr('admin.orders.analysis.topPartners', 'Top Đối tác hiệu quả')}</h4>
                         <div className="space-y-3">
                             {stats.top_partners && stats.top_partners.length > 0 ? (
                                 stats.top_partners.map((partner, index) => (
@@ -476,7 +513,7 @@ const OrdersPage = () => {
                         </div>
                     </div>
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                        <h4 className="font-bold mb-4">{tr('admin.orders.analysis.estimatedCommissionWeek', 'Hoa hồng ước tính (Tuần)')}</h4>
+                        <h4 className="font-bold mb-4 text-gray-800 dark:text-gray-100">{tr('admin.orders.analysis.estimatedCommissionWeek', 'Hoa hồng ước tính (Tuần)')}</h4>
                         <div style={{ width: '100%', height: 150 }}>
                             <ResponsiveContainer>
                                 <BarChart data={weeklyCommissionData} layout="vertical" margin={{ top: 0, right: 0, left: 10, bottom: 0 }}>

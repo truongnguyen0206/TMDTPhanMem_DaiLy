@@ -342,7 +342,7 @@ const OrdersPage = () => {
                                 <LuFileText /> {tr('admin.common.exportPdf', 'Xuất PDF')}
                             </button>
                             <button onClick={() => handleExport('csv')} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium">
-                                <LuFileText /> {tr('admin.common.exportPdf', 'Xuất CSV')}
+                                <LuFileText /> {tr('admin.common.exportCSV', 'Xuất CSV')}
                             </button>
                         </div>
                     </div>

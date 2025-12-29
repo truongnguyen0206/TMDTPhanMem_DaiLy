@@ -58,7 +58,7 @@ const LoginPage = () => {
               className="max-w-md mx-auto"
             />
         </div>
-      </div>
+      </div>  
       <div className="w-full lg:w-1/2 flex items-center justify-center bg-gray-100 p-8">
         <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-lg">
           <h2 className="text-3xl font-bold text-gray-800 mb-8">Welcome to</h2>
@@ -100,7 +100,7 @@ const LoginPage = () => {
                 </div>
               <div className="flex justify-between items-center">
                 <label className="block text-sm font-medium text-gray-700"> </label>
-                <a href="#" className="text-sm text-custom-Forgot-Password hover:underline">Quên mật khẩu?</a>
+                <a href="#" className="text-sm text-custom-Forgot-Password hover:underline"></a>
               </div>
             </div>
             {message && <p className="text-sm text-center text-red-500">{message}</p>}

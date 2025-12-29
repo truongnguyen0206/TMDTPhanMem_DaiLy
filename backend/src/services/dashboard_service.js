@@ -113,22 +113,22 @@ const processExcelUpload = async (filePath, userId) => {
  * Lấy các thống kê tổng quan (total orders, total sales, etc.)
  * Sửa lại để dùng Dashboard Overview VIEW.
  */
-const getStatistics = async (userId) => {
-    try {
-        // Sử dụng dashboard_overview VIEW để lấy thống kê đã được tính sẵn
-        const { data, error } = await supabase
-            .from('dashboard_overview')
-            .select('*')
-            .eq('user_id', userId)
-            .single();
+// const getStatistics = async (userId) => {
+//     try {
+//         // Sử dụng dashboard_overview VIEW để lấy thống kê đã được tính sẵn 
+//         const { data, error } = await supabase
+//             .from('dashboard_overview')
+//             .select('*')
+//             .eq('user_id', userId)
+//             .single(); 
 
-        if (error) throw error;
-        return data; // Trả về object chứa total_orders, total_sales, total_commission...
+//         if (error) throw error;
+//         return data; // Trả về object chứa total_orders, total_sales, total_commission...
 
-    } catch (error) {
-        throw new Error(`Failed to get statistics: ${error.message}`);
-    }
-};
+//     } catch (error) {
+//         throw new Error(`Failed to get statistics: ${error.message}`);
+//     }
+// };
 
 /**
  * Lấy danh sách sản phẩm bán chạy/tóm tắt sản phẩm. (Thiếu trong code gốc)
@@ -481,7 +481,7 @@ const getAdminOrderStats = async (groupBy = 'year') => {
 module.exports = {
     getPersonalData,
     processExcelUpload,
-    getStatistics, 
+    // getStatistics, 
     getProductsSummary,
     submitWithdrawalRequest,
     getAdminOrderStats,

@@ -3,8 +3,8 @@ import { useOutletContext } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { LuCamera } from 'react-icons/lu';
 import { useTranslation } from 'react-i18next';
-// import avatar from '../../assets/images/logo.png';
-import avatar from '../../assets/images/logo3.jpg';
+import avatar from '../../assets/images/logo.png';
+// import avatar from '../../assets/images/logo3.jpg';
 
 // Component con để hiển thị thông tin tĩnh (Read-only)
 const InfoFieldReadOnly = ({ label, value, fallback = 'N/A' }) => (

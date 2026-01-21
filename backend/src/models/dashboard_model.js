@@ -46,13 +46,13 @@ const findRecentOrdersByUserId = (userId) => {
 // };
 
 // Lấy thống kê tổng quan từ view
-const findStatisticsByUserId = (userId) => {
-    return supabase
-        .from('dashboard_overview')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
-};
+// const findStatisticsByUserId = (userId) => {
+//     return supabase
+//         .from('dashboard_overview')
+//         .select('*')
+//         .eq('user_id', userId)
+//         .single();
+// };
 
 // Lấy top 3 sản phẩm của user
 const findTopProductsByUserId = (userId) => {
@@ -126,7 +126,7 @@ module.exports = {
     findCurrentMonthCommission,
     findRecentOrdersByUserId,
     // updateUserActivities,
-    findStatisticsByUserId,
+    // findStatisticsByUserId,
     findTopProductsByUserId,
     createWithdrawalRequest,
     countAgentsByDistributor,

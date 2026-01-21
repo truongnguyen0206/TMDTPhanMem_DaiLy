@@ -6,6 +6,7 @@ import axiosClient from '../../api/axiosClient';
 import OrderDetailModal from '../../components/Order/OrderDetailModal';
 import OrderStatusModal from '../../components/Order/OrderStatusModal';
 import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 // --- DỮ LIỆU MẪU BIỂU ĐỒ ---
 const weeklyCommissionData = [
@@ -28,9 +29,9 @@ const StatCard = ({ title, value }) => (
            - truncate: Tự động thêm '...' nếu vẫn quá dài
            - title={value}: Rê chuột vào sẽ thấy số đầy đủ
         */}
-        <p 
-            className="text-xl md:text-2xl font-bold text-gray-800 truncate px-1 w-full" 
-            title={String(value)} 
+        <p
+            className="text-xl md:text-2xl font-bold text-gray-800 truncate px-1 w-full"
+            title={String(value)}
         >
             {value}
         </p>
@@ -71,6 +72,9 @@ const PaymentStatusBadge = ({ status }) => {
 const OrdersPage = () => {
     const { setPageTitle } = useOutletContext();
     const location = useLocation();
+    const { t, i18n } = useTranslation();
+    const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN';
+    const tr = (key, defaultValue, options = {}) => t(key, { defaultValue, ...options });
 
     // Dữ liệu
     const [orders, setOrders] = useState([]);
@@ -98,7 +102,7 @@ const OrdersPage = () => {
     const [selectedOrderForEdit, setSelectedOrderForEdit] = useState(null);
 
     useEffect(() => {
-        setPageTitle('Quản lý Đơn hàng');
+        setPageTitle(t('admin.orders.pageTitle', { defaultValue: 'Quản lý Đơn hàng' }));
         const fetchData = async () => {
             setLoading(true);
             setError('');
@@ -174,26 +178,76 @@ const OrdersPage = () => {
         return pages;
     };
 
+    // --- XUẤT BÁO CÁO ĐƠN HÀNG (EXCEL, PDF, CSV) ---
+    const buildFileNameBase = (from, to) => {
+        if (from && to) {
+            const fromClean = String(from).replace(/\//g, "-");
+            const toClean = String(to).replace(/\//g, "-");
+            return `Bao_cao_danh_sach_don_hang-(${fromClean}→${toClean})`;
+        }
+        const exportDate = new Date().toLocaleDateString("vi-VN").replace(/\//g, "-");
+        return `Bao_cao_danh_sach_don_hang-(${exportDate})`;
+    };
+
     const handleExport = async (type) => {
         try {
-            const endpoint = type === 'excel' 
-                ? `/report/orders/excel/${user.id}` 
-                : `/report/orders/pdf/${user.id}`;
-            const extension = type === 'excel' ? 'xlsx' : 'pdf';
-            const response = await axiosClient.get(endpoint, { responseType: 'blob' });
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement('a');
+            let endpoint = "";
+            let extension = "";
+
+            switch (type) {
+                case "excel":
+                    endpoint = `/report/orders/excel/${user.id}`;
+                    extension = "xlsx";
+                    break;
+
+                case "pdf":
+                    endpoint = `/report/orders/pdf/${user.id}`;
+                    extension = "pdf";
+                    break;
+
+                case "csv":
+                    endpoint = `/report/orders/csv/${user.id}`;
+                    extension = "csv";
+                    break;
+
+                default:
+                    return;
+            }
+
+            const fileNameBase = buildFileNameBase(startDate, endDate);
+
+            const response = await axiosClient.get(endpoint, {
+                responseType: "blob",
+            });
+
+            let blob = response.data;
+
+            // ✅ CSV: thêm BOM để Excel đọc đúng tiếng Việt
+            if (type === "csv") {
+                blob = new Blob(
+                    ["\ufeff", response.data],
+                    { type: "text/csv;charset=utf-8;" }
+                );
+            }
+
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement("a");
+
+
+            link.setAttribute("download", `${fileNameBase}.${extension}`);
             link.href = url;
-            link.setAttribute('download', `Danh_sach_don_hang_${new Date().getTime()}.${extension}`);
+
             document.body.appendChild(link);
             link.click();
             link.remove();
             window.URL.revokeObjectURL(url);
         } catch (error) {
-            console.error(`Lỗi xuất file ${type}:`, error);
+            console.error(`❌ Lỗi xuất file ${type}:`, error);
             alert(`Xuất file ${type} thất bại.`);
         }
     };
+
+
 
     const handleViewDetail = (order) => setSelectedOrder(order);
     const handleCloseModal = () => setSelectedOrder(null);
@@ -222,67 +276,117 @@ const OrdersPage = () => {
             {/* THỐNG KÊ */}
             {/* 🔥 UPDATE GRID: Chỉnh grid cho responsive tốt hơn để tránh vỡ layout */}
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
-                <StatCard title="Đơn chờ xử lý" value={stats.pending_orders} />
-                <StatCard title="Chờ thanh toán" value={stats.pending_payment} />
-                <StatCard title="Qua CTV" value={stats.via_ctv} />
-                <StatCard title="Qua NPP" value={stats.via_npp} />
-                <StatCard title="Đã hủy" value={stats.returned} />
-                <StatCard title="Tổng doanh thu" value={formatCurrency(stats.total_revenue)} />
+                <div className="dark:[&_div]:bg-gray-800 dark:[&_div]:border-gray-700 dark:[&_p]:text-gray-100">
+                    <StatCard
+                        title={tr('admin.orders.stats.pendingOrders', 'Đơn chờ xử lý')}
+                        value={stats.pending_orders}
+                    />
+                </div>
+
+                <div className="dark:[&_div]:bg-gray-800 dark:[&_div]:border-gray-700 dark:[&_p]:text-gray-100">
+                    <StatCard
+                        title={tr('admin.orders.stats.pendingPayment', 'Chờ thanh toán')}
+                        value={stats.pending_payment}
+                    />
+                </div>
+
+                <div className="dark:[&_div]:bg-gray-800 dark:[&_div]:border-gray-700 dark:[&_p]:text-gray-100">
+                    <StatCard
+                        title={tr('admin.orders.stats.viaCtv', 'Qua CỘNG TÁC VIÊN')}
+                        value={stats.via_ctv}
+                    />
+                </div>
+
+                <div className="dark:[&_div]:bg-gray-800 dark:[&_div]:border-gray-700 dark:[&_p]:text-gray-100">
+                    <StatCard
+                        title={tr('admin.orders.stats.viaNpp', 'Qua NHÀ PHÂN PHỐI')}
+                        value={stats.via_npp}
+                    />
+                </div>
+
+                <div className="dark:[&_div]:bg-gray-800 dark:[&_div]:border-gray-700 dark:[&_p]:text-gray-100">
+                    <StatCard
+                        title={tr('admin.orders.stats.cancelled', 'Đã hủy')}
+                        value={stats.returned}
+                    />
+                </div>
+
+                <div className="dark:[&_div]:bg-gray-800 dark:[&_div]:border-gray-700 dark:[&_p]:text-gray-100">
+                    <StatCard
+                        title={tr('admin.orders.stats.totalRevenue', 'Tổng doanh thu')}
+                        value={formatCurrency(stats.total_revenue, locale)}
+                    />
+                </div>
             </div>
 
             {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative text-sm">
-                    <strong className="font-bold">Đã có lỗi xảy ra: </strong>
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200 px-4 py-3 rounded relative text-sm">
+                    <strong className="font-bold">
+                        {tr('admin.common.errorPrefix', 'Đã có lỗi xảy ra:')}
+                    </strong>{' '}
                     <span className="block sm:inline">{error}</span>
                 </div>
             )}
 
             {/* MAIN CONTENT */}
-            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
                 {/* TOOLBAR */}
                 <div className="flex flex-col gap-4 mb-6">
                     <div className="flex justify-between items-center">
-                        <h3 className="text-lg font-bold text-gray-800">Danh sách đơn hàng</h3>
+                        <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">{tr('admin.orders.listTitle', 'Danh sách đơn hàng')}</h3>
                         <div className="flex gap-2">
                             <button onClick={() => handleExport('excel')} className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm font-medium">
-                                <LuFileSpreadsheet /> Xuất Excel
+                                <LuFileSpreadsheet /> {tr('admin.common.exportExcel', 'Xuất Excel')}
                             </button>
                             <button onClick={() => handleExport('pdf')} className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm font-medium">
-                                <LuFileText /> Xuất PDF
+                                <LuFileText /> {tr('admin.common.exportPdf', 'Xuất PDF')}
+                            </button>
+                            <button onClick={() => handleExport('csv')} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium">
+                                <LuFileText /> {tr('admin.common.exportCSV', 'Xuất CSV')}
                             </button>
                         </div>
                     </div>
 
                     {/* Filter Bar */}
-                    <div className="flex flex-wrap gap-3 items-center bg-gray-50 p-3 rounded-lg border border-gray-100">
+                    <div className="flex flex-wrap gap-3 items-center bg-gray-50 dark:bg-gray-900/30 p-3 rounded-lg border border-gray-100">
                         <div className="relative">
                             <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                            <input type="text" placeholder="Mã đơn, Người GT..." className="pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:border-blue-500 w-60"
+                            <input type="text" placeholder={tr('admin.orders.searchPlaceholder', 'Mã đơn, Người GT...')} className="pl-9 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:border-blue-500 w-60"
                                 value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                         </div>
-                        <select className="py-2 px-3 border border-gray-300 rounded-md text-sm bg-white cursor-pointer"
-                            value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-                            <option value="">Tất cả trạng thái</option>
-                            <option value="pending">Chờ xử lý</option>
-                            <option value="completed">Hoàn thành</option>
-                            <option value="cancelled">Đã hủy</option>
+                        <select
+                            className="py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-100 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                            value={filterStatus}
+                            onChange={e => setFilterStatus(e.target.value)}>
+                            <option className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-100" value="">
+                                {tr('admin.orders.filters.allStatus', 'Tất cả trạng thái')}
+                            </option>
+                            <option className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-100" value="pending">
+                                {tr('admin.orders.status.pending', 'Chờ xử lý')}
+                            </option>
+                            <option className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-100" value="completed">
+                                {tr('admin.orders.status.completed', 'Hoàn thành')}
+                            </option>
+                            <option className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-100" value="cancelled">
+                                {tr('admin.orders.status.cancelled', 'Đã hủy')}
+                            </option>
                         </select>
-                        <select className="py-2 px-3 border border-gray-300 rounded-md text-sm bg-white cursor-pointer"
+                        <select className="py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-100 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                             value={filterSource} onChange={e => setFilterSource(e.target.value)}>
-                            <option value="">Tất cả nguồn</option>
-                            <option value="npp">Nhà phân phối</option>
-                            <option value="agent">Đại lý</option>
-                            <option value="ctv">Cộng tác viên</option>
+                            <option value="">{tr('admin.orders.filters.allSource', 'Tất cả nguồn')}</option>
+                            <option value="npp">{tr('admin.orders.source.npp', 'Nhà phân phối')}</option>
+                            <option value="agent">{tr('admin.orders.source.agent', 'Đại lý')}</option>
+                            <option value="ctv">{tr('admin.orders.source.ctv', 'Cộng tác viên')}</option>
                         </select>
-                        <div className="flex items-center gap-2 bg-white border border-gray-300 rounded-md px-2 py-1">
+                        <div className="flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1">
                             <LuCalendar className="text-gray-400" />
-                            <input type="date" className="text-sm outline-none text-gray-600" value={startDate} onChange={e => setStartDate(e.target.value)} />
+                            <input type="date" className="text-sm outline-none text-gray-600 dark:text-gray-300" value={startDate} onChange={e => setStartDate(e.target.value)} />
                             <span className="text-gray-400">-</span>
-                            <input type="date" className="text-sm outline-none text-gray-600" value={endDate} onChange={e => setEndDate(e.target.value)} />
+                            <input type="date" className="text-sm outline-none text-gray-600 dark:text-gray-300" value={endDate} onChange={e => setEndDate(e.target.value)} />
                         </div>
                         {(searchTerm || filterStatus || filterSource || startDate) && (
                             <button onClick={() => { setSearchTerm(''); setFilterStatus(''); setFilterSource(''); setStartDate(''); setEndDate('') }} className="text-red-500 hover:text-red-700 text-sm flex items-center gap-1">
-                                <LuX /> Xóa lọc
+                                <LuX /> {tr('admin.common.clearFilters', 'Xóa lọc')}
                             </button>
                         )}
                     </div>
@@ -290,56 +394,56 @@ const OrdersPage = () => {
 
                 {/* TABLE */}
                 <div className="overflow-x-auto border border-gray-100 rounded-lg">
-                    <table className="w-full text-sm text-left text-gray-600">
-                        <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-100">
+                    <table className="w-full text-sm text-left text-gray-600 dark:text-gray-300">
+                        <thead className="text-xs text-gray-700 dark:text-gray-200 uppercase bg-gray-50 dark:bg-gray-900/30 border-b border-gray-100">
                             <tr>
-                                <th className="px-6 py-3">Mã Đơn</th>
-                                <th className="px-6 py-3">Sản phẩm</th>
-                                <th className="px-6 py-3 text-center">Số lượng</th>
-                                <th className="px-6 py-3">Tổng tiền</th>
-                                <th className="px-6 py-3">Nguồn</th>
-                                <th className="px-6 py-3">Người tạo đơn</th>
-                                <th className="px-6 py-3">Ngày tạo</th>
-                                <th className="px-6 py-3 text-center">Trạng thái</th>
-                                <th className="px-6 py-3 text-center">Thanh toán</th>
+                                <th className="px-6 py-3">{tr('admin.orders.table.orderCode', 'Mã Đơn')}</th>
+                                <th className="px-6 py-3">{tr('admin.orders.table.product', 'Sản phẩm')}</th>
+                                <th className="px-6 py-3 text-center">{tr('admin.orders.table.quantity', 'Số lượng')}</th>
+                                <th className="px-6 py-3">{tr('admin.orders.table.total', 'Tổng tiền')}</th>
+                                <th className="px-6 py-3">{tr('admin.orders.table.source', 'Nguồn')}</th>
+                                <th className="px-6 py-3">{tr('admin.orders.table.createdBy', 'Người tạo đơn')}</th>
+                                <th className="px-6 py-3">{tr('admin.orders.table.createdDate', 'Ngày tạo')}</th>
+                                <th className="px-6 py-3 text-center">{tr('admin.orders.table.status', 'Trạng thái')}</th>
+                                <th className="px-6 py-3 text-center">{tr('admin.orders.table.payment', 'Thanh toán')}</th>
                                 <th className="px-6 py-3 text-right"></th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                             {loading ? (
-                                <tr><td colSpan="10" className="text-center py-10">Đang tải...</td></tr>
+                                <tr><td colSpan="10" className="text-center py-10">{t('general.loading')}</td></tr>
                             ) : currentItems.length === 0 ? (
-                                <tr><td colSpan="10" className="text-center py-10">Không tìm thấy đơn hàng.</td></tr>
+                                <tr><td colSpan="10" className="text-center py-10">{tr('admin.orders.noResults', 'Không tìm thấy đơn hàng.')}</td></tr>
                             ) : (
                                 currentItems.map((order) => {
                                     const statusLower = (order.trang_thai_don_hang || '').toLowerCase();
                                     const isLocked = statusLower.includes('hoàn thành') || statusLower.includes('thành công') || statusLower.includes('hủy');
 
                                     return (
-                                        <tr key={order.ma_don_hang} className="bg-white hover:bg-gray-50">
+                                        <tr key={order.ma_don_hang} className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700">
                                             <td className="px-6 py-4 font-medium text-blue-600 cursor-pointer" onClick={() => handleViewDetail(order)}>
                                                 {order.ma_don_hang}
                                             </td>
                                             <td className="px-6 py-4 truncate max-w-[150px]" title={order.san_pham}>
-                                                {order.san_pham || <span className="text-gray-400 italic">Chưa cập nhật</span>}
+                                                {order.san_pham || <span className="text-gray-400 italic">{tr('admin.orders.notUpdated', 'Chưa cập nhật')}</span>}
                                             </td>
                                             <td className="px-6 py-4 text-center">{order.so_luong || 0}</td>
-                                            <td className="px-6 py-4 font-bold text-gray-900">{formatCurrency(order.tong_tien)}</td>
+                                            <td className="px-6 py-4 font-bold text-gray-900 dark:text-gray-100">{formatCurrency(order.tong_tien, locale)}</td>
                                             <td className="px-6 py-4"><SourceBadge source={order.nguon_tao_don} /></td>
                                             <td className="px-6 py-4">
-                                                {order.nguoi_tao_don || <span className="text-gray-400">Khách lẻ / System</span>}
+                                                {order.nguoi_tao_don || <span className="text-gray-400">{tr('admin.orders.guestOrSystem', 'Khách lẻ / System')}</span>}
                                             </td>
-                                            <td className="px-6 py-4">{order.tao_vao_luc ? new Date(order.tao_vao_luc).toLocaleDateString('vi-VN') : '-'}</td>
+                                            <td className="px-6 py-4">{order.tao_vao_luc ? new Date(order.tao_vao_luc).toLocaleDateString(locale) : '-'}</td>
                                             <td className="px-6 py-4 text-center"><OrderStatusBadge status={order.trang_thai_don_hang} /></td>
                                             <td className="px-6 py-4 text-center"><PaymentStatusBadge status={order.trang_thai_thanh_toan} /></td>
                                             <td className="px-6 py-4 text-right">
                                                 <div className="flex items-center justify-end gap-2">
-                                                    <button onClick={() => handleViewDetail(order)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="Xem chi tiết"><LuEye size={18} /></button>
+                                                    <button onClick={() => handleViewDetail(order)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded" title={tr('admin.orders.actions.view', 'Xem chi tiết')}><LuEye size={18} /></button>
                                                     {!isLocked && (
-                                                        <button onClick={() => handleEditClick(order)} className="p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded" title="Cập nhật trạng thái"><LuPencil size={18} /></button>
+                                                        <button onClick={() => handleEditClick(order)} className="p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded" title={tr('admin.orders.actions.updateStatus', 'Cập nhật trạng thái')}><LuPencil size={18} /></button>
                                                     )}
                                                     {!isLocked && (
-                                                        <button className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded" title="Hủy đơn hàng"><LuTrash2 size={18} /></button>
+                                                        <button className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded" title={tr('admin.orders.actions.cancelOrder', 'Hủy đơn hàng')}><LuTrash2 size={18} /></button>
                                                     )}
                                                 </div>
                                             </td>
@@ -357,13 +461,13 @@ const OrdersPage = () => {
                 {/* FOOTER */}
                 {!loading && filteredOrders.length > 0 && (
                     <div className="flex flex-col sm:flex-row justify-between items-center mt-6 gap-4">
-                        <p className="text-sm text-gray-500">
-                            Hiển thị <span className="font-medium">{indexOfFirstItem + 1}</span> đến <span className="font-medium">{Math.min(indexOfLastItem, filteredOrders.length)}</span> của <span className="font-medium">{filteredOrders.length}</span> kết quả
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {t('general.showingResults', { start: indexOfFirstItem + 1, end: Math.min(indexOfLastItem, filteredOrders.length), total: filteredOrders.length })}
                         </p>
                         <div className="flex items-center gap-1">
-                            <button onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1} className="w-8 h-8 border rounded hover:bg-gray-50 disabled:opacity-50">{'<'}</button>
+                            <button onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1} className="w-8 h-8 border rounded hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50">{'<'}</button>
                             {renderPagination()}
-                            <button onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages} className="w-8 h-8 border rounded hover:bg-gray-50 disabled:opacity-50">{'>'}</button>
+                            <button onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages} className="w-8 h-8 border rounded hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50">{'>'}</button>
                         </div>
                     </div>
                 )}
@@ -371,45 +475,45 @@ const OrdersPage = () => {
 
             {/* PHÂN TÍCH */}
             <div>
-                <h3 className="text-xl font-bold text-gray-800 mb-4">Phân tích</h3>
+                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">{tr('admin.orders.analysis.title', 'Phân tích')}</h3>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                        <h4 className="font-bold mb-4">Tỷ lệ nguồn đơn hàng</h4>
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                        <h4 className="font-bold mb-4 text-gray-800 dark:text-gray-100">{tr('admin.orders.analysis.sourceShare', 'Tỷ lệ nguồn đơn hàng')}</h4>
                         <div className="space-y-4">
                             {(() => {
                                 const total = (stats.via_npp || 0) + (stats.via_ctv || 0) + (stats.via_agent || 0);
                                 const getPercent = (val) => total > 0 ? (val / total) * 100 : 0;
                                 return (
                                     <>
-                                        <div><div className="flex justify-between text-sm mb-1"><span>Nhà Phân Phối</span><span>{stats.via_npp || 0}</span></div><div className="w-full bg-gray-100 rounded-full h-2.5"><div className="bg-purple-500 h-2.5 rounded-full" style={{ width: `${getPercent(stats.via_npp)}%` }}></div></div></div>
-                                        <div><div className="flex justify-between text-sm mb-1"><span>Cộng tác viên</span><span>{stats.via_ctv || 0}</span></div><div className="w-full bg-gray-100 rounded-full h-2.5"><div className="bg-yellow-400 h-2.5 rounded-full" style={{ width: `${getPercent(stats.via_ctv)}%` }}></div></div></div>
-                                        <div><div className="flex justify-between text-sm mb-1"><span>Đại lý</span><span>{stats.via_agent || 0}</span></div><div className="w-full bg-gray-100 rounded-full h-2.5"><div className="bg-blue-500 h-2.5 rounded-full" style={{ width: `${getPercent(stats.via_agent)}%` }}></div></div></div>
+                                        <div><div className="flex justify-between text-sm mb-1 text-gray-700 dark:text-gray-300"><span>{tr('admin.orders.source.npp', 'Nhà Phân Phối')}</span><span>{stats.via_npp || 0}</span></div><div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2.5"><div className="bg-purple-500 h-2.5 rounded-full" style={{ width: `${getPercent(stats.via_npp)}%` }}></div></div></div>
+                                        <div><div className="flex justify-between text-sm mb-1 text-gray-700 dark:text-gray-300"><span>{tr('admin.orders.source.ctv', 'Cộng tác viên')}</span><span>{stats.via_ctv || 0}</span></div><div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2.5"><div className="bg-yellow-400 h-2.5 rounded-full" style={{ width: `${getPercent(stats.via_ctv)}%` }}></div></div></div>
+                                        <div><div className="flex justify-between text-sm mb-1 text-gray-700 dark:text-gray-300"><span>{tr('admin.orders.source.agent', 'Đại lý')}</span><span>{stats.via_agent || 0}</span></div><div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2.5"><div className="bg-blue-500 h-2.5 rounded-full" style={{ width: `${getPercent(stats.via_agent)}%` }}></div></div></div>
                                     </>
                                 );
                             })()}
                         </div>
                     </div>
-                    <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                        <h4 className="font-bold mb-4">Top Đối tác hiệu quả</h4>
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                        <h4 className="font-bold mb-4 text-gray-800 dark:text-gray-100">{tr('admin.orders.analysis.topPartners', 'Top Đối tác hiệu quả')}</h4>
                         <div className="space-y-3">
                             {stats.top_partners && stats.top_partners.length > 0 ? (
                                 stats.top_partners.map((partner, index) => (
                                     <div key={index} className="flex items-center justify-between p-2 border-b border-gray-50 last:border-0">
                                         <div className="flex items-center gap-3 min-w-0 flex-1 mr-4">
                                             <span className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold text-white flex-shrink-0 ${index === 0 ? 'bg-yellow-400' : index === 1 ? 'bg-gray-400' : index === 2 ? 'bg-orange-400' : 'bg-blue-100 text-blue-600'}`}>{index + 1}</span>
-                                            <p className="font-medium text-gray-800 truncate" title={partner.name}>{partner.name}</p>
+                                            <p className="font-medium text-gray-800 dark:text-gray-100 truncate" title={partner.name}>{partner.name}</p>
                                         </div>
                                         <div className="text-right flex-shrink-0">
-                                            <p className="text-green-600 font-bold text-sm whitespace-nowrap">{formatCurrency(partner.revenue)}</p>
-                                            <p className="text-xs text-gray-500 font-medium bg-gray-100 px-2 py-0.5 rounded-full inline-block mt-1">{partner.orders} Đơn</p>
+                                            <p className="text-green-600 font-bold text-sm whitespace-nowrap">{formatCurrency(partner.revenue, locale)}</p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full inline-block mt-1">{partner.orders} {tr('admin.orders.orderUnit', 'Đơn')}</p>
                                         </div>
                                     </div>
                                 ))
-                            ) : <p className="text-center text-gray-500 py-10">Chưa có dữ liệu.</p>}
+                            ) : <p className="text-center text-gray-500 dark:text-gray-400 py-10">{t('general.noData')}</p>}
                         </div>
                     </div>
-                    <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                        <h4 className="font-bold mb-4">Hoa hồng ước tính (Tuần)</h4>
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                        <h4 className="font-bold mb-4 text-gray-800 dark:text-gray-100">{tr('admin.orders.analysis.estimatedCommissionWeek', 'Hoa hồng ước tính (Tuần)')}</h4>
                         <div style={{ width: '100%', height: 150 }}>
                             <ResponsiveContainer>
                                 <BarChart data={weeklyCommissionData} layout="vertical" margin={{ top: 0, right: 0, left: 10, bottom: 0 }}>

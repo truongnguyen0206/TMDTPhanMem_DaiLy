@@ -378,5 +378,244 @@
       "submitButton": "Gửi yêu cầu rút tiền",
       "submitSuccess": "Đã gửi yêu cầu rút tiền thành công!"
     }
+  },
+  "admin": {
+    "common": {
+      "exportExcel": "Xuất Excel",
+      "exportPdf": "Xuất PDF",
+      "clearFilters": "Xóa lọc",
+      "errorPrefix": "Đã có lỗi xảy ra:",
+      "confirmDelete": "Bạn có chắc chắn muốn xóa mục này không?",
+      "deleteSuccess": "Đã xóa thành công!",
+      "deleteFailPrefix": "Xóa thất bại: ",
+      "createSuccess": "Tạo mới thành công!",
+      "updateSuccess": "Cập nhật thành công!",
+      "saveError": "Có lỗi xảy ra khi lưu dữ liệu.",
+      "errorOccurred": "Có lỗi xảy ra.",
+      "createFailPrefix": "Tạo thất bại: ",
+      "updateFailPrefix": "Cập nhật thất bại. ",
+      "all": "Tất cả",
+      "start": "BĐ:",
+      "end": "KT:",
+      "noExpiry": "Vô thời hạn",
+      "edit": "Sửa",
+      "delete": "Xóa",
+      "orderUnit": "Đơn",
+      "unknown": "Không xác định",
+      "notAvailable": "N/A",
+      "status": "Trạng thái",
+      "unlimited": "Không giới hạn",
+      "startDate": "Ngày bắt đầu",
+      "endDate": "Ngày kết thúc",
+      "description": "Mô tả",
+      "notesPlaceholder": "Ghi chú thêm...",
+      "cancel": "Hủy bỏ",
+      "saving": "Đang lưu...",
+      "processing": "Đang xử lý...",
+      "saveChanges": "Lưu thay đổi",
+      "update": "Cập nhật",
+      "create": "Tạo mới",
+      "creating": "Đang tạo..."
+    },
+    "orders": {
+      "pageTitle": "Quản lý Đơn hàng",
+      "stats": {
+        "pendingOrders": "Đơn chờ xử lý",
+        "pendingPayment": "Chờ thanh toán",
+        "viaCtv": "Qua CTV",
+        "viaNpp": "Qua NPP",
+        "cancelled": "Đã hủy",
+        "totalRevenue": "Tổng doanh thu"
+      },
+      "listTitle": "Danh sách đơn hàng",
+      "searchPlaceholder": "Mã đơn, Người GT...",
+      "filters": {
+        "allStatus": "Tất cả trạng thái",
+        "allSource": "Tất cả nguồn"
+      },
+      "status": {
+        "pending": "Chờ xử lý",
+        "completed": "Hoàn thành",
+        "cancelled": "Đã hủy"
+      },
+      "source": {
+        "npp": "Nhà phân phối",
+        "agent": "Đại lý",
+        "ctv": "Cộng tác viên"
+      },
+      "table": {
+        "orderCode": "Mã Đơn",
+        "product": "Sản phẩm",
+        "quantity": "Số lượng",
+        "total": "Tổng tiền",
+        "source": "Nguồn",
+        "createdBy": "Người tạo đơn",
+        "createdDate": "Ngày tạo",
+        "status": "Trạng thái",
+        "payment": "Thanh toán"
+      },
+      "noResults": "Không tìm thấy đơn hàng.",
+      "notUpdated": "Chưa cập nhật",
+      "guestOrSystem": "Khách lẻ / System",
+      "actions": {
+        "view": "Xem chi tiết",
+        "updateStatus": "Cập nhật trạng thái",
+        "cancelOrder": "Hủy đơn hàng"
+      },
+      "analysis": {
+        "title": "Phân tích",
+        "sourceShare": "Tỷ lệ nguồn đơn hàng",
+        "topPartners": "Top Đối tác hiệu quả",
+        "estimatedCommissionWeek": "Hoa hồng ước tính (Tuần)"
+      },
+      "orderUnit": "Đơn"
+    },
+    "accounts": {
+      "pageTitle": "Quản lý Tài khoản",
+      "searchPlaceholder": "Tìm kiếm...",
+      "filters": {
+        "allRoles": "Tất cả vai trò",
+        "statusTitle": "Lọc theo trạng thái",
+        "all": "Tất cả"
+      },
+      "roles": {
+        "npp": "Nhà phân phối",
+        "agent": "Đại lý",
+        "ctv": "Cộng tác viên",
+        "customer": "Khách hàng"
+      },
+      "addAccount": "Thêm tài khoản",
+      "table": {
+        "username": "Tên tài khoản",
+        "email": "Email",
+        "phone": "SĐT",
+        "role": "Vai trò",
+        "status": "Trạng thái",
+        "createdAt": "Ngày tạo"
+      },
+      "noResults": "Không tìm thấy tài khoản nào.",
+      "actions": {
+        "quickApprove": "Duyệt tài khoản (Kích hoạt ngay)",
+        "edit": "Sửa thông tin"
+      },
+      "showingResults": "Hiển thị {{start}} đến {{end}} trong tổng số {{total}} tài khoản"
+    },
+    "dashboard": {
+      "topPartners": "Top Đại lý/CTV Xuất sắc",
+      "cards": {
+        "totalOrders": "Tổng đơn hàng (Tháng này)",
+        "totalRevenue": "Tổng doanh thu (Tháng này)",
+        "pendingOrders": "Đơn chờ xử lý",
+        "pendingOrdersHint": "Bấm để xử lý ngay",
+        "pendingAccounts": "Tài khoản chờ duyệt",
+        "pendingAccountsHint": "Cần kích hoạt"
+      },
+      "compareLastMonth": "so với tháng trước",
+      "ordersGenerated": "Đơn hàng phát sinh",
+      "filters": {
+        "year": "Năm nay (Theo tháng)",
+        "week": "Tuần này (Theo ngày)"
+      }
+    },
+    "commission": {
+      "pageTitle": "Quản lý Quy tắc Hoa hồng",
+      "errorLoad": "Không thể tải dữ liệu quy tắc.",
+      "filters": {
+        "allRoles": "Tất cả vai trò"
+      },
+      "createNew": "Tạo quy tắc mới",
+      "table": {
+        "role": "Vai trò",
+        "salesRange": "Doanh số (Min - Max)",
+        "commission": "Hoa hồng",
+        "category": "Danh mục",
+        "time": "Thời gian",
+        "status": "Trạng thái"
+      },
+      "noRules": "Chưa có quy tắc nào.",
+      "showingResults": "Hiển thị {{start}} đến {{end}} trong tổng số {{total}} quy tắc"
+    },
+    "commissionForm": {
+      "editTitle": "Chỉnh sửa Quy tắc Hoa hồng",
+      "createTitle": "Tạo Quy tắc Hoa hồng Mới",
+      "editRule": "Chỉnh sửa Quy tắc",
+      "createRule": "Tạo Quy tắc Mới",
+      "createAction": "Tạo quy tắc",
+      "errors": {
+        "roleRequired": "Vui lòng chọn vai trò.",
+        "rateRequired": "Vui lòng nhập tỷ lệ hoa hồng."
+      },
+      "fields": {
+        "applyFor": "Áp dụng cho",
+        "chooseRole": "Chọn vai trò",
+        "minSales": "Min Sales (VND)",
+        "maxSales": "Max Sales (VND)",
+        "rate": "Hoa hồng (%)",
+        "category": "Danh mục sản phẩm",
+        "categoryPlaceholder": "Ví dụ: Mỹ phẩm, Điện tử (Bỏ trống nếu áp dụng tất cả)"
+      }
+    },
+    "addAccount": {
+      "pageTitle": "Thêm Tài Khoản Mới",
+      "title": "Thêm Tài Khoản",
+      "tabs": {
+        "manual": "Thêm thủ công",
+        "csv": "Nhập từ Excel/CSV"
+      },
+      "fields": {
+        "username": "Tên tài khoản / Họ tên",
+        "usernamePlaceholder": "Ví dụ: nguyenvan_a",
+        "password": "Mật khẩu",
+        "phone": "Số điện thoại",
+        "role": "Vai trò",
+        "chooseRole": "Chọn vai trò"
+      },
+      "errors": {
+        "roleRequired": "Vui lòng chọn vai trò cho tài khoản."
+      },
+      "success": "Tạo tài khoản thành công!",
+      "actions": {
+        "create": "Tạo tài khoản"
+      },
+      "csvComingSoon": "Tính năng Import CSV đang được phát triển.",
+      "downloadCsvTemplate": "Tải mẫu file CSV"
+    },
+    "updateAccount": {
+      "pageTitle": "Cập nhật Tài khoản",
+      "title": "Cập nhật Tài khoản",
+      "loading": "Đang tải dữ liệu tài khoản...",
+      "errors": {
+        "notFound": "Không tìm thấy dữ liệu tài khoản.",
+        "loadFailPrefix": "Lỗi khi tải dữ liệu User. "
+      },
+      "success": "Cập nhật tài khoản thành công!",
+      "fields": {
+        "username": "Tên tài khoản (Username)",
+        "phone": "Số Điện Thoại",
+        "newPassword": "Mật khẩu mới",
+        "passwordPlaceholder": "Bỏ trống nếu không đổi"
+      }
+    },
+    "profile": {
+      "pageTitle": "Thông tin cá nhân",
+      "avatarComingSoon": "Chức năng tải lên avatar đang được phát triển!",
+      "updatedMock": "Thông tin đã được cập nhật (giả lập)!",
+      "passwordMismatch": "Mật khẩu mới và xác nhận không khớp!",
+      "passwordMinLen": "Mật khẩu mới phải có ít nhất 6 ký tự!",
+      "passwordChangedMock": "Đổi mật khẩu thành công (giả lập)!",
+      "actions": {
+        "editProfile": "Cập nhật hồ sơ",
+        "changePassword": "Đổi mật khẩu"
+      },
+      "fields": {
+        "currentPassword": "Mật khẩu hiện tại",
+        "newPassword": "Mật khẩu mới",
+        "confirmPassword": "Xác nhận mật khẩu mới",
+        "fullName": "Họ và tên",
+        "gender": "Giới tính",
+        "dob": "Ngày sinh",
+        "phone": "Số điện thoại"
+      }
+    }
   }
 }

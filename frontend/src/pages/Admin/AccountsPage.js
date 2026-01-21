@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useOutletContext, Link, useLocation } from 'react-router-dom';
 import axiosClient from '../../api/axiosClient';
 import { LuSearch, LuPencil, LuPlus, LuPin, LuFilter, LuCheck } from 'react-icons/lu';
+import { useTranslation } from 'react-i18next';
 
 // --- Component RoleBadge (Style compact) ---
 const RoleBadge = ({ roleName }) => {
@@ -45,7 +46,10 @@ const AccountsPage = () => {
     const [error, setError] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
     const [roleFilter, setRoleFilter] = useState('');
-    
+    const { t, i18n } = useTranslation();
+    const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN';
+    const tr = (key, defaultValue, options = {}) => t(key, { defaultValue, ...options });
+
     // State cho Pin Dropdown
     const [pinnedStatus, setPinnedStatus] = useState('');
     const [isPinDropdownOpen, setIsPinDropdownOpen] = useState(false);
@@ -56,7 +60,7 @@ const AccountsPage = () => {
         if (location.state?.autoFilterStatus) {
             // Nếu có tín hiệu từ Dashboard gửi sang
             setPinnedStatus(location.state.autoFilterStatus);
-            
+
             // (Tùy chọn) Xóa state sau khi dùng để nếu reload trang không bị kẹt
             window.history.replaceState({}, document.title);
         }
@@ -74,7 +78,7 @@ const AccountsPage = () => {
     }, []);
 
     useEffect(() => {
-        setPageTitle('Quản lý Tài khoản');
+        setPageTitle(t('admin.accounts.pageTitle', { defaultValue: 'Quản lý Tài khoản' }));
         const fetchAccounts = async () => {
             setLoading(true);
             setError('');
@@ -110,12 +114,12 @@ const AccountsPage = () => {
             try {
                 // Gọi API update trạng thái thành 'Đang hoạt động'
                 await axiosClient.put(`/users/updateUser/${userId}`, { status: 'Đang hoạt động' });
-                
+
                 // Cập nhật UI ngay lập tức
-                setAccounts(prev => prev.map(acc => 
+                setAccounts(prev => prev.map(acc =>
                     acc.user_id === userId ? { ...acc, status: 'Đang hoạt động' } : acc
                 ));
-                
+
                 // alert(`Đã duyệt tài khoản "${username}" thành công!`);
             } catch (err) {
                 console.error("Lỗi khi duyệt:", err);
@@ -126,7 +130,7 @@ const AccountsPage = () => {
 
     const handleSearchChange = (e) => setSearchTerm(e.target.value);
     const handleRoleFilterChange = (e) => setRoleFilter(e.target.value);
-    
+
     const handleSelectStatus = (status) => {
         setPinnedStatus(status === pinnedStatus ? '' : status);
         setIsPinDropdownOpen(false);
@@ -182,23 +186,23 @@ const AccountsPage = () => {
 
         if (endPage < totalPages) {
             if (endPage < totalPages - 1) pages.push(<span key="end-ellipsis" className="px-3 py-1">...</span>);
-            pages.push(<button key="last" onClick={() => setCurrentPage(totalPages)} className="px-3 py-1 rounded-md bg-white text-gray-700 hover:bg-gray-100 border">{totalPages}</button>);
+            pages.push(<button key="last" onClick={() => setCurrentPage(totalPages)} className="px-3 py-1 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 border">{totalPages}</button>);
         }
         return pages;
     };
 
     return (
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
             {/* HEADER & BỘ LỌC */}
             <div className="flex flex-col md:flex-row items-center justify-between mb-6 gap-4">
                 <div className="flex items-center gap-3 w-full md:w-auto">
                     <div className="relative">
                         <input
                             type="text"
-                            placeholder="Tìm kiếm..."
+                            placeholder={tr('admin.accounts.searchPlaceholder', 'Tìm kiếm...')}
                             value={searchTerm}
                             onChange={handleSearchChange}
-                            className="w-full sm:w-64 bg-gray-50 border border-gray-200 rounded-lg py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-primary text-sm transition-all"
+                            className="w-full sm:w-64 bg-gray-50 dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700 rounded-lg py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-primary text-sm transition-all"
                         />
                         <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     </div>
@@ -207,17 +211,17 @@ const AccountsPage = () => {
                         <select
                             value={roleFilter}
                             onChange={handleRoleFilterChange}
-                            className="bg-gray-50 border border-gray-200 rounded-lg py-2 pl-3 pr-8 focus:outline-none focus:ring-2 focus:ring-primary text-sm cursor-pointer appearance-none"
+                            className="py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-100 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                         >
-                            <option value="">Tất cả vai trò</option>
+                            <option value="">{tr('admin.accounts.filters.allRoles', 'Tất cả vai trò')}</option>
                             <option value="1">Admin</option>
-                            <option value="2">Nhà phân phối</option>
-                            <option value="3">Đại lý</option>
-                            <option value="4">Cộng tác viên</option>
-                            <option value="5">Khách hàng</option>
+                            <option value="2">{tr('admin.accounts.roles.npp', 'Nhà phân phối')}</option>
+                            <option value="3">{tr('admin.accounts.roles.agent', 'Đại lý')}</option>
+                            <option value="4">{tr('admin.accounts.roles.ctv', 'Cộng tác viên')}</option>
+                            <option value="5">{tr('admin.accounts.roles.customer', 'Khách hàng')}</option>
                         </select>
                         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                            <LuFilter className="text-gray-400" size={14}/>
+                            <LuFilter className="text-gray-400" size={14} />
                         </div>
                     </div>
 
@@ -227,25 +231,25 @@ const AccountsPage = () => {
                             onClick={() => setIsPinDropdownOpen(!isPinDropdownOpen)}
                             className={`
                                 flex items-center justify-center w-9 h-9 rounded-lg border transition-all duration-200
-                                ${pinnedStatus 
-                                    ? 'bg-blue-50 border-blue-300 text-blue-600 shadow-sm' 
-                                    : 'bg-white border-gray-200 text-gray-400 hover:text-gray-600 hover:bg-gray-50'}
+                                ${pinnedStatus
+                                    ? 'bg-blue-50 border-blue-300 text-blue-600 shadow-sm'
+                                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-400 hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}
                             `}
-                            title="Lọc theo trạng thái"
+                            title={tr('admin.accounts.filters.statusTitle', 'Lọc theo trạng thái')}
                         >
                             <LuPin size={16} className={pinnedStatus ? "fill-current rotate-45" : ""} />
                         </button>
 
                         {isPinDropdownOpen && (
-                            <div className="absolute top-full right-0 mt-2 w-56 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
+                            <div className="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-50 overflow-hidden">
                                 <div className="py-1">
-                                    <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100 bg-gray-50">
+                                    <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100 bg-gray-50 dark:bg-gray-900/30">
                                         Lọc theo trạng thái
                                     </div>
-                                    <button onClick={() => handleSelectStatus('')} className={`w-full text-left px-4 py-2 text-sm flex justify-between hover:bg-gray-50 ${pinnedStatus === '' ? 'text-blue-600 bg-blue-50 font-medium' : 'text-gray-700'}`}><span>Tất cả</span>{pinnedStatus === '' && <LuCheck size={16} />}</button>
-                                    <button onClick={() => handleSelectStatus('Đang hoạt động')} className={`w-full text-left px-4 py-2 text-sm flex justify-between hover:bg-gray-50 ${pinnedStatus === 'Đang hoạt động' ? 'text-green-600 bg-green-50 font-medium' : 'text-gray-700'}`}><span>Đang hoạt động</span>{pinnedStatus === 'Đang hoạt động' && <LuCheck size={16} />}</button>
-                                    <button onClick={() => handleSelectStatus('Đang chờ cấp tài khoản')} className={`w-full text-left px-4 py-2 text-sm flex justify-between hover:bg-gray-50 ${pinnedStatus === 'Đang chờ cấp tài khoản' ? 'text-yellow-600 bg-yellow-50 font-medium' : 'text-gray-700'}`}><span>Đang chờ cấp</span>{pinnedStatus === 'Đang chờ cấp tài khoản' && <LuCheck size={16} />}</button>
-                                    <button onClick={() => handleSelectStatus('Ngừng hoạt động')} className={`w-full text-left px-4 py-2 text-sm flex justify-between hover:bg-gray-50 ${pinnedStatus === 'Ngừng hoạt động' ? 'text-red-600 bg-red-50 font-medium' : 'text-gray-700'}`}><span>Ngừng hoạt động</span>{pinnedStatus === 'Ngừng hoạt động' && <LuCheck size={16} />}</button>
+                                    <button onClick={() => handleSelectStatus('')} className={`w-full text-left px-4 py-2 text-sm flex justify-between hover:bg-gray-50 dark:hover:bg-gray-700 ${pinnedStatus === '' ? 'text-blue-600 bg-blue-50 font-medium' : 'text-gray-700 dark:text-gray-200'}`}><span>{tr('admin.accounts.filters.all', 'Tất cả')}</span>{pinnedStatus === '' && <LuCheck size={16} />}</button>
+                                    <button onClick={() => handleSelectStatus('Đang hoạt động')} className={`w-full text-left px-4 py-2 text-sm flex justify-between hover:bg-gray-50 dark:hover:bg-gray-700 ${pinnedStatus === 'Đang hoạt động' ? 'text-green-600 bg-green-50 dark:bg-green-900/20 font-medium' : 'text-gray-700 dark:text-gray-200'}`}><span>{tr('status.active', 'Đang hoạt động')}</span>{pinnedStatus === 'Đang hoạt động' && <LuCheck size={16} />}</button>
+                                    <button onClick={() => handleSelectStatus('Đang chờ cấp tài khoản')} className={`w-full text-left px-4 py-2 text-sm flex justify-between hover:bg-gray-50 dark:hover:bg-gray-700 ${pinnedStatus === 'Đang chờ cấp tài khoản' ? 'text-yellow-600 bg-yellow-50 font-medium' : 'text-gray-700 dark:text-gray-200'}`}><span>{tr('status.pendingApproval', 'Đang chờ cấp')}</span>{pinnedStatus === 'Đang chờ cấp tài khoản' && <LuCheck size={16} />}</button>
+                                    <button onClick={() => handleSelectStatus('Ngừng hoạt động')} className={`w-full text-left px-4 py-2 text-sm flex justify-between hover:bg-gray-50 dark:hover:bg-gray-700 ${pinnedStatus === 'Ngừng hoạt động' ? 'text-red-600 bg-red-50 dark:bg-red-900/20 font-medium' : 'text-gray-700 dark:text-gray-200'}`}><span>{tr('status.inactive', 'Ngừng hoạt động')}</span>{pinnedStatus === 'Ngừng hoạt động' && <LuCheck size={16} />}</button>
                                 </div>
                             </div>
                         )}
@@ -253,7 +257,7 @@ const AccountsPage = () => {
                 </div>
 
                 <Link to="/admin/accounts/new" className="flex items-center gap-2 bg-blue-600 text-white font-bold px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm whitespace-nowrap">
-                    <LuPlus size={18} /> Thêm tài khoản
+                    <LuPlus size={18} /> {tr('admin.accounts.addAccount', 'Thêm tài khoản')}
                 </Link>
             </div>
 
@@ -261,45 +265,45 @@ const AccountsPage = () => {
 
             {/* BẢNG DỮ LIỆU */}
             <div className="overflow-x-auto border border-gray-100 rounded-lg">
-                <table className="w-full text-sm text-left text-gray-600">
-                    <thead className="text-xs text-gray-500 uppercase bg-gray-50 border-b border-gray-100">
+                <table className="w-full text-sm text-left text-gray-600 dark:text-gray-300">
+                    <thead className="text-xs text-gray-500 dark:text-gray-400 uppercase bg-gray-50 dark:bg-gray-900/30 border-b border-gray-100">
                         <tr>
                             <th className="px-6 py-3">ID</th>
-                            <th className="px-6 py-3">Tên tài khoản</th>
-                            <th className="px-6 py-3">Email</th>
-                            <th className="px-6 py-3 ">SĐT</th>
-                            <th className="px-6 py-3">Vai trò</th>
-                            <th className="px-6 py-3">Trạng thái</th>
-                            <th className="px-6 py-3">Ngày tạo</th>
+                            <th className="px-6 py-3">{tr('admin.accounts.table.username', 'Tên tài khoản')}</th>
+                            <th className="px-6 py-3">{tr('admin.accounts.table.email', 'Email')}</th>
+                            <th className="px-6 py-3 ">{tr('admin.accounts.table.phone', 'SĐT')}</th>
+                            <th className="px-6 py-3">{tr('admin.accounts.table.role', 'Vai trò')}</th>
+                            <th className="px-6 py-3">{tr('admin.accounts.table.status', 'Trạng thái')}</th>
+                            <th className="px-6 py-3">{tr('admin.accounts.table.createdAt', 'Ngày tạo')}</th>
                             <th className="px-6 py-3 text-right"></th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                         {loading ? (
-                            <tr><td colSpan="8" className="text-center py-10 text-gray-400">Đang tải dữ liệu...</td></tr>
+                            <tr><td colSpan="8" className="text-center py-10 text-gray-400">{t('general.loading')}</td></tr>
                         ) : paginatedAccounts.length === 0 ? (
-                            <tr><td colSpan="8" className="text-center py-10 text-gray-400">Không tìm thấy tài khoản nào.</td></tr>
+                            <tr><td colSpan="8" className="text-center py-10 text-gray-400">{tr('admin.accounts.noResults', 'Không tìm thấy tài khoản nào.')}</td></tr>
                         ) : (
                             paginatedAccounts.map((account) => (
-                                <tr key={account.user_id} className="bg-white hover:bg-gray-50 transition-colors">
-                                    <td className="px-6 py-3 font-medium text-gray-900">{account.user_id}</td>
-                                    <td className="px-6 py-3 font-medium text-gray-800">{account.username}</td>
-                                    <td className="px-6 py-3 text-gray-500">{account.email}</td>
-                                    <td className="px-6 py-3 text-gray-500">{account.phone || '-'}</td>
+                                <tr key={account.user_id} className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                    <td className="px-6 py-3 font-medium text-gray-900 dark:text-gray-100">{account.user_id}</td>
+                                    <td className="px-6 py-3 font-medium text-gray-800 dark:text-gray-100">{account.username}</td>
+                                    <td className="px-6 py-3 text-gray-500 dark:text-gray-400">{account.email}</td>
+                                    <td className="px-6 py-3 text-gray-500 dark:text-gray-400">{account.phone || '-'}</td>
                                     <td className="px-6 py-3"><RoleBadge roleName={account.role_name} /></td>
                                     <td className="px-6 py-3"><StatusBadge status={account.status} /></td>
-                                    <td className="px-6 py-3 text-gray-500">
-                                        {account.created_at ? new Date(account.created_at).toLocaleDateString('vi-VN') : '-'}
+                                    <td className="px-6 py-3 text-gray-500 dark:text-gray-400">
+                                        {account.created_at ? new Date(account.created_at).toLocaleDateString(locale) : '-'}
                                     </td>
                                     <td className="px-6 py-3 text-right">
                                         <div className="flex items-center justify-end gap-2">
-                                            
+
                                             {/* ✅ NÚT DUYỆT NHANH (Chỉ hiện khi trạng thái là 'Đang chờ cấp tài khoản') */}
                                             {account.status === 'Đang chờ cấp tài khoản' && (
                                                 <button
                                                     onClick={() => handleQuickApprove(account.user_id, account.username)}
-                                                    className="p-1.5 text-white bg-green-500 hover:bg-green-600 rounded-md shadow-sm transition-all"
-                                                    title="Duyệt tài khoản (Kích hoạt ngay)"
+                                                    className="p-1.5 text-white bg-green-50 dark:bg-green-900/200 hover:bg-green-600 rounded-md shadow-sm transition-all"
+                                                    title={tr('admin.accounts.actions.quickApprove', 'Duyệt tài khoản (Kích hoạt ngay)')}
                                                 >
                                                     <LuCheck size={16} />
                                                 </button>
@@ -308,7 +312,7 @@ const AccountsPage = () => {
                                             <Link
                                                 to={`/admin/accounts/edit/${account.user_id}`}
                                                 className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                                                title="Sửa thông tin"
+                                                title={tr('admin.accounts.actions.edit', 'Sửa thông tin')}
                                             >
                                                 <LuPencil size={18} />
                                             </Link>
@@ -324,22 +328,22 @@ const AccountsPage = () => {
             {/* FOOTER: PHÂN TRANG */}
             {!loading && filteredAccounts.length > 0 && (
                 <div className="flex flex-col sm:flex-row justify-between items-center mt-6 gap-4 pt-4 border-t border-gray-100">
-                    <p className="text-sm text-gray-500">
-                        Hiển thị <span className="font-medium">{Math.min((currentPage - 1) * itemsPerPage + 1, filteredAccounts.length)}</span> đến <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredAccounts.length)}</span> trong tổng số <span className="font-medium">{filteredAccounts.length}</span> tài khoản
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {tr('admin.accounts.showingResults', 'Hiển thị {{start}} đến {{end}} trong tổng số {{total}} tài khoản', { start: Math.min((currentPage - 1) * itemsPerPage + 1, filteredAccounts.length), end: Math.min(currentPage * itemsPerPage, filteredAccounts.length), total: filteredAccounts.length })}
                     </p>
                     <div className="flex items-center gap-2 flex-wrap justify-center">
                         <button
                             onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                             disabled={currentPage === 1}
-                            className="px-3 py-1 rounded-md bg-white text-gray-700 hover:bg-gray-100 border disabled:opacity-50"
+                            className="px-3 py-1 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 border disabled:opacity-50"
                         >
                             {'<'}
                         </button>
                         {renderPagination()}
                         <button
-                             onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                             disabled={currentPage === totalPages}
-                            className="px-3 py-1 rounded-md bg-white text-gray-700 hover:bg-gray-100 border disabled:opacity-50"
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages}
+                            className="px-3 py-1 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 border disabled:opacity-50"
                         >
                             {'>'}
                         </button>

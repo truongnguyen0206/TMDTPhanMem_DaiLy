@@ -7,6 +7,7 @@ import {
 } from 'react-icons/lu';
 import { HiServerStack } from "react-icons/hi2";
 import logo from '../../assets/images/logo.png';
+// import logo from '../../assets/images/logo3.jpg';
 import { useAuth } from '../../context/AuthContext';
 
 const Sidebar = ({ isOpen }) => {

@@ -3,6 +3,7 @@ import { useOutletContext, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { LuCamera } from 'react-icons/lu';
 import avatar from '../../assets/images/logo.png'; // Dùng chung avatar
+// import avatar from '../../assets/images/logo3.jpg';
 
 // Component con để hiển thị thông tin tĩnh (Read-only)
 const InfoFieldReadOnly = ({ label, value }) => (

@@ -1,4 +1,5 @@
-const supabase = require('../config/database_config');
+const supabase = require("../config/supabaseClient");
+// const supabase = require('../config/database_config');
 const xlsx = require('xlsx');
 const fs = require('fs');
 const UserModel = require('../models/user_model'); // Nếu dùng model, nếu không thì dùng trực tiếp supabase
@@ -112,22 +113,22 @@ const processExcelUpload = async (filePath, userId) => {
  * Lấy các thống kê tổng quan (total orders, total sales, etc.)
  * Sửa lại để dùng Dashboard Overview VIEW.
  */
-const getStatistics = async (userId) => {
-    try {
-        // Sử dụng dashboard_overview VIEW để lấy thống kê đã được tính sẵn
-        const { data, error } = await supabase
-            .from('dashboard_overview')
-            .select('*')
-            .eq('user_id', userId)
-            .single();
+// const getStatistics = async (userId) => {
+//     try {
+//         // Sử dụng dashboard_overview VIEW để lấy thống kê đã được tính sẵn 
+//         const { data, error } = await supabase
+//             .from('dashboard_overview')
+//             .select('*')
+//             .eq('user_id', userId)
+//             .single(); 
 
-        if (error) throw error;
-        return data; // Trả về object chứa total_orders, total_sales, total_commission...
+//         if (error) throw error;
+//         return data; // Trả về object chứa total_orders, total_sales, total_commission...
 
-    } catch (error) {
-        throw new Error(`Failed to get statistics: ${error.message}`);
-    }
-};
+//     } catch (error) {
+//         throw new Error(`Failed to get statistics: ${error.message}`);
+//     }
+// };
 
 /**
  * Lấy danh sách sản phẩm bán chạy/tóm tắt sản phẩm. (Thiếu trong code gốc)
@@ -201,6 +202,9 @@ const getProductsSummary = async (userId) => {
 //         throw new Error(`File processing error: ${error.message}`);
 //     }
 // };
+
+
+
 
 /**
  * 3. Gửi yêu cầu rút tiền (CẬP NHẬT LOGIC MỚI)
@@ -375,7 +379,9 @@ const getAdminOrderStats = async (groupBy = 'year') => {
       // 3. Dữ liệu cho DashboardPage (So sánh tăng trưởng)
       ordersThisMonth,
       ordersLastMonth,
-      pendingAccountsCount, 
+      pendingAccountsCount,
+      newUsersThisMonth,
+      newUsersLastMonth
     ] = await Promise.all([
       OrderModel.countOrders({ source: 'Đại lý' }), 
       OrderModel.countOrders({ payment_status: 'Chờ thanh toán' }), 
@@ -475,8 +481,9 @@ const getAdminOrderStats = async (groupBy = 'year') => {
 module.exports = {
     getPersonalData,
     processExcelUpload,
-    getStatistics, 
+    // getStatistics, 
     getProductsSummary,
     submitWithdrawalRequest,
-    getAdminOrderStats 
+    getAdminOrderStats,
+    getBankList, 
 };

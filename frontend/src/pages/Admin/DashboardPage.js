@@ -4,6 +4,8 @@ import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianG
 import { LuEllipsisVertical, LuTrendingUp, LuTrendingDown, LuPackage, LuChartBar, LuCopy, LuUserPlus } from 'react-icons/lu';
 import axiosClient from '../../api/axiosClient';
 import { connectSocket } from '../../realtime/socketClient';
+import { useTranslation } from 'react-i18next';
+
 
 // --- COMPONENT CON ---
 
@@ -30,15 +32,15 @@ const StatCard = ({ icon, title, value, growth, subText }) => {
     const GrowthIcon = isPositive ? LuTrendingUp : LuTrendingDown;
 
     return (
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between h-full">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between h-full">
             <div className="flex items-center justify-between mb-4">
                 <p className="text-gray-500 font-medium text-sm">{title}</p>
                 <div className="p-2 bg-blue-50 rounded-lg text-blue-600">{icon}</div>
             </div>
-            
+
             <div className="mt-auto">
-                <p className="text-2xl font-bold text-gray-800 mb-2">{value}</p>
-                
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">{value}</p>
+
                 {/* Logic hiển thị phần % hoặc Subtext */}
                 {growth !== undefined ? (
                     <div className={`flex items-center gap-1 text-xs font-medium ${growthColor}`}>
@@ -60,7 +62,9 @@ const StatCard = ({ icon, title, value, growth, subText }) => {
 const DashboardPage = () => {
     const { setPageTitle } = useOutletContext();
     const navigate = useNavigate();
-    
+    const { t, i18n } = useTranslation();
+    const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN';
+    const tr = (key, defaultValue, options = {}) => t(key, { defaultValue, ...options });
     // State lưu dữ liệu thực từ API
     const [stats, setStats] = useState({
         stats_cards: { // Cấu trúc mới từ Backend
@@ -128,155 +132,191 @@ const DashboardPage = () => {
     const formatMoney = (num) => new Intl.NumberFormat('vi-VN', { notation: "compact", compactDisplay: "short" }).format(num || 0) + 'đ';
     const cards = stats.stats_cards || {};
 
-    const clickableCardClass = "cursor-pointer transition-transform hover:scale-105 active:scale-95 h-full";
+    const clickableCardClass =
+        "cursor-pointer h-full " +
+        "transition-transform hover:scale-105 active:scale-95 " +
+        "bg-white dark:bg-gray-800 " +
+        "border border-gray-200 dark:border-gray-700 " +
+        "rounded-xl shadow-sm " +
+        "hover:bg-gray-50 dark:hover:bg-gray-700/40";
+
     return (
         <div className="space-y-8">
-            
+
             {/* --- HÀNG 1: TOP ĐỐI TÁC --- */}
-            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                <h3 className="font-bold text-lg text-gray-800 mb-4">Top Đại lý/CTV Xuất sắc</h3>
-                <div className="divide-y divide-gray-100">
-                    {loading ? <p className="text-center py-4 text-gray-500">Đang tải...</p> : 
-                     stats.top_partners?.length > 0 ? stats.top_partners.map((partner, index) => (
-                        <TopAgentCard key={index} name={partner.name} sales={partner.revenue} orders={partner.orders} />
-                    )) : <p className="text-center py-4 text-gray-500">Chưa có dữ liệu.</p>}
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                <h3 className="mb-4 text-lg font-bold text-gray-900 dark:text-gray-100">
+                    {tr('admin.dashboard.topPartners', 'Top Đại lý/CTV Xuất sắc')}
+                </h3>
+
+                <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {loading ? (
+                        <p className="py-4 text-center text-gray-500 dark:text-gray-400">
+                            {t('general.loading')}
+                        </p>
+                    ) : stats.top_partners?.length > 0 ? (
+                        stats.top_partners.map((partner, index) => (
+                            <TopAgentCard
+                                key={index}
+                                name={
+                                    <span className="font-semibold text-gray-900 dark:text-white">
+                                        {partner.name}
+                                    </span>
+                                }
+                                sales={partner.revenue}
+                                orders={partner.orders}
+                                locale={locale}
+                                orderUnitLabel={tr('admin.common.orderUnit', 'Đơn')}
+                                unknownLabel={tr('admin.common.unknown', 'Không xác định')}
+                            />
+                        ))
+                    ) : (
+                        <p className="py-4 text-center text-gray-500 dark:text-gray-400">
+                            {t('general.noData')}
+                        </p>
+                    )}
                 </div>
             </div>
 
-  {/* --- HÀNG 2: THẺ THỐNG KÊ (Đã cập nhật logic) --- */}
+
+
+            {/* --- HÀNG 2: THẺ THỐNG KÊ (Đã cập nhật logic) --- */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                
+
                 {/* 1. Tổng đơn hàng -> Chuyển sang trang Đơn hàng */}
-                <div 
+                <div
                     className={clickableCardClass}
                     onClick={() => navigate('/admin/orders')}
                 >
-                    <StatCard 
-                        icon={<LuPackage size={24}/>} 
-                        title="Tổng đơn hàng (Tháng này)" 
-                        value={formatNumber(cards.total_orders?.value)} 
-                        growth={cards.total_orders?.growth} 
+                    <StatCard
+                        icon={<LuPackage size={24} />}
+                        title={tr('admin.dashboard.cards.totalOrders', 'Tổng đơn hàng (Tháng này)')}
+                        value={formatNumber(cards.total_orders?.value)}
+                        growth={cards.total_orders?.growth}
+                        compareText={tr('admin.dashboard.compareLastMonth', 'so với tháng trước')}
                     />
                 </div>
 
                 {/* 2. Tổng doanh thu -> Chuyển sang trang Đơn hàng */}
-                <div 
+                <div
                     className={clickableCardClass}
                     onClick={() => navigate('/admin/orders')}
                 >
-                    <StatCard 
-                        icon={<LuChartBar size={24}/>} 
-                        title="Tổng doanh thu (Tháng này)" 
-                        value={formatMoney(cards.total_revenue?.value)} 
-                        growth={cards.total_revenue?.growth} 
+                    <StatCard
+                        icon={<LuChartBar size={24} />}
+                        title={tr('admin.dashboard.cards.totalRevenue', 'Tổng doanh thu (Tháng này)')}
+                        value={formatMoney(cards.total_revenue?.value)}
+                        growth={cards.total_revenue?.growth}
+                        compareText={tr('admin.dashboard.compareLastMonth', 'so với tháng trước')}
                     />
                 </div>
 
                 {/* 3. Đơn chờ xử lý -> Chuyển sang trang Đơn hàng + Lọc "Chờ xử lý" */}
-                <div 
+                <div
                     className={clickableCardClass}
                     onClick={() => {
                         // Gửi kèm state để bên kia biết mà lọc
-                        navigate('/admin/orders', { 
-                            state: { autoFilterStatus: 'pending' } 
+                        navigate('/admin/orders', {
+                            state: { autoFilterStatus: 'pending' }
                         });
                     }}
                 >
-                    <StatCard 
-                        icon={<LuCopy size={24}/>} 
-                        title="Đơn chờ xử lý" 
-                        value={formatNumber(cards.pending_orders?.value)} 
-                        subText="Bấm để xử lý ngay" 
+                    <StatCard
+                        icon={<LuCopy size={24} />}
+                        title={tr('admin.dashboard.cards.pendingOrders', 'Đơn chờ xử lý')}
+                        value={formatNumber(cards.pending_orders?.value)}
+                        subText={tr('admin.dashboard.cards.pendingOrdersHint', 'Bấm để xử lý ngay')}
                     />
                 </div>
 
                 {/* 4. Tài khoản chờ duyệt (Code cũ của bạn - Giữ nguyên) */}
-                <div 
+                <div
                     className={clickableCardClass}
                     onClick={() => {
-                        navigate('/admin/accounts', { 
-                            state: { autoFilterStatus: 'Đang chờ cấp tài khoản' } 
+                        navigate('/admin/accounts', {
+                            state: { autoFilterStatus: 'Đang chờ cấp tài khoản' }
                         });
                     }}
                 >
-                    <StatCard 
-                        icon={<LuUserPlus size={24}/>} 
-                        title="Tài khoản chờ duyệt" 
-                        value={formatNumber(cards.new_customers?.value)} 
-                        subText="Cần kích hoạt"
+                    <StatCard
+                        icon={<LuUserPlus size={24} />}
+                        title={tr('admin.dashboard.cards.pendingAccounts', 'Tài khoản chờ duyệt')}
+                        value={formatNumber(cards.new_customers?.value)}
+                        subText={tr('admin.dashboard.cards.pendingAccountsHint', 'Cần kích hoạt')}
                     />
                 </div>
             </div>
+
             {/* --- HÀNG 3: BIỂU ĐỒ --- */}
             <div className="grid grid-cols-1 gap-6">
-                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm relative">
-                    
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm relative">
+
                     {/* Header Biểu đồ & Dropdown */}
                     <div className="flex justify-between items-center mb-6">
-                        <h3 className="font-bold text-lg text-gray-800">
-                            Đơn hàng phát sinh ({new Date().getFullYear()})
+                        <h3 className="font-bold text-lg text-gray-800 dark:text-gray-100">
+                            {tr('admin.dashboard.ordersGenerated', 'Đơn hàng phát sinh')} ({new Date().getFullYear()})
                         </h3>
-                        
+
                         {/* Dropdown chọn kiểu xem */}
-                        <select 
-                            className="bg-white border border-gray-300 text-gray-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-3 py-2 outline-none font-medium cursor-pointer hover:bg-gray-50 transition-colors"
+                        <select
+                            className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-3 py-2 outline-none font-medium cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                             value={groupBy}
                             onChange={(e) => setGroupBy(e.target.value)}
                         >
-                            <option value="year">Năm nay (Theo tháng)</option>
-                            <option value="week">Tuần này (Theo ngày)</option>
+                            <option value="year">{tr('admin.dashboard.filters.year', 'Năm nay (Theo tháng)')}</option>
+                            <option value="week">{tr('admin.dashboard.filters.week', 'Tuần này (Theo ngày)')}</option>
                         </select>
                     </div>
-                    
+
                     {/* Vùng vẽ biểu đồ */}
                     <div style={{ width: '100%', height: 350 }}>
                         <ResponsiveContainer>
                             <LineChart data={stats.monthly_stats || []} margin={{ top: 20, right: 20, left: 0, bottom: 20 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" opacity={0.5}/>
-                                <XAxis 
-                                    dataKey="name" 
-                                    axisLine={false} 
-                                    tickLine={false} 
-                                    tick={{ fontSize: 12, fill: '#9CA3AF' }} 
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" opacity={0.5} />
+                                <XAxis
+                                    dataKey="name"
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fontSize: 12, fill: '#9CA3AF' }}
                                     dy={10}
                                     // Nếu xem theo tuần (số lượng điểm nhiều), giãn label ra
-                                    interval={groupBy === 'week' ? 0 : 0} 
+                                    interval={groupBy === 'week' ? 0 : 0}
                                 />
-                                <YAxis 
-                                    axisLine={false} 
-                                    tickLine={false} 
-                                    tick={{ fontSize: 12, fill: '#9CA3AF' }} 
-                                    allowDecimals={false} 
+                                <YAxis
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fontSize: 12, fill: '#9CA3AF' }}
+                                    allowDecimals={false}
                                 />
-                                <Tooltip 
-                                    contentStyle={{backgroundColor: '#1F2937', border: 'none', borderRadius: '8px', color: '#fff'}}
-                                    itemStyle={{color: '#fff'}}
+                                <Tooltip
+                                    contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px', color: '#fff' }}
+                                    itemStyle={{ color: '#fff' }}
                                     formatter={(value, name) => [value, name === "Cancelled" ? "Đã hủy" : "Hoàn thành"]}
                                 />
-                                <Legend 
-                                    verticalAlign="bottom" 
-                                    height={36} 
+                                <Legend
+                                    verticalAlign="bottom"
+                                    height={36}
                                     iconType="circle"
                                 />
-                                
+
                                 {/* Line 1: Đã thanh toán (Hoàn thành) - Màu Xanh Ngọc */}
-                                <Line 
-                                    type="monotone" 
-                                    dataKey="Approved" 
-                                    name="Hoàn thành" 
-                                    stroke="#4FD1C5" 
-                                    strokeWidth={3} 
-                                    dot={{ r: 4, fill: '#ffffff', strokeWidth: 2, stroke: '#4FD1C5' }} 
-                                    activeDot={{ r: 6 }} 
+                                <Line
+                                    type="monotone"
+                                    dataKey="Approved"
+                                    name="Hoàn thành"
+                                    stroke="#4FD1C5"
+                                    strokeWidth={3}
+                                    dot={{ r: 4, fill: '#ffffff', strokeWidth: 2, stroke: '#4FD1C5' }}
+                                    activeDot={{ r: 6 }}
                                 />
-                                
+
                                 {/* Line 2: Đã hủy - Màu Đỏ */}
-                                <Line 
-                                    type="monotone" 
-                                    dataKey="Cancelled" 
-                                    name="Đã hủy" 
-                                    stroke="#F56565" 
-                                    strokeWidth={3} 
+                                <Line
+                                    type="monotone"
+                                    dataKey="Cancelled"
+                                    name="Đã hủy"
+                                    stroke="#F56565"
+                                    strokeWidth={3}
                                     dot={{ r: 4, fill: '#ffffff', strokeWidth: 2, stroke: '#F56565' }}
                                 />
                             </LineChart>

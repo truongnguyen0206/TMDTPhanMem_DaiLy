@@ -377,5 +377,244 @@
       "submitButton": "Submit Withdrawal Request",
       "submitSuccess": "Withdrawal request submitted successfully!"
     }
+  },
+  "admin": {
+    "common": {
+      "exportExcel": "Export Excel",
+      "exportPdf": "Export PDF",
+      "clearFilters": "Clear filters",
+      "errorPrefix": "An error occurred:",
+      "confirmDelete": "Are you sure you want to delete this item?",
+      "deleteSuccess": "Deleted successfully!",
+      "deleteFailPrefix": "Delete failed: ",
+      "createSuccess": "Created successfully!",
+      "updateSuccess": "Updated successfully!",
+      "saveError": "An error occurred while saving data.",
+      "errorOccurred": "An error occurred.",
+      "createFailPrefix": "Create failed: ",
+      "updateFailPrefix": "Update failed. ",
+      "all": "All",
+      "start": "From:",
+      "end": "To:",
+      "noExpiry": "No expiry",
+      "edit": "Edit",
+      "delete": "Delete",
+      "orderUnit": "orders",
+      "unknown": "Unknown",
+      "notAvailable": "N/A",
+      "status": "Status",
+      "unlimited": "Unlimited",
+      "startDate": "Start date",
+      "endDate": "End date",
+      "description": "Description",
+      "notesPlaceholder": "Additional notes...",
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "processing": "Processing...",
+      "saveChanges": "Save changes",
+      "update": "Update",
+      "create": "Create",
+      "creating": "Creating..."
+    },
+    "orders": {
+      "pageTitle": "Orders",
+      "stats": {
+        "pendingOrders": "Pending orders",
+        "pendingPayment": "Pending payment",
+        "viaCtv": "Via Collaborators",
+        "viaNpp": "Via Distributors",
+        "cancelled": "Cancelled",
+        "totalRevenue": "Total revenue"
+      },
+      "listTitle": "Order list",
+      "searchPlaceholder": "Order code, referrer...",
+      "filters": {
+        "allStatus": "All statuses",
+        "allSource": "All sources"
+      },
+      "status": {
+        "pending": "Pending",
+        "completed": "Completed",
+        "cancelled": "Cancelled"
+      },
+      "source": {
+        "npp": "Distributor",
+        "agent": "Agent",
+        "ctv": "Collaborator"
+      },
+      "table": {
+        "orderCode": "Order code",
+        "product": "Product",
+        "quantity": "Qty",
+        "total": "Total",
+        "source": "Source",
+        "createdBy": "Created by",
+        "createdDate": "Created at",
+        "status": "Status",
+        "payment": "Payment"
+      },
+      "noResults": "No orders found.",
+      "notUpdated": "Not updated",
+      "guestOrSystem": "Guest / System",
+      "actions": {
+        "view": "View details",
+        "updateStatus": "Update status",
+        "cancelOrder": "Cancel order"
+      },
+      "analysis": {
+        "title": "Analytics",
+        "sourceShare": "Order source share",
+        "topPartners": "Top partners",
+        "estimatedCommissionWeek": "Estimated commission (week)"
+      },
+      "orderUnit": "orders"
+    },
+    "accounts": {
+      "pageTitle": "Accounts",
+      "searchPlaceholder": "Search...",
+      "filters": {
+        "allRoles": "All roles",
+        "statusTitle": "Filter by status",
+        "all": "All"
+      },
+      "roles": {
+        "npp": "Distributor",
+        "agent": "Agent",
+        "ctv": "Collaborator",
+        "customer": "Customer"
+      },
+      "addAccount": "Add account",
+      "table": {
+        "username": "Username",
+        "email": "Email",
+        "phone": "Phone",
+        "role": "Role",
+        "status": "Status",
+        "createdAt": "Created at"
+      },
+      "noResults": "No accounts found.",
+      "actions": {
+        "quickApprove": "Approve account (activate now)",
+        "edit": "Edit"
+      },
+      "showingResults": "Showing {{start}} to {{end}} of {{total}} accounts"
+    },
+    "dashboard": {
+      "topPartners": "Top Agents/Collaborators",
+      "cards": {
+        "totalOrders": "Total orders (this month)",
+        "totalRevenue": "Total revenue (this month)",
+        "pendingOrders": "Pending orders",
+        "pendingOrdersHint": "Click to process",
+        "pendingAccounts": "Accounts pending approval",
+        "pendingAccountsHint": "Need activation"
+      },
+      "compareLastMonth": "vs last month",
+      "ordersGenerated": "Orders generated",
+      "filters": {
+        "year": "This year (by month)",
+        "week": "This week (by day)"
+      }
+    },
+    "commission": {
+      "pageTitle": "Commission rules",
+      "errorLoad": "Unable to load commission rules.",
+      "filters": {
+        "allRoles": "All roles"
+      },
+      "createNew": "Create new rule",
+      "table": {
+        "role": "Role",
+        "salesRange": "Sales (Min - Max)",
+        "commission": "Commission",
+        "category": "Category",
+        "time": "Time",
+        "status": "Status"
+      },
+      "noRules": "No rules yet.",
+      "showingResults": "Showing {{start}} to {{end}} of {{total}} rules"
+    },
+    "commissionForm": {
+      "editTitle": "Edit commission rule",
+      "createTitle": "Create new commission rule",
+      "editRule": "Edit rule",
+      "createRule": "Create rule",
+      "createAction": "Create rule",
+      "errors": {
+        "roleRequired": "Please choose a role.",
+        "rateRequired": "Please enter commission rate."
+      },
+      "fields": {
+        "applyFor": "Apply for",
+        "chooseRole": "Choose role",
+        "minSales": "Min Sales (VND)",
+        "maxSales": "Max Sales (VND)",
+        "rate": "Commission rate (%)",
+        "category": "Product category",
+        "categoryPlaceholder": "e.g., Cosmetics, Electronics (leave blank to apply all)"
+      }
+    },
+    "addAccount": {
+      "pageTitle": "Add new account",
+      "title": "Add account",
+      "tabs": {
+        "manual": "Add manually",
+        "csv": "Import from Excel/CSV"
+      },
+      "fields": {
+        "username": "Username / Full name",
+        "usernamePlaceholder": "e.g., nguyenvan_a",
+        "password": "Password",
+        "phone": "Phone number",
+        "role": "Role",
+        "chooseRole": "Choose role"
+      },
+      "errors": {
+        "roleRequired": "Please select a role for the account."
+      },
+      "success": "Account created successfully!",
+      "actions": {
+        "create": "Create account"
+      },
+      "csvComingSoon": "CSV import feature is under development.",
+      "downloadCsvTemplate": "Download CSV template"
+    },
+    "updateAccount": {
+      "pageTitle": "Update account",
+      "title": "Update account",
+      "loading": "Loading account data...",
+      "errors": {
+        "notFound": "Account data not found.",
+        "loadFailPrefix": "Failed to load user data. "
+      },
+      "success": "Account updated successfully!",
+      "fields": {
+        "username": "Username",
+        "phone": "Phone",
+        "newPassword": "New password",
+        "passwordPlaceholder": "Leave blank to keep current"
+      }
+    },
+    "profile": {
+      "pageTitle": "Profile",
+      "avatarComingSoon": "Avatar upload feature is under development!",
+      "updatedMock": "Profile updated (mock)!",
+      "passwordMismatch": "New password and confirmation do not match!",
+      "passwordMinLen": "New password must be at least 6 characters!",
+      "passwordChangedMock": "Password changed successfully (mock)!",
+      "actions": {
+        "editProfile": "Edit profile",
+        "changePassword": "Change password"
+      },
+      "fields": {
+        "currentPassword": "Current password",
+        "newPassword": "New password",
+        "confirmPassword": "Confirm new password",
+        "fullName": "Full name",
+        "gender": "Gender",
+        "dob": "Date of birth",
+        "phone": "Phone number"
+      }
+    }
   }
 }
